@@ -4,14 +4,13 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-if [ ! -f .env ]; then
-  cp .env.example .env
-  echo "Created .env from .env.example"
+if [ -f .env ]; then
+  set -a
+  source .env
+  set +a
+else
+  echo "[codesentinel] no .env found — using built-in defaults (see docs/environment.md)"
 fi
-
-set -a
-source .env
-set +a
 
 echo "[codesentinel] starting backend containers (api on :8000, postgres :5432, redis :6379)"
 docker compose up -d --build

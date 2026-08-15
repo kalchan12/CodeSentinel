@@ -2,7 +2,8 @@
 
 All backend settings are read from environment variables prefixed with
 `CODESENTINEL_`. A `.env` file in the repository root is loaded
-automatically (pydantic-settings). See `.env.example` for a starting point.
+automatically (pydantic-settings). Every variable has a safe default, so a
+`.env` file is optional. This document is the reference for all of them.
 
 ## Full reference
 

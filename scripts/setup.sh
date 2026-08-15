@@ -13,6 +13,6 @@ npm install
 
 echo
 echo "Setup complete."
-echo "  Next:   cp .env.example .env"
+echo "  Next:   (optional) create .env to override defaults — see docs/environment.md"
 echo "  Then:   docker compose up -d --build   (or run ./scripts/dev.sh)"
 echo "After that, open http://localhost:3000 and http://localhost:8000/api/health"

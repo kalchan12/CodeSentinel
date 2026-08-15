@@ -95,8 +95,8 @@ full picture and the reasoning behind each decision.
 
 ```bash
 # 1) one-time setup
+#    OPTIONAL: create `.env` to override defaults (see docs/environment.md)
 ./scripts/setup.sh
-cp .env.example .env
 
 # 2) start the backend stack
 docker compose up -d --build
@@ -132,8 +132,8 @@ The Python parts can run directly:
 
 ```bash
 # 1) PostgreSQL + Redis (any local install), then:
+#    OPTIONAL: create `.env` to override defaults (see docs/environment.md)
 ./scripts/setup.sh
-cp .env.example .env
 
 # 2) apply migrations (path A — host psql)
 CODESENTINEL_DATABASE_URL=postgresql+psycopg://..."
