@@ -1,0 +1,16 @@
+rules:
+  - id: py-insecure-deserialization
+    languages: [python]
+    severity: WARNING
+    message: Avoid deserializing untrusted data with pickle. Malicious
+      payloads can execute arbitrary code on load.
+    metadata:
+      category: security
+      cwe: ["CWE-502"]
+    patterns:
+      - pattern-either:
+          - pattern: pickle.loads(...)
+          - pattern: pickle.load(...)
+          - pattern: joblib.load(...)
+          - pattern: shelve.open(...)
+    fix: Prefer safe formats (JSON) or verify the payload origin before deserializing.

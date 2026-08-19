@@ -1,0 +1,14 @@
+rules:
+  - id: js-dangerous-exec
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: Dynamic code execution (eval) can run arbitrary input. Avoid
+      it or restrict input to trusted, validated data.
+    metadata:
+      category: security
+      cwe: ["CWE-95"]
+    patterns:
+      - pattern: eval(...)
+      - pattern: new Function(...)
+    fix: Refactor to avoid dynamic code generation; use a safe parser or
+      explicit dispatch.

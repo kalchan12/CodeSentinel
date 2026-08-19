@@ -1,0 +1,16 @@
+rules:
+  - id: py-weak-crypto
+    languages: [python]
+    severity: WARNING
+    message: MD5 and SHA-1 are cryptographically broken. Use a modern
+      hashing algorithm such as SHA-256 or SHA-3.
+    metadata:
+      category: security
+      cwe: ["CWE-327"]
+    patterns:
+      - pattern-either:
+          - pattern: hashlib.md5(...)
+          - pattern: hashlib.sha1(...)
+          - pattern: hashlib.new("md5", ...)
+          - pattern: hashlib.new("sha1", ...)
+    fix: Use hashlib.sha256 or hashlib.sha3_256 instead.

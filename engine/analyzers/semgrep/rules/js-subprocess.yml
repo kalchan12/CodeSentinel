@@ -1,0 +1,15 @@
+rules:
+  - id: js-shell-execution
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: Child process execution with a shell string can be exploited
+      via command injection when input is untrusted. Use spawn with an
+      argument array.
+    metadata:
+      category: security
+      cwe: ["CWE-78"]
+    patterns:
+      - pattern-either:
+          - pattern: child_process.exec(...)
+          - pattern: child_process.execSync(...)
+    fix: Prefer child_process.spawn(command, args) with an argument array.
