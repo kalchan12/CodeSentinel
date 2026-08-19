@@ -12,12 +12,8 @@ import logging
 from collections.abc import Mapping
 from pathlib import Path
 
-from engine.ai.provider import (
-    AIAnalysisRequest,
-    AIProvider,
-    CodeSnippet,
-    NoopAIProvider,
-)
+from engine.ai import build_provider
+from engine.ai.provider import AIAnalysisRequest, AIProvider, CodeSnippet
 from engine.core.analyzer import Analyzer
 from engine.core.context import AnalysisContext
 from engine.core.registry import AnalyzerRegistry
@@ -58,7 +54,7 @@ class AIAnalyzer(Analyzer):
         provider: AIProvider | None = None,
     ) -> None:
         self.env = env or {}
-        self.provider = provider or NoopAIProvider()
+        self.provider = provider or build_provider(self.env)
 
     def analyze(self, context: AnalysisContext) -> list[Finding]:
         if not self.provider.available():
