@@ -192,20 +192,24 @@ over HTTP. Native Tauri commands (e.g. a directory picker) can be added later
 without changing the frontend/backend data flow. Note that building Tauri
 requires the platform webview libraries (webkit2gtk-4.1 on Linux).
 
-## Roadmap / planned analyzers
+## Analyzers
 
-Registered but not implemented (opt-in, fail loudly if enabled):
+All analyzers are opt-in via `CODESENTINEL_ENABLED_ANALYZERS`
+(comma-separated; default `mock`):
 
-- `semgrep` — Semgrep CLI static analysis
-- `gitleaks` — infrastructure-level secrets detection
-- `tree_sitter` — AST-based source analysis
-- `dependencies` — OSV-based dependency vulnerability analysis
-- `configuration` — security-relevant configuration checks
-- `git` — repository hygiene / history exposure analysis
-- `ai` — optional AI-assisted analysis (OpenCode / local models) via a
-  pluggable `AIProvider`
+| Analyzer | What it does | Tooling required |
+| --- | --- | --- |
+| `mock` | deterministic demo rules (secrets, eval/exec, debug) | none |
+| `semgrep` | static analysis over bundled local rules (no registry download) | semgrep CLI (`pip install semgrep` or `.[analyzers]`) |
+| `gitleaks` | secrets detection, redacted reports | gitleaks binary (`scripts/install_gitleaks.sh`) |
+| `tree_sitter` | AST structural checks (shell=True, unsafe deserialization, eval, weak hashes) | `tree-sitter-language-pack` (`.[analyzers]`) |
+| `dependencies` | lockfile parsing + OSV vulnerability lookup (network; degrades to an info finding offline) | httpx (runtime dep) |
+| `configuration` | debug mode, open CORS, weak secret keys in config files | none |
+| `git` | repo hygiene: tracked credentials, missing .gitignore, large files, dirty tree | git CLI |
+| `ai` | AI-assisted insights via an OpenAI-compatible provider | `CODESENTINEL_AI_API_KEY` (else no-op) |
 
-Follow the "Adding an analyzer" guide in
+An analyzer whose tooling is missing raises `AnalyzerNotAvailableError`,
+failing that scan loudly. Follow the "Adding an analyzer" guide in
 [docs/architecture/analyzer-architecture.md](docs/architecture/analyzer-architecture.md).
 
 ## Docs

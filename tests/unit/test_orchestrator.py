@@ -36,12 +36,16 @@ def test_full_pipeline(sample_project_dir: Path, orchestrator) -> None:
     assert all(0 <= fr.score <= 100 for fr in result.assessment.finding_risks)
 
 
-def test_registry_lists_planned_and_implemented() -> None:
+def test_registry_lists_all_analyzers_as_implemented() -> None:
     available = AnalyzerRegistry.available()
     assert available["mock"]["implemented"] is True
-    assert available["semgrep"]["implemented"] is False
-    assert "gitleaks" in available
-    assert "ai" in available
+    assert available["semgrep"]["implemented"] is True
+    assert available["gitleaks"]["implemented"] is True
+    assert available["tree_sitter"]["implemented"] is True
+    assert available["dependencies"]["implemented"] is True
+    assert available["configuration"]["implemented"] is True
+    assert available["git"]["implemented"] is True
+    assert available["ai"]["implemented"] is True
 
 
 def test_registry_rejects_unprovided_analyzer() -> None:
@@ -49,9 +53,16 @@ def test_registry_rejects_unprovided_analyzer() -> None:
         build_orchestrator(["nonexistent"], workspace_root=Path("/tmp/ws"))
 
 
-def test_registry_rejects_unimplemented_analyzer() -> None:
-    with pytest.raises(AnalyzerRegistryError):
-        build_orchestrator(["semgrep"], workspace_root=Path("/tmp/ws"))
+def test_registry_builds_implemented_analyzers() -> None:
+    orch = build_orchestrator(
+        ["mock", "semgrep", "gitleaks", "tree_sitter", "dependencies", "configuration", "git", "ai"],
+        workspace_root=Path("/tmp/ws"),
+    )
+    names = {analyzer.name for analyzer in orch.analyzers}
+    assert names == {
+        "mock", "semgrep", "gitleaks", "tree_sitter",
+        "dependencies", "configuration", "git", "ai",
+    }
 
 
 def test_orchestrator_build_supports_custom_risk_config() -> None:
