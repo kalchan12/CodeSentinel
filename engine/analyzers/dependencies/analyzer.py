@@ -54,7 +54,7 @@ _VERSION_RE = r"[0-9][0-9A-Za-z.+-]*"
 #: pinned requirement, tolerating trailing environment markers (e.g. "; python_version >= '3.8'")
 _PIN_RE = re.compile(rf"^(\S+)\s*(?:===|==)\s*({_VERSION_RE})")
 #: any requirement that is not exactly pinned (range, latest, bare name)
-_UNPINNED_RE = re.compile(r"^(\S+)\s*(?:>=|<=|~=|==|!=|>|<|\*|$)")
+_UNPINNED_RE = re.compile(r"^([A-Za-z0-9_.-]+?)\s*(?:>=|<=|~=|==|!=|>|<|\*)")
 _PIPFILE_RE = re.compile(
     rf'^\s*["\']?([A-Za-z0-9_.-]+)["\']?\s*=\s*["\'](?:==|===)?({_VERSION_RE})["\']'
 )
