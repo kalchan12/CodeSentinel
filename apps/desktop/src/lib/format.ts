@@ -10,11 +10,11 @@ export const SCAN_STATUS_LABELS: Record<ScanStatus, string> = {
 };
 
 export const SCAN_STATUS_STYLES: Record<ScanStatus, string> = {
-  pending: "bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200",
-  running: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-  completed: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200",
-  failed: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-  canceled: "bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
+  pending: "bg-surface-container text-on-surface-variant border border-outline-variant",
+  running: "bg-secondary/10 text-secondary border border-secondary/30",
+  completed: "bg-primary/10 text-primary border border-primary/30",
+  failed: "bg-error/10 text-error border border-error/30",
+  canceled: "bg-surface-container text-on-surface-variant border border-outline-variant",
 };
 
 export const SEVERITY_LABELS: Record<Severity, string> = {
@@ -23,6 +23,31 @@ export const SEVERITY_LABELS: Record<Severity, string> = {
   medium: "Medium",
   high: "High",
   critical: "Critical",
+};
+
+/** Design-token severity colors for pips/bars (see cybernetic_developer_core). */
+export const SEVERITY_DOT_CLASSES: Record<Severity, string> = {
+  critical: "bg-error",
+  high: "bg-tertiary",
+  medium: "bg-secondary",
+  low: "bg-outline",
+  info: "bg-outline-variant",
+};
+
+export const SEVERITY_TEXT_CLASSES: Record<Severity, string> = {
+  critical: "text-error",
+  high: "text-tertiary",
+  medium: "text-secondary",
+  low: "text-on-surface-variant",
+  info: "text-on-surface-variant",
+};
+
+export const SEVERITY_BAR_CLASSES: Record<Severity, string> = {
+  critical: "bg-error",
+  high: "bg-tertiary",
+  medium: "bg-secondary",
+  low: "bg-outline",
+  info: "bg-outline-variant",
 };
 
 export function severityClass(severity: Severity): string {
