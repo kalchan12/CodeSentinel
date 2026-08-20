@@ -4,19 +4,16 @@
 
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { FolderPlus, FolderOpen, Plus, RefreshCw } from "lucide-react";
+import { FolderOpen, Plus, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import type { Project } from "@codesentinel/shared";
 
 import { NewProjectDialog } from "@/components/new-project-dialog";
 import { ProjectDetail } from "@/components/project-detail";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api";
-import { formatDate } from "@/lib/format";
-import { SCAN_STATUS_LABELS, SCAN_STATUS_STYLES } from "@/lib/format";
-import type { Project } from "@codesentinel/shared";
+import { formatDate, SCAN_STATUS_LABELS, SCAN_STATUS_STYLES } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 export default function ProjectsPage() {
   return (
@@ -60,62 +57,71 @@ function ProjectList() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Projects</h1>
-          <p className="text-sm text-muted-foreground">
+          <h1 className="text-2xl font-semibold text-on-surface">Projects</h1>
+          <p className="text-sm text-on-surface-variant">
             Analyze a local directory or a GitHub repository. Analysis runs on your machine.
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="icon" onClick={() => setRefreshKey((k) => k + 1)}>
+          <button
+            onClick={() => setRefreshKey((k) => k + 1)}
+            className="rounded-lg border border-outline-variant bg-surface-container p-2.5 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface"
+            aria-label="Refresh"
+          >
             <RefreshCw className="h-4 w-4" />
-          </Button>
+          </button>
           <NewProjectDialog onCreated={() => setRefreshKey((k) => k + 1)} />
         </div>
       </div>
 
       {projects.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
-            <FolderOpen className="h-10 w-10 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">
-              No projects yet. Create your first project to run a security scan.
-            </p>
-            <NewProjectDialog onCreated={() => setRefreshKey((k) => k + 1)} />
-          </CardContent>
-        </Card>
+        <div className="flex flex-col items-center gap-3 rounded-xl border border-outline-variant bg-surface-container py-16 text-center">
+          <FolderOpen className="h-10 w-10 text-on-surface-variant" />
+          <p className="text-sm text-on-surface-variant">
+            No projects yet. Create your first project to run a security scan.
+          </p>
+          <NewProjectDialog onCreated={() => setRefreshKey((k) => k + 1)} />
+        </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {projects.map((project) => (
             <a key={project.id} href={`/projects?project=${project.id}`} className="group">
-              <Card className="h-full transition-shadow group-hover:shadow-md">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <FolderPlus className="h-4 w-4 text-muted-foreground" />
-                    {project.name}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2 text-sm">
+              <div className="flex h-full flex-col rounded-xl border border-outline-variant bg-surface-container p-5 transition-all group-hover:border-primary/50">
+                <div className="flex items-center gap-2">
+                  <span className="flex size-9 items-center justify-center rounded-lg bg-surface-bright text-primary">
+                    <FolderOpen className="h-4 w-4" />
+                  </span>
+                  <h2 className="truncate text-base font-semibold text-on-surface">{project.name}</h2>
+                </div>
+                <div className="mt-3 space-y-2 text-sm">
                   <div className="flex items-center gap-2">
-                    <Badge variant="secondary">{project.source_type}</Badge>
+                    <span className="rounded border border-outline-variant bg-surface-container-high px-2 py-0.5 font-code text-[10px] font-bold text-on-surface-variant uppercase">
+                      {project.source_type}
+                    </span>
                     {project.last_scan_status && (
-                      <Badge className={SCAN_STATUS_STYLES[project.last_scan_status]}>
+                      <span
+                        className={cn(
+                          "rounded border px-2 py-0.5 font-code text-[10px] font-bold",
+                          SCAN_STATUS_STYLES[project.last_scan_status]
+                        )}
+                      >
                         {SCAN_STATUS_LABELS[project.last_scan_status]}
-                      </Badge>
+                      </span>
                     )}
                   </div>
-                  <p className="truncate text-muted-foreground">
+                  <p className="truncate font-code text-xs text-on-surface-variant">
                     {project.local_path ?? project.repo_url}
                   </p>
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <div className="flex items-center justify-between text-xs text-on-surface-variant">
                     <span>{project.scan_count} scan(s)</span>
                     <span>{project.last_scan_id ? `#${project.last_scan_id}` : "no scans yet"}</span>
                   </div>
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-1 text-xs text-on-surface-variant">
                     <Plus className="h-3 w-3" />
                     <span>Created {formatDate(project.created_at)}</span>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             </a>
           ))}
         </div>
