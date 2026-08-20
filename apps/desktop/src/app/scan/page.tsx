@@ -5,7 +5,7 @@
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, FileSearch, Loader2 } from "lucide-react";
+import { AlertTriangle, Check, FileSearch, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 import type {
   Finding,
@@ -19,6 +19,7 @@ import { CATEGORY_LABELS, SEVERITY_ORDER } from "@codesentinel/shared";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -28,13 +29,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { api, ApiError } from "@/lib/api";
 import { formatLine, formatRiskScore, SEVERITY_LABELS, severityClass } from "@/lib/format";
 import { usePolling } from "@/lib/hooks";
@@ -106,7 +100,16 @@ function ScanContent() {
     }
   }, [scan?.status, loadResults]);
 
-  return <ScanDashboard scan={scan} findings={findings} assessment={assessment} severityFilter={severityFilter} setSeverityFilter={setSeverityFilter} projectId={projectId} />;
+  return (
+    <ScanDashboard
+      scan={scan}
+      findings={findings}
+      assessment={assessment}
+      severityFilter={severityFilter}
+      setSeverityFilter={setSeverityFilter}
+      projectId={projectId}
+    />
+  );
 }
 
 function ScanDashboard({
@@ -130,41 +133,34 @@ function ScanDashboard({
 
   const running = scan.status === "pending" || scan.status === "running";
 
+  if (running) {
+    return <ScanInProgress scan={scan} />;
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
           <Link
             href={`/projects?project=${projectId ?? scan.project_id}`}
-            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+            className="inline-flex items-center gap-1 text-sm text-on-surface-variant hover:text-primary"
           >
-            <ArrowLeft className="h-4 w-4" />
             Project
           </Link>
-          <h1 className="text-2xl font-semibold">Scan #{scan.id}</h1>
+          <h1 className="text-2xl font-semibold text-on-surface">Scan #{scan.id}</h1>
         </div>
-        <StatusBadge status={scan.status} />
+        <span className={scanStatusBadge(scan.status)}>{scan.status}</span>
       </div>
 
-      {running && (
-        <Card>
-          <CardContent className="space-y-3 pt-6">
-            <div className="flex items-center gap-2 text-sm">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Analyzing… this may take a moment.
-            </div>
-            <Progress value={scan.progress} />
-            <p className="text-xs text-muted-foreground">{Math.round(scan.progress)}% complete</p>
-          </CardContent>
-        </Card>
-      )}
-
       {scan.status === "failed" && (
-        <Card className="border-destructive">
+        <Card className="border-error/50">
           <CardHeader>
-            <CardTitle className="text-destructive">Scan failed</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-error">
+              <AlertTriangle className="h-5 w-5" />
+              Scan failed
+            </CardTitle>
           </CardHeader>
-          <CardContent className="text-sm text-destructive">
+          <CardContent className="text-sm text-error">
             {scan.error_message ?? "The analysis pipeline failed."}
           </CardContent>
         </Card>
@@ -186,16 +182,167 @@ function ScanDashboard({
   );
 }
 
-function StatusBadge({ status }: { status: Scan["status"] }) {
+function scanStatusBadge(status: Scan["status"]): string {
   const styles: Record<string, string> = {
-    pending: "bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200",
-    running: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-    completed: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200",
-    failed: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+    pending: "rounded border border-outline-variant bg-surface-container px-2 py-1 font-code text-[10px] font-bold text-on-surface-variant uppercase",
+    running: "rounded border border-primary/30 bg-primary/10 px-2 py-1 font-code text-[10px] font-bold text-primary uppercase",
+    completed: "rounded border border-secondary/30 bg-secondary/10 px-2 py-1 font-code text-[10px] font-bold text-secondary uppercase",
+    failed: "rounded border border-error/30 bg-error/10 px-2 py-1 font-code text-[10px] font-bold text-error uppercase",
+    canceled: "rounded border border-outline-variant bg-surface-container px-2 py-1 font-code text-[10px] font-bold text-on-surface-variant uppercase",
   };
-  const labels: Record<string, string> = { pending: "Pending", running: "Running", completed: "Completed", failed: "Failed" };
-  return <Badge className={styles[status] ?? styles.pending}>{labels[status] ?? status}</Badge>;
+  return styles[status] ?? styles.pending;
 }
+
+/* ---------- Scan in progress (codesentinel_scan_in_progress) ---------- */
+
+const PIPELINE_STEPS = ["Discovery", "Source Analysis", "Dependencies", "Secrets"];
+
+const TERMINAL_LOG = [
+  "[INFO] Cloning / reading workspace…",
+  "[INFO] Resolving source files…",
+  "[INFO] Running analyzer: mock",
+  "[WARN] Potential hardcoded credential in src/app.js",
+  "[INFO] Correlating findings…",
+  "[INFO] Computing risk scores…",
+];
+
+function ScanInProgress({ scan }: { scan: Scan }) {
+  const pct = Math.round(scan.progress);
+  const activeStep = Math.min(Math.floor(pct / 25), PIPELINE_STEPS.length - 1);
+
+  return (
+    <div className="relative flex min-h-[70vh] items-center justify-center">
+      <div className="tech-grid pointer-events-none absolute inset-0 z-0 opacity-20" />
+      <div className="relative z-10 w-full max-w-3xl flex-col overflow-hidden rounded-xl border border-outline-variant bg-surface-container">
+        {/* Modal header */}
+        <div className="flex justify-between border-b border-outline-variant bg-surface-container-low px-6 py-4">
+          <div>
+            <h2 className="text-lg font-semibold text-on-surface">
+              Active Scan: <span className="font-code text-primary">scan-{scan.id}</span>
+            </h2>
+            <p className="mt-0.5 font-code text-sm text-on-surface-variant">
+              ID: #{scan.id} · {scan.status}
+            </p>
+          </div>
+          <span className="rounded border border-error/30 px-2.5 py-1 font-code text-[10px] font-bold text-error transition-colors hover:bg-error/10">
+            Abort
+          </span>
+        </div>
+
+        {/* Stepper */}
+        <div className="border-b border-outline-variant px-6 py-4">
+          <div className="relative flex items-center justify-between">
+            <div className="absolute top-1/2 left-0 h-[2px] w-full -translate-y-1/2 bg-surface-variant" />
+            <div
+              className="absolute top-1/2 left-0 h-[2px] -translate-y-1/2 bg-secondary transition-all duration-1000"
+              style={{ width: `${(activeStep / (PIPELINE_STEPS.length - 1)) * 100}%` }}
+            />
+            {PIPELINE_STEPS.map((label, index) => {
+              const done = index < activeStep;
+              const current = index === activeStep;
+              const stepPct = index === 0 ? 100 : Math.min(100, (pct - index * 25) * 4);
+              return (
+                <div key={label} className="relative flex flex-col items-center gap-1 bg-surface-container px-2">
+                  <div
+                    className={cn(
+                      "flex size-8 items-center justify-center rounded-full border",
+                      done && "border-secondary bg-secondary/20 text-secondary",
+                      current && "border-primary bg-primary/20 text-primary",
+                      !done && !current && "border-outline-variant bg-surface-variant text-on-surface-variant"
+                    )}
+                  >
+                    {done ? (
+                      <Check className="h-4 w-4" />
+                    ) : current ? (
+                      <>
+                        <span className="absolute inset-0 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                        <span className="font-code text-[10px]">{stepPct}%</span>
+                      </>
+                    ) : (
+                      <span className="font-code text-[10px]">{index + 1}</span>
+                    )}
+                  </div>
+                  <span
+                    className={cn(
+                      "font-code text-[10px] font-bold uppercase",
+                      current ? "text-primary" : done ? "text-secondary" : "text-on-surface-variant opacity-50"
+                    )}
+                  >
+                    {label}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Progress */}
+        <div className="flex flex-col gap-4 p-6">
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-end justify-between">
+              <span className="font-code text-sm text-on-surface-variant">
+                Scanning repository files…
+              </span>
+              <span className="font-code text-[10px] font-bold text-primary">{pct}%</span>
+            </div>
+            <div className="h-2 w-full overflow-hidden rounded-full border border-outline-variant/50 bg-surface-variant">
+              <div
+                className="progress-bar-animated glow-primary h-full rounded-full bg-primary"
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+            <div className="mt-1 flex items-center justify-between">
+              <span className="font-code text-sm text-on-surface-variant">
+                {scan.findings_count} findings discovered so far
+              </span>
+              <span className="font-code text-sm text-on-surface-variant">
+                Est. time remaining: scanning…
+              </span>
+            </div>
+          </div>
+
+          {/* Metrics bento */}
+          <div className="mt-2 grid grid-cols-2 gap-3">
+            <div className="flex flex-col items-center justify-center gap-1.5 rounded border border-outline-variant/50 bg-[#090c10] p-3">
+              <span className="font-code text-[10px] font-bold tracking-wider text-on-surface-variant uppercase">
+                Progress
+              </span>
+              <span className="font-code text-3xl font-bold text-secondary">{pct}%</span>
+              <span className="font-code text-[10px] text-on-surface-variant">scanning…</span>
+            </div>
+            <div className="relative flex flex-col items-center justify-center gap-1.5 overflow-hidden rounded border border-error/30 bg-[#090c10] p-3">
+              <div className="absolute inset-0 z-0 bg-error/5" />
+              <span className="relative z-10 font-code text-[10px] font-bold tracking-wider text-error uppercase">
+                Findings Discovered
+              </span>
+              <span className="relative z-10 flex items-center gap-1 font-code text-3xl font-bold text-error">
+                {scan.findings_count}
+                <TriangleAlert className="h-5 w-5 animate-pulse text-error" />
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Terminal feed */}
+        <div className="relative flex h-32 flex-col gap-0.5 overflow-hidden border-t border-outline-variant bg-[#090c10] p-3 font-code text-xs opacity-70">
+          <div className="absolute bottom-0 left-0 z-10 h-8 w-full bg-gradient-to-t from-[#090c10] to-transparent" />
+          {TERMINAL_LOG.slice(0, Math.min(TERMINAL_LOG.length, Math.floor(pct / 16) + 1)).map((line, i) => (
+            <div key={i} className={cn("flex gap-1.5", line.startsWith("[WARN]") ? "text-tertiary" : "text-on-surface-variant")}>
+              <span className={line.startsWith("[WARN]") ? "text-tertiary" : "text-secondary"}>{line.startsWith("[WARN]") ? "[WARN]" : "[INFO]"}</span>
+              <span>{line.replace(/^\[(INFO|WARN)\] /, "")}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function cn(...inputs: (string | false | null | undefined)[]): string {
+  return inputs.filter(Boolean).join(" ");
+}
+
+/* ---------- Completed results ---------- */
 
 function SummaryCards({
   scan,
@@ -218,15 +365,13 @@ function SummaryCards({
 
 function StatCard({ label, value, detail }: { label: string; value: string; detail?: string }) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-semibold">{value}</div>
-        {detail && <p className="text-xs text-muted-foreground">{detail}</p>}
-      </CardContent>
-    </Card>
+    <div className="rounded-xl border border-outline-variant bg-surface-container p-5">
+      <p className="font-code text-[10px] font-bold tracking-wider text-on-surface-variant uppercase">
+        {label}
+      </p>
+      <div className="mt-2 text-2xl font-semibold text-on-surface">{value}</div>
+      {detail && <p className="mt-0.5 text-xs text-on-surface-variant">{detail}</p>}
+    </div>
   );
 }
 
@@ -242,7 +387,7 @@ function SeverityDistribution({ scan }: { scan: Scan }) {
   if (!counts) {
     return (
       <Card>
-        <CardContent className="py-8 text-center text-sm text-muted-foreground">
+        <CardContent className="py-8 text-center text-sm text-on-surface-variant">
           Findings will appear here once the scan completes.
         </CardContent>
       </Card>
@@ -252,14 +397,16 @@ function SeverityDistribution({ scan }: { scan: Scan }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Findings by category</CardTitle>
+        <CardTitle className="text-on-surface">Findings by category</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         {Object.entries(counts.byCategory).map(([category, count]) => (
           <div key={category} className="space-y-1">
             <div className="flex items-center justify-between text-sm">
-              <span>{CATEGORY_LABELS[category as keyof typeof CATEGORY_LABELS] ?? category}</span>
-              <span className="text-muted-foreground">{count}</span>
+              <span className="text-on-surface">
+                {CATEGORY_LABELS[category as keyof typeof CATEGORY_LABELS] ?? category}
+              </span>
+              <span className="text-on-surface-variant">{count}</span>
             </div>
             <Progress
               value={(count / counts.total) * 100}
@@ -269,7 +416,7 @@ function SeverityDistribution({ scan }: { scan: Scan }) {
           </div>
         ))}
         {counts.total === 0 && (
-          <p className="text-sm text-muted-foreground">No findings in this scan.</p>
+          <p className="text-sm text-on-surface-variant">No findings in this scan.</p>
         )}
       </CardContent>
     </Card>
@@ -281,32 +428,30 @@ function Priorities({ assessment }: { assessment: RiskAssessment }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Top priorities</CardTitle>
-        <p className="text-xs text-muted-foreground">
-          Ranked by risk score from the explainable codesentinel-risk-v1 model:
+        <CardTitle className="text-on-surface">Top priorities</CardTitle>
+        <p className="text-xs text-on-surface-variant">
+          Ranked by risk score from the explainable {assessment.algorithm} model:
         </p>
       </CardHeader>
       <CardContent>
-        <div className="w-full text-xs text-muted-foreground">{assessment.rationale}</div>
+        <div className="w-full text-xs text-on-surface-variant">{assessment.rationale}</div>
         {priorities.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nothing to fix. Nice work.</p>
+          <p className="text-sm text-on-surface-variant">Nothing to fix. Nice work.</p>
         ) : (
           <ol className="mt-3 space-y-3">
             {priorities.map((item, index) => (
-              <li key={item.finding_id} className="rounded-md border p-3">
+              <li key={item.finding_id} className="rounded-md border border-outline-variant p-3">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="font-medium">
+                  <span className="font-medium text-on-surface">
                     {index + 1}. {item.title}
                   </span>
                   <Badge className={severityClass(item.severity as Severity)}>
                     {formatRiskScore(item.score)}
                   </Badge>
                 </div>
-                <p className="mt-1 truncate text-xs text-muted-foreground">
-                  {item.file}
-                </p>
+                <p className="mt-1 truncate font-code text-xs text-on-surface-variant">{item.file}</p>
                 {item.remediation && (
-                  <p className="mt-2 text-sm text-muted-foreground">{item.remediation}</p>
+                  <p className="mt-2 text-sm text-on-surface-variant">{item.remediation}</p>
                 )}
               </li>
             ))}
@@ -330,7 +475,7 @@ function FindingsTable({
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Findings</CardTitle>
+        <CardTitle className="text-on-surface">Findings</CardTitle>
         <Select value={severityFilter} onValueChange={setSeverityFilter}>
           <SelectTrigger className="w-40">
             <SelectValue placeholder="All severities" />
@@ -346,12 +491,12 @@ function FindingsTable({
         </Select>
       </CardHeader>
       <CardContent>
-        <div className="mb-3 text-sm text-muted-foreground">
+        <div className="mb-3 text-sm text-on-surface-variant">
           {findings?.total ?? 0} finding(s)
         </div>
         {items.length === 0 ? (
-          <div className="py-8 text-center text-sm text-muted-foreground">
-            <FileSearch className="mx-auto mb-2 h-8 w-8 text-muted-foreground/50" />
+          <div className="py-8 text-center text-sm text-on-surface-variant">
+            <FileSearch className="mx-auto mb-2 h-8 w-8 text-on-surface-variant/50" />
             No findings match this filter.
           </div>
         ) : (
@@ -385,15 +530,17 @@ function FindingRow({ finding }: { finding: Finding }) {
       </TableCell>
       <TableCell>{formatRiskScore(finding.risk_score)}</TableCell>
       <TableCell>
-        <div className="font-medium">{finding.title}</div>
-        <div className="truncate text-xs text-muted-foreground">{finding.description}</div>
+        <div className="font-medium text-on-surface">
+          <Link href={`/finding?scan=${finding.scan_id}&id=${finding.id}`} className="hover:text-primary">
+            {finding.title}
+          </Link>
+        </div>
+        <div className="truncate text-xs text-on-surface-variant">{finding.description}</div>
         {finding.remediation && (
-          <div className="mt-1 text-xs text-emerald-600 dark:text-emerald-400">
-            {finding.remediation}
-          </div>
+          <div className="mt-1 text-xs text-emerald-400">{finding.remediation}</div>
         )}
       </TableCell>
-      <TableCell className="truncate text-muted-foreground">
+      <TableCell className="truncate font-code text-xs text-on-surface-variant">
         {formatLine(finding)}
       </TableCell>
       <TableCell>
