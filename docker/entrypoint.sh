@@ -12,6 +12,8 @@ import time
 import psycopg
 
 url = os.environ["CODESENTINEL_DATABASE_URL"]
+# psycopg cannot parse the SQLAlchemy "+psycopg" driver suffix.
+url = url.replace("postgresql+psycopg://", "postgresql://", 1)
 for _ in range(60):
     try:
         with psycopg.connect(url, connect_timeout=2):
@@ -22,6 +24,10 @@ else:
     raise SystemExit("PostgreSQL did not become ready in time")
 PY
 
+# The `app` package and alembic scripts live under apps/backend.
+cd /app/apps/backend
+export PYTHONPATH="/app/apps/backend${PYTHONPATH:+:$PYTHONPATH}"
+
 if [ "$1" = "worker" ]; then
     shift
     echo "[codesentinel] starting Celery worker"
@@ -29,7 +35,7 @@ if [ "$1" = "worker" ]; then
 fi
 
 echo "[codesentinel] applying database migrations"
-alembic -c /app/apps/backend/alembic.ini upgrade head
+alembic -c alembic.ini upgrade head
 
 echo "[codesentinel] starting API server"
 exec "$@"

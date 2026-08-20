@@ -12,6 +12,7 @@ import logging
 from app.celery_app import celery_app
 from app.db.session import SessionLocal
 from app.services import scan_service
+import engine.analyzers  # noqa: F401 - imports register analyzers in AnalyzerRegistry
 from engine.core.errors import AnalysisError
 from engine.core.registry import build_orchestrator
 from engine.models.source import ProjectSource, SourceType
