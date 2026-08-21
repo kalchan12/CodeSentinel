@@ -80,41 +80,62 @@
   --radius-xl: 0.75rem;
   --radius-full: 9999px;
 
+  /* Spacing — 4px base scale from the reference Tailwind configuration */
+  --spacing-base: 4px;
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-gutter: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 40px;
+  --container-container-max: 1440px;
+
   /* Font families */
   --font-sans: var(--font-inter);
   --font-mono: var(--font-jetbrains);
+  --font-headline-md: var(--font-inter);
+  --font-title-sm: var(--font-inter);
+  --font-body-base: var(--font-inter);
+  --font-body-sm: var(--font-inter);
+  --font-display-lg: var(--font-inter);
+  --font-code-base: var(--font-jetbrains);
+  --font-code-sm: var(--font-jetbrains);
+  --font-label-caps: var(--font-jetbrains);
 
   /* Font sizes — Design System typography */
-  --font-size-headline-md: 24px;
-  --font-size-title-sm: 18px;
-  --font-size-body-base: 14px;
-  --font-size-body-sm: 13px;
-  --font-size-code-base: 13px;
-  --font-size-code-sm: 11px;
-  --font-size-label-caps: 10px;
-  --font-size-display-lg: 32px;
+  --text-headline-md: 24px;
+  --text-title-sm: 18px;
+  --text-body-base: 14px;
+  --text-body-sm: 13px;
+  --text-code-base: 13px;
+  --text-code-sm: 11px;
+  --text-label-caps: 10px;
+  --text-display-lg: 32px;
 
   /* Line heights */
-  --line-height-headline-md: 32px;
-  --line-height-title-sm: 24px;
-  --line-height-body-base: 20px;
-  --line-height-body-sm: 18px;
-  --line-height-code-base: 20px;
-  --line-height-code-sm: 16px;
-  --line-height-label-caps: 12px;
-  --line-height-display-lg: 40px;
+  --text-headline-md--line-height: 32px;
+  --text-title-sm--line-height: 24px;
+  --text-body-base--line-height: 20px;
+  --text-body-sm--line-height: 18px;
+  --text-code-base--line-height: 20px;
+  --text-code-sm--line-height: 16px;
+  --text-label-caps--line-height: 12px;
+  --text-display-lg--line-height: 40px;
 
   /* Letter spacing */
-  --letter-spacing-headline-md: -0.01em;
-  --letter-spacing-label-caps: 0.08em;
-  --letter-spacing-display-lg: -0.02em;
+  --text-headline-md--letter-spacing: -0.01em;
+  --text-label-caps--letter-spacing: 0.08em;
+  --text-display-lg--letter-spacing: -0.02em;
 
   /* Font weights */
-  --font-weight-regular: 400;
-  --font-weight-medium: 500;
-  --font-weight-semibold: 600;
-  --font-weight-bold: 700;
-  --font-weight-black: 900;
+  --text-headline-md--font-weight: 600;
+  --text-title-sm--font-weight: 600;
+  --text-body-base--font-weight: 400;
+  --text-body-sm--font-weight: 400;
+  --text-code-base--font-weight: 450;
+  --text-code-sm--font-weight: 450;
+  --text-label-caps--font-weight: 700;
+  --text-display-lg--font-weight: 700;
 }
 
 /* ── Base Styles ── */
