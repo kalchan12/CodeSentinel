@@ -65,11 +65,11 @@ function ProjectList() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-[1440px] mx-auto space-y-6">
       <div className="flex justify-between items-end mb-lg">
         <div>
-          <h2 className="font-headline-md text-headline-md text-on-surface mb-xs">Projects</h2>
-          <p className="text-on-surface-variant text-body-sm font-body-sm">Manage and monitor your security targets.</p>
+          <h2 className="text-[24px] leading-[32px] tracking-[-0.01em] font-semibold text-on-surface mb-xs font-[Inter]">Projects</h2>
+          <p className="text-on-surface-variant text-[13px] leading-[18px] font-[Inter]">Manage and monitor your security targets.</p>
         </div>
         <NewProjectDialog onCreated={() => setRefreshKey((k) => k + 1)} />
       </div>
@@ -93,7 +93,7 @@ function ProjectCard({ project }: { project: Project }) {
   } : { critical: 0, high: 0, medium: 0 };
 
   return (
-    <div className="bg-card border border-outline-variant rounded-xl p-lg tech-shadow hover:border-primary/50 transition-colors group cursor-pointer relative overflow-hidden">
+    <div className="bg-surface-container-low border border-outline-variant rounded-xl p-lg tech-shadow hover:border-primary/50 transition-colors group cursor-pointer relative overflow-hidden">
       <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 blur-2xl rounded-full -mr-16 -mt-16 group-hover:bg-primary/20 transition-all" />
       <div className="flex justify-between items-start mb-md relative z-10">
         <div className="flex items-center gap-sm">
@@ -101,8 +101,8 @@ function ProjectCard({ project }: { project: Project }) {
             <span className="material-symbols-outlined">account_balance_wallet</span>
           </div>
           <div>
-            <h3 className="font-title-sm text-title-sm text-on-background group-hover:text-primary transition-colors">{project.name}</h3>
-            <p className="text-on-surface-variant text-body-sm font-body-sm">{project.repo_url ?? `local: ${project.local_path}`}</p>
+            <h3 className="text-[18px] leading-[24px] font-semibold text-on-background group-hover:text-primary transition-colors font-[Inter]">{project.name}</h3>
+            <p className="text-on-surface-variant text-[13px] leading-[18px] font-[Inter]">{project.repo_url ?? `local: ${project.local_path}`}</p>
           </div>
         </div>
         <button className="text-on-surface-variant hover:text-on-surface">
@@ -110,41 +110,41 @@ function ProjectCard({ project }: { project: Project }) {
         </button>
       </div>
       <div className="grid grid-cols-2 gap-md mb-lg relative z-10">
-        <div className="bg-[#080A0F] border border-outline-variant rounded-lg p-sm">
-          <span className="text-on-surface-variant font-label-caps text-label-caps uppercase block mb-1">Tech Stack</span>
-          <span className="font-code-base text-code-base text-secondary">Python · FastAPI</span>
+        <div className="bg-background border border-outline-variant rounded-lg p-sm">
+          <span className="text-on-surface-variant text-[10px] leading-[12px] tracking-[0.08em] font-bold font-[JetBrains_Mono] uppercase block mb-1">Tech Stack</span>
+          <span className="text-[13px] leading-[20px] text-secondary font-[JetBrains_Mono]">Python &middot; FastAPI</span>
         </div>
-        <div className="bg-[#080A0F] border border-outline-variant rounded-lg p-sm flex items-center justify-between">
-          <span className="text-on-surface-variant font-label-caps text-label-caps uppercase">Security Score</span>
+        <div className="bg-background border border-outline-variant rounded-lg p-sm flex items-center justify-between">
+          <span className="text-on-surface-variant text-[10px] leading-[12px] tracking-[0.08em] font-bold font-[JetBrains_Mono] uppercase">Security Score</span>
           <div className="flex items-center gap-1">
-            <span className={cn("font-code-base text-code-base", score >= 85 ? "text-secondary" : "text-tertiary")}>{score}</span>
-            <span className="font-code-sm text-code-sm text-on-surface-variant">/100</span>
+            <span className={cn("text-[13px] leading-[20px] font-[JetBrains_Mono]", score >= 85 ? "text-secondary" : "text-tertiary")}>{score}</span>
+            <span className="text-[11px] leading-[16px] text-on-surface-variant font-[JetBrains_Mono]">/100</span>
           </div>
         </div>
       </div>
       <div className="mb-md relative z-10">
-        <span className="text-on-surface-variant font-label-caps text-label-caps uppercase block mb-2">Findings</span>
+        <span className="text-on-surface-variant text-[10px] leading-[12px] tracking-[0.08em] font-bold font-[JetBrains_Mono] uppercase block mb-2">Findings</span>
         <div className="flex gap-2">
-          <div className={cn("flex items-center gap-1 px-2 py-1 rounded border", "bg-error/20", "border-error/50")}>
+          <div className="flex items-center gap-1 bg-error/20 px-2 py-1 rounded border border-error/50">
             <span className="w-2 h-2 rounded-full bg-error" />
-            <span className="font-label-caps text-label-caps text-error">{findings.critical} CRIT</span>
+            <span className="text-[10px] leading-[12px] tracking-[0.08em] font-bold text-error font-[JetBrains_Mono]">{findings.critical} CRIT</span>
           </div>
-          <div className={cn("flex items-center gap-1 px-2 py-1 rounded border", "bg-tertiary/20", "border-tertiary/50")}>
+          <div className="flex items-center gap-1 bg-tertiary/20 px-2 py-1 rounded border border-tertiary/50">
             <span className="w-2 h-2 rounded-full bg-tertiary" />
-            <span className="font-label-caps text-label-caps text-tertiary">{findings.high} HIGH</span>
+            <span className="text-[10px] leading-[12px] tracking-[0.08em] font-bold text-tertiary font-[JetBrains_Mono]">{findings.high} HIGH</span>
           </div>
-          <div className={cn("flex items-center gap-1 px-2 py-1 rounded border", "bg-secondary/20", "border-secondary/50")}>
+          <div className="flex items-center gap-1 bg-secondary/20 px-2 py-1 rounded border border-secondary/50">
             <span className="w-2 h-2 rounded-full bg-secondary" />
-            <span className="font-label-caps text-label-caps text-secondary">{findings.medium} MED</span>
+            <span className="text-[10px] leading-[12px] tracking-[0.08em] font-bold text-secondary font-[JetBrains_Mono]">{findings.medium} MED</span>
           </div>
         </div>
       </div>
       <div className="border-t border-outline-variant pt-sm mt-md flex justify-between items-center relative z-10">
         <div className="flex items-center gap-1 text-on-surface-variant">
           <span className="material-symbols-outlined text-[14px]">history</span>
-          <span className="font-code-sm text-code-sm">Last scan: {project.last_scan_status ? "12m ago" : "never"}</span>
+          <span className="text-[11px] leading-[16px] font-[JetBrains_Mono]">Last scan: {project.last_scan_status ? "12m ago" : "never"}</span>
         </div>
-        <span className="text-primary font-body-sm text-body-sm group-hover:underline">View Details →</span>
+        <span className="text-primary text-[13px] leading-[18px] font-[Inter] group-hover:underline">View Details &rarr;</span>
       </div>
     </div>
   );
@@ -156,8 +156,8 @@ function AddProjectGhostCard() {
       <div className="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center mb-md text-on-surface-variant">
         <span className="material-symbols-outlined text-[24px]">add</span>
       </div>
-      <h3 className="font-title-sm text-title-sm text-on-surface mb-xs">New Project</h3>
-      <p className="text-on-surface-variant text-body-sm font-body-sm max-w-[200px]">Connect a repository or upload local source code.</p>
+      <h3 className="text-[18px] leading-[24px] font-semibold text-on-surface mb-xs font-[Inter]">New Project</h3>
+      <p className="text-on-surface-variant text-[13px] leading-[18px] font-[Inter] max-w-[200px]">Connect a repository or upload local source code.</p>
       <NewProjectDialog onCreated={() => window.location.reload()} />
     </div>
   );

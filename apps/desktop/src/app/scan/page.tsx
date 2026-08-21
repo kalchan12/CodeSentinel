@@ -51,10 +51,10 @@ function ScanContent() {
   const scanId = Number(searchParams.get("scan")) || null;
 
   const [scan, setScan] = useState<Scan | null>(null);
-  const [, setFindings] = useState<FindingsPage | null>(null);
-  const [, setAssessment] = useState<RiskAssessment | null>(null);
-  const [, setSeverityFilter] = useState<string>("all");
-  const [, setProjectId] = useState<number | null>(null);
+  const [findings, setFindings] = useState<FindingsPage | null>(null);
+  const [assessment, setAssessment] = useState<RiskAssessment | null>(null);
+  const [severityFilter, setSeverityFilter] = useState<string>("all");
+  const [projectId, setProjectId] = useState<number | null>(null);
   const router = useRouter();
 
   const loadScan = useCallback(async () => {
@@ -142,53 +142,53 @@ function ScanDashboard({
           <div>
             <div className="flex items-center gap-sm mb-xs">
               <span className="material-symbols-outlined text-secondary animate-pulse" style={{ fontVariationSettings: "'FILL' 1" }}>radar</span>
-              <h2 className="font-headline-md text-headline-md text-on-surface">Active Scan: payments-api</h2>
+              <h2 className="text-[24px] leading-[32px] tracking-[-0.01em] font-semibold text-on-surface font-[Inter]">Active Scan: payments-api</h2>
             </div>
-            <p className="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-sm">
+            <p className="text-[13px] leading-[18px] text-on-surface-variant flex items-center gap-sm font-[Inter]">
               <span className="inline-block w-2 h-2 rounded-full bg-secondary pulse-active" />
               Scan ID #{scan.id} · {scan.status} · {scan.started_at ? "00:02:41 elapsed" : "starting..."}
             </p>
           </div>
-          <button className="flex items-center gap-xs px-md py-sm border border-outline-variant rounded-lg bg-surface-container text-error hover:bg-surface-container-high transition-colors font-title-sm text-title-sm">
+          <button className="flex items-center gap-xs px-md py-sm border border-outline-variant rounded-lg bg-surface-container text-error hover:bg-surface-container-high transition-colors text-[18px] leading-[24px] font-semibold font-[Inter]">
             <span className="material-symbols-outlined text-[18px]">stop_circle</span>
             Abort Scan
           </button>
         </div>
 
-        <div className="mb-xl bg-card border border-outline-variant rounded-xl p-md">
+        <div className="mb-xl bg-surface-container-low border border-outline-variant rounded-xl p-md">
           <div className="flex justify-between items-end mb-sm">
             <div className="flex items-center gap-sm">
-              <span className="font-label-caps text-label-caps text-on-surface-variant">Global Pipeline Progress</span>
+              <span className="text-[10px] leading-[12px] tracking-[0.08em] font-bold text-on-surface-variant font-[JetBrains_Mono]">Global Pipeline Progress</span>
             </div>
-            <span className="font-code-base text-code-base text-secondary font-bold">{Math.round(scan.progress)}%</span>
+            <span className="text-[13px] leading-[20px] text-secondary font-bold font-[JetBrains_Mono]">{Math.round(scan.progress)}%</span>
           </div>
           <div className="w-full h-2 bg-surface-container-highest rounded-full overflow-hidden relative">
-            <div className="absolute top-0 left-0 h-full bg-secondary w-[{scan.progress}%] progress-glow transition-all duration-1000 ease-out" />
+            <div className="absolute top-0 left-0 h-full bg-secondary progress-glow transition-all duration-1000 ease-out" style={{ width: `${scan.progress}%` }} />
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-lg h-[500px]">
           <div className="lg:col-span-8 flex flex-col gap-lg h-full">
             <div className="flex-1 bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden flex flex-col relative shadow-[0_4px_12px_rgba(0,0,0,0.3)]">
-              <div className="bg-surface-container-high border-b border-outline-variant px-md py-sm flex justify-between items-center z-10">
-                <div className="flex items-center gap-sm">
-                  <span className="material-symbols-outlined text-on-surface-variant text-[16px]">code</span>
-                  <span className="font-code-sm text-code-sm text-on-surface">src/api/auth.py</span>
-                </div>
-                <span className="font-label-caps text-label-caps text-secondary flex items-center gap-xs">
+                <div className="bg-surface-container-high border-b border-outline-variant px-md py-sm flex justify-between items-center z-10">
+                  <div className="flex items-center gap-sm">
+                    <span className="material-symbols-outlined text-on-surface-variant text-[16px]">code</span>
+                    <span className="text-[11px] leading-[16px] text-on-surface font-[JetBrains_Mono]">src/api/auth.py</span>
+                  </div>
+                  <span className="text-[10px] leading-[12px] tracking-[0.08em] font-bold text-secondary flex items-center gap-xs font-[JetBrains_Mono]">
                   <span className="material-symbols-outlined text-[14px] animate-spin">sync</span>
                   ANALYZING
                 </span>
               </div>
-              <div className="flex-1 p-md overflow-hidden relative font-code-base text-code-base leading-relaxed bg-[#0a0a0e]">
+              <div className="flex-1 p-md overflow-hidden relative text-[13px] leading-[20px] text-on-surface-variant whitespace-pre font-[JetBrains_Mono] bg-background">
                 <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden">
                   <div className="w-full h-16 scanner-beam absolute top-0 left-0" />
                 </div>
                 <div className="flex h-full">
-                  <div className="w-8 flex-shrink-0 text-on-surface-variant opacity-30 select-none text-right pr-sm border-r border-outline-variant h-full mr-sm">
+                  <div className="w-8 flex-shrink-0 text-on-surface-variant opacity-30 select-none text-right pr-sm border-r border-outline-variant h-full mr-sm text-[11px] leading-[16px] font-[JetBrains_Mono]">
                     42<br/>43<br/>44<br/>45<br/>46<br/>47<br/>48<br/>49<br/>50<br/>51<br/>52<br/>53<br/>54
                   </div>
-                  <div className="flex-1 text-on-surface-variant whitespace-pre font-code-sm text-code-sm overflow-hidden">
+                  <div className="flex-1 text-on-surface-variant whitespace-pre text-[11px] leading-[16px] overflow-hidden font-[JetBrains_Mono]">
                     <span className="text-primary-fixed">def</span> <span className="text-secondary-fixed">validate_jwt</span>(token: str):
                     <span className="text-outline"># Decode the incoming token</span>
                     <span className="text-primary-fixed">try</span>:
@@ -207,14 +207,14 @@ function ScanDashboard({
               </div>
             </div>
             <div className="grid grid-cols-4 gap-sm">
-              <MetricCard label="FILES" value="84 / 201" />
+              <MetricCard label="FILES" value="84" total="/201" />
               <MetricCard label="FINDINGS" value={scan.findings_count} color="tertiary" />
               <MetricCard label="SECRETS" value="2" color="error" />
-              <MetricCard label="DEPENDENCIES" value="38" color="secondary" />
+              <MetricCard label="DEPENDENCIES" value="38" />
             </div>
           </div>
           <div className="lg:col-span-4 bg-surface-container-low border border-outline-variant rounded-xl p-lg flex flex-col shadow-[0_4px_12px_rgba(0,0,0,0.2)]">
-            <h3 className="font-title-sm text-title-sm text-on-surface mb-xl flex items-center gap-sm">
+            <h3 className="text-[18px] leading-[24px] font-semibold text-on-surface mb-xl flex items-center gap-sm font-[Inter]">
               <span className="material-symbols-outlined">checklist</span>
               Live Pipeline
             </h3>
@@ -244,28 +244,28 @@ function ScanDashboard({
         <div>
           <div className="flex items-center gap-sm mb-xs">
             <span className="material-symbols-outlined text-secondary animate-pulse" style={{ fontVariationSettings: "'FILL' 1" }}>radar</span>
-            <h2 className="font-headline-md text-headline-md text-on-surface">Active Scan: payments-api</h2>
+            <h2 className="text-[24px] leading-[32px] tracking-[-0.01em] font-semibold text-on-surface font-[Inter]">Active Scan: payments-api</h2>
           </div>
-          <p className="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-sm">
+          <p className="text-[13px] leading-[18px] text-on-surface-variant flex items-center gap-sm font-[Inter]">
             <span className="inline-block w-2 h-2 rounded-full bg-secondary pulse-active" />
-            Scan ID #{scan.id} · {scan.status} · {scan.started_at ? "00:02:41 elapsed" : "starting..."}
+            Scan ID #{scan.id} &middot; {scan.status} &middot; {scan.started_at ? "00:02:41 elapsed" : "starting..."}
           </p>
         </div>
-        <button className="flex items-center gap-xs px-md py-sm border border-outline-variant rounded-lg bg-surface-container text-error hover:bg-surface-container-high transition-colors font-title-sm text-title-sm">
+        <button className="flex items-center gap-xs px-md py-sm border border-outline-variant rounded-lg bg-surface-container text-error hover:bg-surface-container-high transition-colors text-[18px] leading-[24px] font-semibold font-[Inter]">
           <span className="material-symbols-outlined text-[18px]">stop_circle</span>
           Abort Scan
         </button>
       </div>
 
-      <div className="mb-xl bg-card border border-outline-variant rounded-xl p-md">
+      <div className="mb-xl bg-surface-container-low border border-outline-variant rounded-xl p-md">
         <div className="flex justify-between items-end mb-sm">
           <div className="flex items-center gap-sm">
-            <span className="font-label-caps text-label-caps text-on-surface-variant">Global Pipeline Progress</span>
+            <span className="text-[10px] leading-[12px] tracking-[0.08em] font-bold text-on-surface-variant font-[JetBrains_Mono]">Global Pipeline Progress</span>
           </div>
-          <span className="font-code-base text-code-base text-secondary font-bold">{Math.round(scan.progress)}%</span>
+          <span className="text-[13px] leading-[20px] text-secondary font-bold font-[JetBrains_Mono]">{Math.round(scan.progress)}%</span>
         </div>
         <div className="w-full h-2 bg-surface-container-highest rounded-full overflow-hidden relative">
-          <div className="absolute top-0 left-0 h-full bg-secondary w-[{scan.progress}%] progress-glow transition-all duration-1000 ease-out" />
+            <div className="absolute top-0 left-0 h-full bg-secondary progress-glow transition-all duration-1000 ease-out" style={{ width: `${scan.progress}%` }} />
         </div>
       </div>
 
@@ -275,22 +275,22 @@ function ScanDashboard({
             <div className="bg-surface-container-high border-b border-outline-variant px-md py-sm flex justify-between items-center z-10">
               <div className="flex items-center gap-sm">
                 <span className="material-symbols-outlined text-on-surface-variant text-[16px]">code</span>
-                <span className="font-code-sm text-code-sm text-on-surface">src/api/auth.py</span>
+                <span className="text-[11px] leading-[16px] text-on-surface font-[JetBrains_Mono]">src/api/auth.py</span>
               </div>
-              <span className="font-label-caps text-label-caps text-secondary flex items-center gap-xs">
+              <span className="text-[10px] leading-[12px] tracking-[0.08em] font-bold text-secondary flex items-center gap-xs font-[JetBrains_Mono]">
                 <span className="material-symbols-outlined text-[14px] animate-spin">sync</span>
                 ANALYZING
               </span>
             </div>
-            <div className="flex-1 p-md overflow-hidden relative font-code-base text-code-base leading-relaxed bg-[#0a0a0e]">
+            <div className="flex-1 p-md overflow-hidden relative text-[13px] leading-[20px] text-on-surface-variant whitespace-pre font-[JetBrains_Mono] bg-background">
               <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden">
                 <div className="w-full h-16 scanner-beam absolute top-0 left-0" />
               </div>
               <div className="flex h-full">
-                <div className="w-8 flex-shrink-0 text-on-surface-variant opacity-30 select-none text-right pr-sm border-r border-outline-variant h-full mr-sm">
+                <div className="w-8 flex-shrink-0 text-on-surface-variant opacity-30 select-none text-right pr-sm border-r border-outline-variant h-full mr-sm text-[11px] leading-[16px] font-[JetBrains_Mono]">
                   42<br/>43<br/>44<br/>45<br/>46<br/>47<br/>48<br/>49<br/>50<br/>51<br/>52<br/>53<br/>54
                 </div>
-                <div className="flex-1 text-on-surface-variant whitespace-pre font-code-sm text-code-sm overflow-hidden">
+                <div className="flex-1 text-on-surface-variant whitespace-pre text-[11px] leading-[16px] overflow-hidden font-[JetBrains_Mono]">
                   <span className="text-primary-fixed">def</span> <span className="text-secondary-fixed">validate_jwt</span>(token: str):
                   <span className="text-outline"># Decode the incoming token</span>
                   <span className="text-primary-fixed">try</span>:
@@ -308,15 +308,15 @@ function ScanDashboard({
               </div>
             </div>
           </div>
-          <div className="grid grid-cols-4 gap-sm">
-            <MetricCard label="FILES" value="84 / 201" />
-            <MetricCard label="FINDINGS" value={scan.findings_count} color="tertiary" />
-            <MetricCard label="SECRETS" value="2" color="error" />
-            <MetricCard label="DEPENDENCIES" value="38" color="secondary" />
-          </div>
+            <div className="grid grid-cols-4 gap-sm">
+              <MetricCard label="FILES" value="84" total="/201" />
+              <MetricCard label="FINDINGS" value={scan.findings_count} color="tertiary" />
+              <MetricCard label="SECRETS" value="2" color="error" />
+              <MetricCard label="DEPENDENCIES" value="38" />
+            </div>
         </div>
         <div className="lg:col-span-4 bg-surface-container-low border border-outline-variant rounded-xl p-lg flex flex-col shadow-[0_4px_12px_rgba(0,0,0,0.2)]">
-          <h3 className="font-title-sm text-title-sm text-on-surface mb-xl flex items-center gap-sm">
+          <h3 className="text-[18px] leading-[24px] font-semibold text-on-surface mb-xl flex items-center gap-sm font-[Inter]">
             <span className="material-symbols-outlined">checklist</span>
             Live Pipeline
           </h3>
@@ -353,10 +353,10 @@ function PipelineStep({ label, done, current, pending }: { label: string; done: 
         )}
       </div>
       <div>
-        <h4 className={cn("font-body-base text-body-base font-semibold", done ? "text-on-surface" : current ? "text-secondary font-bold" : pending ? "text-on-surface-variant" : "text-on-surface")}>
+        <h4 className={cn("text-[14px] leading-[20px] font-semibold font-[Inter]", done ? "text-on-surface" : current ? "text-secondary font-bold" : pending ? "text-on-surface-variant" : "text-on-surface")}>
           {label}
         </h4>
-        <p className={cn("font-body-sm text-body-sm mt-xs", done ? "text-on-surface-variant" : current ? "text-secondary" : "text-outline")}>
+        <p className={cn("text-[13px] leading-[18px] mt-xs font-[Inter]", done ? "text-on-surface-variant" : current ? "text-secondary" : "text-outline")}>
           {done ? "Complete" : current ? "Checking package.json..." : "Pending"}
         </p>
       </div>
@@ -396,8 +396,8 @@ function SummaryCards({
 
 function StatCard({ label, value, detail }: { label: string; value: string; detail?: string }) {
   return (
-    <div className="rounded-xl border border-outline-variant bg-card p-5">
-      <p className="font-code text-[10px] font-bold tracking-wider text-on-surface-variant uppercase">
+    <div className="rounded-xl border border-outline-variant bg-surface-container-low p-5">
+      <p className="text-[10px] leading-[12px] tracking-[0.08em] font-bold text-on-surface-variant font-[JetBrains_Mono] uppercase">
         {label}
       </p>
       <div className="mt-2 text-2xl font-semibold text-on-surface">{value}</div>
@@ -590,15 +590,15 @@ function FindingRow({ finding }: { finding: Finding }) {
   );
 }
 
-function MetricCard({ label, value, color }: { label: string; value: number | string; color?: string }) {
-  const bgColor = color === "tertiary" ? "bg-tertiary/10" : color === "error" ? "bg-error/10" : color === "secondary" ? "bg-secondary/10" : "bg-secondary/10";
+function MetricCard({ label, value, color, total }: { label: string; value: number | string; color?: string; total?: string }) {
+  const bgColor = color === "tertiary" ? "bg-tertiary/10" : color === "error" ? "bg-error/10" : color === "secondary" ? "bg-secondary/10" : "bg-primary/10";
   return (
     <div className={cn("bg-surface-container-low border border-outline-variant rounded-xl p-md relative overflow-hidden group", bgColor)}>
       <div className="absolute inset-0 bg-primary opacity-0 group-hover:opacity-5 transition-opacity" />
-      <span className="font-label-caps text-label-caps text-on-surface-variant block mb-xs">{label}</span>
+      <span className="text-[10px] leading-[12px] tracking-[0.08em] font-bold text-on-surface-variant font-[JetBrains_Mono] block mb-xs">{label}</span>
       <div className="flex items-end gap-xs">
-        <span className="font-display-lg text-display-lg text-on-surface leading-none">{value}</span>
-        <span className="font-code-sm text-code-sm text-on-surface-variant pb-1">/201</span>
+        <span className="text-[32px] leading-[40px] tracking-[-0.02em] font-bold text-on-surface font-[Inter]">{value}</span>
+        {total && <span className="text-[11px] leading-[16px] text-on-surface-variant pb-1 font-[JetBrains_Mono]">{total}</span>}
       </div>
     </div>
   );

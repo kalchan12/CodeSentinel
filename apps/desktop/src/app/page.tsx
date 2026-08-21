@@ -12,16 +12,6 @@ import { api } from "@/lib/api";
 import { formatDate, formatLine, SEVERITY_LABELS, SEVERITY_TEXT_CLASSES } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-const SEVERITY_ORDER: Severity[] = ["critical", "high", "medium", "low", "info"];
-
-const SEVERITY_BG: Record<Severity, string> = {
-  critical: "bg-error/15",
-  high: "bg-tertiary/15",
-  medium: "bg-secondary/15",
-  low: "bg-outline/15",
-  info: "bg-outline-variant/15",
-};
-
 const SEVERITY_BORDER: Record<Severity, string> = {
   critical: "border-l-2 border-l-error",
   high: "border-l-2 border-l-tertiary",
@@ -36,6 +26,14 @@ const SEVERITY_ICON: Record<Severity, string> = {
   medium: "inventory_2",
   low: "check_circle",
   info: "info",
+};
+
+const SEVERITY_BADGE_CLASSES: Record<Severity, string> = {
+  critical: "bg-error/15 text-error",
+  high: "bg-tertiary/15 text-tertiary",
+  medium: "bg-secondary/15 text-secondary",
+  low: "bg-outline/15 text-on-surface-variant",
+  info: "bg-outline-variant/15 text-on-surface-variant",
 };
 
 export default function DashboardPage() {
@@ -107,25 +105,26 @@ export default function DashboardPage() {
 
   const severityCounts = computeSeverityCounts(assessment, scan);
   const healthScore = assessment ? Math.round(assessment.overall_score) : null;
-  const riskLabel = assessment?.overall_level ?? scan.risk_level ?? null;
-  const riskTextClass = riskLabel ? SEVERITY_TEXT_CLASSES[riskLabel as Severity] : "text-on-surface-variant";
 
-  const totalFindings = scan.findings_count ?? 0;
   const criticalCount = severityCounts?.critical ?? 0;
   const highCount = severityCounts?.high ?? 0;
   const mediumCount = severityCounts?.medium ?? 0;
   const lowCount = severityCounts?.low ?? 0;
 
   return (
-    <div className="space-y-lg">
+    <div className="max-w-[1440px] mx-auto space-y-lg">
       {/* Header */}
       <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-md">
         <div>
-          <h2 className="font-headline-md text-headline-md text-on-surface mb-xs">Good morning, Alex.</h2>
-          <p className="font-body-base text-body-base text-on-surface-variant">Security overview for your projects.</p>
+          <h2 className="text-[24px] leading-[32px] tracking-[-0.01em] font-semibold text-on-surface mb-xs font-[Inter]">
+            Good morning, Alex.
+          </h2>
+          <p className="text-[14px] leading-[20px] text-on-surface-variant font-[Inter]">
+            Security overview for your projects.
+          </p>
         </div>
         <div className="flex gap-sm">
-          <button className="bg-transparent border border-outline-variant text-on-surface px-4 py-1.5 rounded-md font-code-base text-code-base hover:bg-surface-container-highest transition-colors flex items-center gap-xs">
+          <button className="bg-transparent border border-outline-variant text-on-surface px-4 py-1.5 rounded-md text-[13px] leading-[20px] font-[JetBrains_Mono] hover:bg-surface-container-highest transition-colors flex items-center gap-xs">
             <span className="material-symbols-outlined text-sm">download</span>
             Export Report
           </button>
@@ -135,61 +134,77 @@ export default function DashboardPage() {
       {/* Metrics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-md">
         {/* Security Score Gauge */}
-        <div className="md:col-span-4 bg-card border border-outline-variant rounded-lg p-md flex flex-col items-center justify-center relative overflow-hidden tech-shadow">
-          <h3 className="font-title-sm text-title-sm text-on-surface absolute top-md left-md">Security Score</h3>
+        <div className="md:col-span-4 bg-surface-container-low border border-outline-variant rounded-lg p-md flex flex-col items-center justify-center relative overflow-hidden tech-shadow">
+          <h3 className="text-[18px] leading-[24px] font-semibold text-on-surface absolute top-md left-md font-[Inter]">
+            Security Score
+          </h3>
           <div className="relative w-48 h-24 mt-8 flex justify-center items-end overflow-hidden">
             <div className="absolute top-0 left-0 w-48 h-48 rounded-full border-[16px] border-surface-container-highest" />
-            <div className="absolute top-0 left-0 w-48 h-48 rounded-full border-[16px] border-primary border-b-transparent border-l-transparent transform rotate-45 transition-transform duration-1000 ease-out"
-              style={{ clipPath: "polygon(0 0, 100% 0, 100% 50%, 0 50%)" }} />
+            <div
+              className="absolute top-0 left-0 w-48 h-48 rounded-full border-[16px] border-primary border-b-transparent border-l-transparent transform rotate-45 transition-transform duration-1000 ease-out"
+              style={{ clipPath: "polygon(0 0, 100% 0, 100% 50%, 0 50%)" }}
+            />
             <div className="text-center z-10 pb-2">
-              <span className="font-display-lg text-[48px] font-bold text-primary">{healthScore ?? "—"}</span>
-              <span className="block font-label-caps text-label-caps text-on-surface-variant">/100</span>
+              <span className="text-[48px] font-bold text-primary font-[Inter]">{healthScore ?? "\u2014"}</span>
+              <span className="block text-[10px] leading-[12px] tracking-[0.08em] font-bold text-on-surface-variant font-[JetBrains_Mono]">
+                /100
+              </span>
             </div>
           </div>
-          <p className="font-body-sm text-body-sm text-secondary mt-sm flex items-center gap-xs">
+          <p className="text-[13px] leading-[18px] text-secondary mt-sm flex items-center gap-xs font-[Inter]">
             <span className="material-symbols-outlined text-xs">trending_up</span>
-            {assessment ? `${assessment.overall_score > 80 ? "+" : ""}${Math.round(assessment.overall_score - 80)} from last week` : "+2 from last week"}
+            {assessment
+              ? `${assessment.overall_score > 80 ? "+" : ""}${Math.round(assessment.overall_score - 80)} from last week`
+              : "+2 from last week"}
           </p>
         </div>
 
         {/* Findings Count Bento */}
         <div className="md:col-span-8 grid grid-cols-2 md:grid-cols-4 gap-sm">
-          <FindingCountCard severity="critical" count={criticalCount} label="CRITICAL" desc="Require immediate action" icon={SEVERITY_ICON.critical} />
-          <FindingCountCard severity="high" count={highCount} label="HIGH" desc="Review this week" icon={SEVERITY_ICON.high} />
-          <FindingCountCard severity="medium" count={mediumCount} label="MEDIUM" desc="Standard backlog" icon={SEVERITY_ICON.medium} />
-          <FindingCountCard severity="low" count={lowCount} label="LOW" desc="Best practices" icon={SEVERITY_ICON.low} />
+          <FindingCountCard severity="critical" count={criticalCount} label="CRITICAL" desc="Require immediate action" />
+          <FindingCountCard severity="high" count={highCount} label="HIGH" desc="Review this week" />
+          <FindingCountCard severity="medium" count={mediumCount} label="MEDIUM" desc="Standard backlog" />
+          <FindingCountCard severity="low" count={lowCount} label="LOW" desc="Best practices" />
         </div>
       </div>
 
       {/* Security Trend Chart */}
-      <section className="bg-card border border-outline-variant rounded-lg p-md tech-shadow flex flex-col">
+      <section className="bg-surface-container-low border border-outline-variant rounded-lg p-md tech-shadow flex flex-col">
         <div className="flex justify-between items-center mb-md">
-          <h3 className="font-title-sm text-title-sm text-on-surface">Security Trend</h3>
-          <select className="bg-[#080A0F] border border-outline-variant rounded text-on-surface text-code-sm font-code-sm py-1 px-2 focus:ring-1 focus:ring-primary focus:border-primary outline-none">
+          <h3 className="text-[18px] leading-[24px] font-semibold text-on-surface font-[Inter]">
+            Security Trend
+          </h3>
+          <select className="bg-background border border-outline-variant rounded text-on-surface text-[11px] leading-[16px] font-[JetBrains_Mono] py-1 px-2 focus:ring-1 focus:ring-primary focus:border-primary outline-none">
             <option>Last 30 Days</option>
             <option>Last 7 Days</option>
             <option>Last 3 Months</option>
           </select>
         </div>
         <div className="w-full h-64 relative border-b border-l border-outline-variant pl-2 pb-2">
-          <div className="absolute left-[-24px] bottom-4 font-code-sm text-code-sm text-on-surface-variant">0</div>
-          <div className="absolute left-[-30px] top-1/2 font-code-sm text-code-sm text-on-surface-variant">50</div>
-          <div className="absolute left-[-36px] top-4 font-code-sm text-code-sm text-on-surface-variant">100</div>
+          <div className="absolute left-[-24px] bottom-4 text-[11px] leading-[16px] text-on-surface-variant font-[JetBrains_Mono]">
+            0
+          </div>
+          <div className="absolute left-[-30px] top-1/2 text-[11px] leading-[16px] text-on-surface-variant font-[JetBrains_Mono]">
+            50
+          </div>
+          <div className="absolute left-[-36px] top-4 text-[11px] leading-[16px] text-on-surface-variant font-[JetBrains_Mono]">
+            100
+          </div>
           <div className="absolute inset-0 border-t border-outline-variant top-1/2 w-full" />
           <div className="absolute inset-0 border-t border-outline-variant top-4 w-full" />
           <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 100 100">
             <defs>
               <linearGradient id="grad" x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0%" stopColor="#8B5CF6" stopOpacity="1" />
-                <stop offset="100%" stopColor="#8B5CF6" stopOpacity="0" />
+                <stop offset="0%" stopColor="#d0bcff" stopOpacity="1" />
+                <stop offset="100%" stopColor="#d0bcff" stopOpacity="0" />
               </linearGradient>
             </defs>
             <path className="opacity-20" d="M0,80 Q20,70 40,50 T80,30 T100,20 L100,100 L0,100 Z" fill="url(#grad)" />
-            <path className="opacity-80" d="M0,80 Q20,70 40,50 T80,30 T100,20" fill="none" stroke="#8B5CF6" strokeWidth="2" />
-            <circle cx="40" cy="50" fill="#0D1117" r="3" stroke="#8B5CF6" strokeWidth="2" />
-            <circle cx="80" cy="30" fill="#0D1117" r="3" stroke="#8B5CF6" strokeWidth="2" />
+            <path className="opacity-80" d="M0,80 Q20,70 40,50 T80,30 T100,20" fill="none" stroke="#d0bcff" strokeWidth="2" />
+            <circle cx="40" cy="50" fill="#1d1a23" r="3" stroke="#d0bcff" strokeWidth="2" />
+            <circle cx="80" cy="30" fill="#1d1a23" r="3" stroke="#d0bcff" strokeWidth="2" />
           </svg>
-          <div className="absolute bottom-[-24px] left-0 w-full flex justify-between font-code-sm text-code-sm text-on-surface-variant px-2">
+          <div className="absolute bottom-[-24px] left-0 w-full flex justify-between text-[11px] leading-[16px] text-on-surface-variant font-[JetBrains_Mono] px-2">
             <span>Oct 1</span>
             <span>Oct 15</span>
             <span>Oct 30</span>
@@ -198,7 +213,9 @@ export default function DashboardPage() {
         <div className="mt-8 flex justify-center gap-md">
           <div className="flex items-center gap-xs">
             <div className="w-3 h-3 rounded-sm bg-primary" />
-            <span className="font-code-sm text-code-sm text-on-surface-variant">Total Findings</span>
+            <span className="text-[11px] leading-[16px] text-on-surface-variant font-[JetBrains_Mono]">
+              Total Findings
+            </span>
           </div>
         </div>
       </section>
@@ -206,21 +223,31 @@ export default function DashboardPage() {
       {/* Bottom Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-lg">
         {/* Project Security Overview Table */}
-        <section className="bg-card border border-outline-variant rounded-lg tech-shadow overflow-hidden flex flex-col">
+        <section className="bg-surface-container-low border border-outline-variant rounded-lg tech-shadow overflow-hidden flex flex-col">
           <div className="p-md border-b border-outline-variant">
-            <h3 className="font-title-sm text-title-sm text-on-surface">Project Security Overview</h3>
+            <h3 className="text-[18px] leading-[24px] font-semibold text-on-surface font-[Inter]">
+              Project Security Overview
+            </h3>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-surface-container-high border-b border-outline-variant">
-                  <th className="p-sm font-label-caps text-label-caps text-on-surface-variant font-semibold pl-md">Project</th>
-                  <th className="p-sm font-label-caps text-label-caps text-on-surface-variant font-semibold">Score</th>
-                  <th className="p-sm font-label-caps text-label-caps text-on-surface-variant font-semibold">Findings</th>
-                  <th className="p-sm font-label-caps text-label-caps text-on-surface-variant font-semibold pr-md">Last Scan</th>
+                <tr className="bg-surface-container-highest border-b border-outline-variant">
+                  <th className="p-sm text-[10px] leading-[12px] tracking-[0.08em] font-bold text-on-surface-variant font-[JetBrains_Mono] pl-md">
+                    Project
+                  </th>
+                  <th className="p-sm text-[10px] leading-[12px] tracking-[0.08em] font-bold text-on-surface-variant font-[JetBrains_Mono]">
+                    Score
+                  </th>
+                  <th className="p-sm text-[10px] leading-[12px] tracking-[0.08em] font-bold text-on-surface-variant font-[JetBrains_Mono]">
+                    Findings
+                  </th>
+                  <th className="p-sm text-[10px] leading-[12px] tracking-[0.08em] font-bold text-on-surface-variant font-[JetBrains_Mono] pr-md">
+                    Last Scan
+                  </th>
                 </tr>
               </thead>
-              <tbody className="font-code-base text-code-base">
+              <tbody className="text-[13px] leading-[20px] font-[JetBrains_Mono]">
                 {projects.slice(0, 3).map((project) => (
                   <ProjectTableRow key={project.id} project={project} />
                 ))}
@@ -230,10 +257,17 @@ export default function DashboardPage() {
         </section>
 
         {/* Recent Findings List */}
-        <section className="bg-card border border-outline-variant rounded-lg tech-shadow flex flex-col">
+        <section className="bg-surface-container-low border border-outline-variant rounded-lg tech-shadow flex flex-col">
           <div className="p-md border-b border-outline-variant flex justify-between items-center">
-            <h3 className="font-title-sm text-title-sm text-on-surface">Recent Findings</h3>
-            <Link href={`/scan?scan=${scan.id}`} className="font-code-sm text-code-sm text-primary hover:underline">View All</Link>
+            <h3 className="text-[18px] leading-[24px] font-semibold text-on-surface font-[Inter]">
+              Recent Findings
+            </h3>
+            <Link
+              href={`/scan?scan=${scan.id}`}
+              className="text-[11px] leading-[16px] text-primary hover:underline font-[JetBrains_Mono]"
+            >
+              View All
+            </Link>
           </div>
           <div className="flex flex-col p-sm gap-sm">
             {(findings?.items.slice(0, 3) ?? []).map((finding) => (
@@ -241,7 +275,7 @@ export default function DashboardPage() {
             ))}
             {(!findings || findings.items.length === 0) && (
               <div className="py-10 text-center text-sm text-on-surface-variant">
-                {scan.status === "running" ? "Scan in progress…" : "No findings in the latest scan."}
+                {scan.status === "running" ? "Scan in progress\u2026" : "No findings in the latest scan."}
               </div>
             )}
           </div>
@@ -256,65 +290,92 @@ function FindingCountCard({
   count,
   label,
   desc,
-  icon,
 }: {
   severity: Severity;
   count: number;
   label: string;
   desc: string;
-  icon: string;
 }) {
   return (
-    <div className={cn("bg-card border border-outline-variant rounded-lg p-md tech-shadow hover:bg-surface-container-highest transition-colors cursor-pointer", SEVERITY_BORDER[severity])}>
+    <div
+      className={cn(
+        "bg-surface-container-low border border-outline-variant rounded-lg p-md tech-shadow hover:bg-surface-container-highest transition-colors cursor-pointer",
+        SEVERITY_BORDER[severity]
+      )}
+    >
       <div className="flex justify-between items-start mb-sm">
-        <span className={cn("font-label-caps text-label-caps", SEVERITY_TEXT_CLASSES[severity])}>{label}</span>
-        <span className="material-symbols-outlined text-sm">{icon}</span>
+        <span className={cn("text-[10px] leading-[12px] tracking-[0.08em] font-bold font-[JetBrains_Mono]", SEVERITY_TEXT_CLASSES[severity])}>
+          {label}
+        </span>
+        <span className="material-symbols-outlined text-sm text-on-surface-variant">
+          {SEVERITY_ICON[severity]}
+        </span>
       </div>
-      <div className="font-display-lg text-display-lg text-on-surface">{count}</div>
-      <div className="font-code-sm text-code-sm text-on-surface-variant mt-xs">{desc}</div>
+      <div className="text-[32px] leading-[40px] tracking-[-0.02em] font-bold text-on-surface font-[Inter]">
+        {count}
+      </div>
+      <div className="text-[11px] leading-[16px] text-on-surface-variant mt-xs font-[JetBrains_Mono]">
+        {desc}
+      </div>
     </div>
   );
 }
 
 function ProjectTableRow({ project }: { project: Awaited<ReturnType<typeof api.listProjects>>[0] }) {
-  const score = project.last_scan_status === "completed" ? project.last_scan_status === "completed" ? 85 : 72 : 72;
+  const score = project.last_scan_status === "completed" ? 85 : 72;
   const scoreColor = score >= 85 ? "text-secondary" : score >= 70 ? "text-tertiary" : "text-error";
   return (
-    <tr className="border-b border-outline-variant/50 hover:bg-surface-container-highest transition-colors group">
+    <tr className="border-b border-outline-variant/50 hover:bg-surface-container transition-colors group">
       <td className="p-sm pl-md text-on-surface flex items-center gap-sm">
-        <span className="material-symbols-outlined text-on-surface-variant text-sm group-hover:text-primary transition-colors">folder</span>
+        <span className="material-symbols-outlined text-on-surface-variant text-sm group-hover:text-primary transition-colors">
+          folder
+        </span>
         {project.name}
       </td>
-      <td className="p-sm font-code-base text-code-base" style={{ color: scoreColor }}>{score}</td>
+      <td className="p-sm" style={{ color: scoreColor }}>{score}</td>
       <td className="p-sm text-on-surface">
-        {project.last_scan_status === "completed" && project.scan_count > 0 && (
+        {project.last_scan_status === "completed" && project.scan_count > 0 ? (
           <>
-            <span className="bg-error/15 text-error px-2 py-0.5 rounded text-[10px] font-bold mr-1">{project.scan_count > 2 ? "2C" : "0"}C</span>
-            <span className="text-on-surface-variant">Total</span>
+            <span className="bg-error/15 text-error px-2 py-0.5 rounded text-[10px] font-bold mr-1">
+              {project.scan_count > 2 ? "2C" : "0"}C
+            </span>
+            <span className="text-on-surface-variant">{project.scan_count} Total</span>
           </>
+        ) : (
+          <span className="text-on-surface-variant">0 Total</span>
         )}
-        {!project.last_scan_status && <span className="text-on-surface-variant">No scans yet</span>}
       </td>
-      <td className="p-sm pr-md text-on-surface-variant">{project.last_scan_status ? "12m ago" : "never"}</td>
+      <td className="p-sm pr-md text-on-surface-variant">
+        {project.last_scan_status ? "12m ago" : "never"}
+      </td>
     </tr>
   );
 }
 
 function FindingListItem({ finding }: { finding: Finding }) {
   return (
-    <div className={cn("bg-surface-container-low border border-outline-variant/50 rounded-md p-sm border-l-2 flex gap-sm items-start", SEVERITY_BORDER[finding.severity])}>
+    <div
+      className={cn(
+        "bg-surface-container border border-outline-variant/50 rounded-md p-sm border-l-2 flex gap-sm items-start",
+        SEVERITY_BORDER[finding.severity]
+      )}
+    >
       <span className={cn("material-symbols-outlined text-lg mt-0.5", SEVERITY_TEXT_CLASSES[finding.severity])}>
         {SEVERITY_ICON[finding.severity]}
       </span>
       <div className="flex-1">
         <div className="flex justify-between items-start">
-          <h4 className="font-code-base text-code-base text-on-surface font-medium truncate w-48 md:w-64">{finding.title}</h4>
-          <span className={cn("bg-error/15 text-error px-1.5 py-0.5 rounded font-label-caps text-label-caps ml-2", SEVERITY_BG[finding.severity])}>
-            {SEVERITY_LABELS[finding.severity]}
+          <h4 className="text-[13px] leading-[20px] text-on-surface font-medium truncate w-48 md:w-64 font-[JetBrains_Mono]">
+            {finding.title}
+          </h4>
+          <span className={cn("px-1.5 py-0.5 rounded text-[10px] leading-[12px] tracking-[0.08em] font-bold font-[JetBrains_Mono] ml-2", SEVERITY_BADGE_CLASSES[finding.severity])}>
+            {SEVERITY_LABELS[finding.severity].toUpperCase()}
           </span>
         </div>
-        <p className="font-body-sm text-body-sm text-on-surface-variant mt-xs line-clamp-1">{finding.description}</p>
-        <div className="flex gap-md mt-sm font-code-sm text-code-sm text-outline">
+        <p className="text-[13px] leading-[18px] text-on-surface-variant mt-xs line-clamp-1 font-[Inter]">
+          {finding.description}
+        </p>
+        <div className="flex gap-md mt-sm text-[11px] leading-[16px] text-outline font-[JetBrains_Mono]">
           <span>{finding.file}</span>
           <span>{finding.line_start != null ? `:${finding.line_start}` : ""}</span>
         </div>
