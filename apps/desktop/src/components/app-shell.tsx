@@ -8,7 +8,7 @@ const NAV_ITEMS = [
   { href: "/", label: "Overview", icon: "dashboard" },
   { href: "/projects", label: "Projects", icon: "folder_open" },
   { href: "/scan", label: "Scans", icon: "radar" },
-  { href: "/scan", label: "Findings", icon: "security" },
+  { href: "/finding", label: "Findings", icon: "security" },
   { href: "/projects", label: "Dependencies", icon: "inventory_2" },
   { href: "/projects", label: "Secrets", icon: "lock" },
   { href: "/projects", label: "Reports", icon: "assessment" },
@@ -23,6 +23,7 @@ const FOOTER_ITEMS = [
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const isScanRoute = pathname.startsWith("/scan");
 
   return (
     <div className="scanline-bg flex h-screen overflow-x-hidden bg-background text-on-background">
@@ -48,10 +49,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
         {/* Run New Scan CTA */}
         <div className="px-md mb-lg">
-          <button className="w-full bg-primary text-on-primary py-sm rounded-lg font-semibold text-[18px] leading-[24px] flex items-center justify-center gap-xs hover:bg-primary-container transition-colors shadow-[0_0_15px_rgba(208,188,255,0.15)]">
+          <Link href="/scan" className="w-full bg-primary text-on-primary py-sm rounded-lg font-semibold text-[18px] leading-[24px] flex items-center justify-center gap-xs hover:bg-primary-container transition-colors shadow-[0_0_15px_rgba(208,188,255,0.15)]">
             <span className="material-symbols-outlined">add</span>
             Run New Scan
-          </button>
+          </Link>
         </div>
 
         {/* Nav Items */}
@@ -60,6 +61,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             const active =
               (item.href === "/" && pathname === "/") ||
               (item.href === "/scan" && pathname.startsWith("/scan")) ||
+              (item.href === "/finding" && pathname.startsWith("/finding")) ||
               (item.href === "/projects" &&
                 pathname.startsWith("/projects") &&
                 pathname !== "/projects");
@@ -120,24 +122,32 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         {/* Topbar — fixed top, matching design */}
         <header className="hidden md:flex justify-between items-center px-lg h-16 fixed top-0 right-0 w-[calc(100%-280px)] bg-surface border-b border-outline-variant z-10 shadow-sm">
-          <div className="flex items-center gap-md">
-            <div className="relative flex items-center">
-              <span className="material-symbols-outlined absolute left-3 text-on-surface-variant text-[18px]">
-                search
-              </span>
-              <input
-                className="bg-background border border-outline-variant rounded-md pl-10 pr-4 py-1.5 text-sm w-64 focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary transition-all text-on-background placeholder:text-on-surface-variant"
-                placeholder="Search projects, findings..."
-                type="text"
-              />
-            </div>
-            <nav className="flex items-center gap-md ml-lg">
-              <a className="text-primary font-bold border-b-2 border-primary pb-1 font-[JetBrains_Mono] text-[10px] tracking-[0.08em] uppercase h-full flex items-center pt-1">
+          {isScanRoute ? (
+            <nav className="flex h-full items-center">
+              <span className="text-primary font-bold border-b-2 border-primary pb-1 font-[JetBrains_Mono] text-[10px] tracking-[0.08em] uppercase h-full flex items-center pt-1">
                 payments-api
-              </a>
+              </span>
             </nav>
-          </div>
-          <div className="flex items-center gap-md text-secondary">
+          ) : (
+            <div className="flex items-center gap-md">
+              <div className="relative flex items-center">
+                <span className="material-symbols-outlined absolute left-3 text-on-surface-variant text-[18px]">
+                  search
+                </span>
+                <input
+                  className="bg-background border border-outline-variant rounded-md pl-10 pr-4 py-1.5 text-sm w-64 focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary transition-all text-on-background placeholder:text-on-surface-variant"
+                  placeholder="Search projects, findings..."
+                  type="text"
+                />
+              </div>
+              <nav className="flex items-center gap-md ml-lg">
+                <span className="text-primary font-bold border-b-2 border-primary pb-1 font-[JetBrains_Mono] text-[10px] tracking-[0.08em] uppercase h-full flex items-center pt-1">
+                  payments-api
+                </span>
+              </nav>
+            </div>
+          )}
+          <div className={cn("flex items-center gap-md", isScanRoute ? "text-on-surface-variant" : "text-secondary")}>
             <button className="hover:text-on-surface hover:bg-surface-container-high p-sm rounded-full transition-colors flex items-center justify-center">
               <span className="material-symbols-outlined">
                 keyboard_command_key
