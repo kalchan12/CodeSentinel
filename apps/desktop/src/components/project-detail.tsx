@@ -109,7 +109,7 @@ export function ProjectDetail({ projectId }: { projectId: number }) {
         <div className="relative flex flex-col justify-between overflow-hidden rounded-xl border border-outline-variant bg-card p-6 lg:col-span-8">
           <div
             className="pointer-events-none absolute inset-0 opacity-[0.03]"
-            style={{ backgroundImage: "radial-gradient(#8B5CF6 1px, transparent 1px)", backgroundSize: "24px 24px" }}
+            style={{ backgroundImage: "radial-gradient(var(--color-primary) 1px, transparent 1px)", backgroundSize: "24px 24px" }}
           />
           <div className="relative z-10 mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
             <div>

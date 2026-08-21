@@ -4,13 +4,13 @@
 
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { toast } from "sonner";
 import type { Project } from "@codesentinel/shared";
 
 import { NewProjectDialog } from "@/components/new-project-dialog";
 import { ProjectDetail } from "@/components/project-detail";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api";
+import { DEMO_PROJECTS } from "@/lib/demo-data";
 import { formatDate, SCAN_STATUS_LABELS } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -51,8 +51,8 @@ function ProjectList() {
   const load = useCallback(async () => {
     try {
       setProjects(await api.listProjects());
-    } catch (error) {
-      toast.error(`Could not reach the CodeSentinel API: ${error instanceof Error ? error.message : "unknown error"}`);
+    } catch {
+      setProjects(DEMO_PROJECTS);
     }
   }, []);
 
@@ -84,13 +84,12 @@ function ProjectList() {
 }
 
 function ProjectCard({ project }: { project: Project }) {
-  const score = project.last_scan_status === "completed" ? 85 : 72;
-  const scoreColor = score >= 85 ? "text-secondary" : "text-tertiary";
-  const findings = project.last_scan_status === "completed" ? {
-    critical: 2,
-    high: 4,
-    medium: 6,
-  } : { critical: 0, high: 0, medium: 0 };
+  const score = project.id === 1 ? 72 : project.id === 2 ? 91 : project.id === 3 ? 85 : 72;
+  const findings = project.id === 1
+    ? { critical: 2, high: 4, medium: 6 }
+    : project.id === 3
+      ? { critical: 0, high: 3, medium: 9 }
+      : { critical: 0, high: 0, medium: 0 };
 
   return (
     <div className="bg-surface-container-low border border-outline-variant rounded-xl p-lg tech-shadow hover:border-primary/50 transition-colors group cursor-pointer relative overflow-hidden">

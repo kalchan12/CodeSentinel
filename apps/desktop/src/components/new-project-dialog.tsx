@@ -84,7 +84,7 @@ export function NewProjectDialog({ onCreated }: { onCreated: () => void }) {
                 placeholder="e.g. my-web-app"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="bg-[#080A0F] border border-outline-variant rounded-md px-3 py-2 text-sm focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary transition-all text-on-background placeholder:text-on-surface-variant"
+                className="bg-background border border-outline-variant rounded-md px-3 py-2 text-sm focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary transition-all text-on-background placeholder:text-on-surface-variant"
               />
             </div>
 
@@ -123,7 +123,7 @@ export function NewProjectDialog({ onCreated }: { onCreated: () => void }) {
                 placeholder={sourceType === "local" ? "/home/you/code/my-app" : "https://github.com/org/repo"}
                 value={pathOrUrl}
                 onChange={(e) => setPathOrUrl(e.target.value)}
-                className="bg-[#080A0F] border border-outline-variant rounded-md px-3 py-2 text-sm focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary transition-all text-on-background placeholder:text-on-surface-variant"
+                className="bg-background border border-outline-variant rounded-md px-3 py-2 text-sm focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary transition-all text-on-background placeholder:text-on-surface-variant"
               />
             </div>
 
@@ -134,7 +134,7 @@ export function NewProjectDialog({ onCreated }: { onCreated: () => void }) {
                 placeholder="What is this project?"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="bg-[#080A0F] border border-outline-variant rounded-md px-3 py-2 text-sm focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary transition-all text-on-background placeholder:text-on-surface-variant"
+                className="bg-background border border-outline-variant rounded-md px-3 py-2 text-sm focus:outline-none focus:border-secondary focus:ring-1 focus:ring-secondary transition-all text-on-background placeholder:text-on-surface-variant"
               />
             </div>
           </div>
