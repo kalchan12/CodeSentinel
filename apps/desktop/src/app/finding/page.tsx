@@ -10,6 +10,7 @@ import type { Finding } from "@codesentinel/shared";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api";
+import { DEMO_FINDINGS } from "@/lib/demo-data";
 import { formatDate, SEVERITY_LABELS, SEVERITY_TEXT_CLASSES } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -26,11 +27,13 @@ function FindingContent() {
   const scanId = Number(searchParams.get("scan")) || null;
   const findingId = searchParams.get("id") ?? null;
 
-  const [finding, setFinding] = useState<Finding | null>(null);
-  const [loading, setLoading] = useState(true);
+  const hasLiveFinding = scanId !== null && findingId !== null;
+  const [finding, setFinding] = useState<Finding | null>(hasLiveFinding ? null : DEMO_FINDINGS[0]);
+  const [loading, setLoading] = useState(hasLiveFinding);
 
   const load = useCallback(async () => {
     if (scanId === null || findingId === null) {
+      setFinding(DEMO_FINDINGS[0]);
       setLoading(false);
       return;
     }
@@ -66,7 +69,8 @@ function FindingContent() {
   }
 
   const snippetLines = (finding.code_snippet ?? "").split("\n");
-  const startLine = finding.line_start ?? 1;
+  const snippetStart = finding.metadata.snippet_start_line;
+  const startLine = typeof snippetStart === "number" ? snippetStart : finding.line_start ?? 1;
   const vulnLineIndex = finding.line_start != null ? finding.line_start - startLine : -1;
 
   const severityBadgeClass = cn(
@@ -79,9 +83,7 @@ function FindingContent() {
   );
 
   return (
-    <div className="h-screen overflow-hidden flex">
-      <main className="w-full md:ml-[280px] md:mt-16 h-[calc(100vh-64px)] overflow-y-auto bg-background p-4 md:p-xl">
-        <div className="max-w-[1200px] mx-auto space-y-lg">
+    <div className="max-w-[1200px] mx-auto space-y-lg">
           {/* Breadcrumb & Header */}
           <div className="flex flex-col gap-sm border-b border-outline-variant pb-md">
             <Link href={`/scan?scan=${scanId ?? ""}`} className="inline-flex items-center gap-xs text-[13px] leading-[18px] text-on-surface-variant hover:text-primary transition-colors font-[Inter]">
@@ -103,7 +105,7 @@ function FindingContent() {
                 <button className="px-md py-sm bg-surface-container-high hover:bg-surface-bright text-on-surface text-[13px] leading-[20px] rounded border border-outline-variant transition-colors flex items-center gap-xs font-[JetBrains_Mono]">
                   <span className="material-symbols-outlined text-[16px]">visibility_off</span> Ignore
                 </button>
-                <button className="px-md py-sm bg-primary text-white text-[13px] leading-[20px] rounded border border-primary luminous-glow transition-colors flex items-center gap-xs font-[JetBrains_Mono]">
+                <button className="px-md py-sm bg-primary text-on-primary text-[13px] leading-[20px] rounded border border-primary luminous-glow transition-colors flex items-center gap-xs font-[JetBrains_Mono]">
                   <span className="material-symbols-outlined text-[16px]">check_circle</span> Mark Resolved
                 </button>
               </div>
@@ -124,13 +126,13 @@ function FindingContent() {
                   <p className="text-[10px] leading-[12px] tracking-[0.08em] font-bold text-on-surface-variant font-[JetBrains_Mono] mb-1">Risk Score</p>
                   <p className={cn("text-[18px] leading-[24px] font-semibold font-[Inter]", SEVERITY_TEXT_CLASSES[finding.severity])}>
                     {finding.risk_score != null ? finding.risk_score.toFixed(0) : "\u2014"}
-                    <span className="text-[13px] leading-[18px] text-on-surface-variant">/10</span>
+                    <span className="text-[13px] leading-[18px] text-on-surface-variant">/100</span>
                   </p>
                 </div>
                 <div>
                   <p className="text-[10px] leading-[12px] tracking-[0.08em] font-bold text-on-surface-variant font-[JetBrains_Mono] mb-1">Confidence</p>
                   <p className="text-[18px] leading-[24px] font-semibold text-secondary font-[Inter]">
-                    {finding.confidence ?? "\u2014"}
+                    {formatConfidence(finding)}
                   </p>
                 </div>
                 <div>
@@ -191,13 +193,13 @@ function FindingContent() {
                 </div>
                 <div className="p-md relative z-10 space-y-sm">
                   <p className="text-[13px] leading-[18px] text-on-surface-variant font-[Inter]">
-                    The analyzer detected unparameterized input <code className="text-[11px] leading-[16px] text-primary bg-primary/10 px-1 rounded font-[JetBrains_Mono]">{finding.title}</code> in the codebase.
+                    {getAiSummary(finding)}
                   </p>
                   <div className="mt-md pt-md border-t border-outline-variant">
                     <h4 className="text-[10px] leading-[12px] tracking-[0.08em] font-bold text-on-surface-variant mb-sm uppercase font-[JetBrains_Mono]">Recommended Fix</h4>
                     <p className="text-[13px] leading-[18px] text-on-surface-variant mb-sm font-[Inter]">{finding.remediation ?? "Use parameterized queries to safely bind variables."}</p>
                     <div className="bg-background border border-outline-variant rounded p-sm overflow-x-auto">
-                      <pre className="m-0 text-[11px] leading-[16px] text-secondary font-[JetBrains_Mono]"><code className="block">{"// See recommended remediation above"}</code></pre>
+                      <pre className="m-0 text-[11px] leading-[16px] text-secondary font-[JetBrains_Mono]"><code className="block">{getRemediationExample(finding)}</code></pre>
                     </div>
                     <button className="mt-sm w-full py-1.5 border border-primary text-primary text-[11px] leading-[16px] font-[JetBrains_Mono] rounded hover:bg-primary/10 transition-colors">Apply Fix via CLI</button>
                   </div>
@@ -220,9 +222,24 @@ function FindingContent() {
             </div>
           </div>
         </div>
-      </main>
-    </div>
   );
+}
+
+function formatConfidence(finding: Finding): string {
+  const score = finding.metadata.confidence_score;
+  return typeof score === "number" ? `${score}%` : finding.confidence;
+}
+
+function getAiSummary(finding: Finding): string {
+  const summary = finding.metadata.ai_summary;
+  return typeof summary === "string"
+    ? summary
+    : `The analyzer identified ${finding.title} and recommends reviewing the affected code path.`;
+}
+
+function getRemediationExample(finding: Finding): string {
+  const example = finding.metadata.remediation_example;
+  return typeof example === "string" ? example : "// See recommended remediation above";
 }
 
 function MetaRow({
