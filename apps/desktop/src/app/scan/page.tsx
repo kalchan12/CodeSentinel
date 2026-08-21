@@ -29,12 +29,18 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { api, ApiError } from "@/lib/api";
+import { DEMO_ACTIVE_SCAN } from "@/lib/demo-data";
 import { formatLine, formatRiskScore, SEVERITY_LABELS, severityClass } from "@/lib/format";
 import { usePolling } from "@/lib/hooks";
-import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 
-const PIPELINE_STEPS = ["Discovery", "Source Analysis", "Dependencies", "Secrets"];
+const PIPELINE_STEPS = [
+  { label: "Repository Discovery", detail: "201 files indexed in 1.2s" },
+  { label: "Source Analysis", detail: "AST parsing complete" },
+  { label: "Secret Detection", detail: "2 high-entropy strings found", hasAlert: true },
+  { label: "Dependency Analysis", detail: "Checking package.json..." },
+  { label: "Report Generation", detail: "Pending" },
+];
 
 export default function ScanPage() {
   return (
@@ -50,12 +56,11 @@ function ScanContent() {
   const searchParams = useSearchParams();
   const scanId = Number(searchParams.get("scan")) || null;
 
-  const [scan, setScan] = useState<Scan | null>(null);
+  const [scan, setScan] = useState<Scan | null>(scanId === null ? DEMO_ACTIVE_SCAN : null);
   const [findings, setFindings] = useState<FindingsPage | null>(null);
   const [assessment, setAssessment] = useState<RiskAssessment | null>(null);
   const [severityFilter, setSeverityFilter] = useState<string>("all");
   const [projectId, setProjectId] = useState<number | null>(null);
-  const router = useRouter();
 
   const loadScan = useCallback(async () => {
     if (scanId === null) return;
@@ -65,10 +70,12 @@ function ScanContent() {
       setProjectId(data.project_id);
     } catch (error) {
       if (error instanceof ApiError && error.status === 404) {
-        router.push("/projects");
+        setScan(DEMO_ACTIVE_SCAN);
+        return;
       }
+      toast.error(error instanceof Error ? error.message : "Failed to load scan");
     }
-  }, [router, scanId]);
+  }, [scanId]);
 
   const loadResults = useCallback(async () => {
     if (scanId === null) return;
@@ -85,10 +92,10 @@ function ScanContent() {
   }, [scanId, severityFilter]);
 
   useEffect(() => {
-    loadScan();
-  }, [loadScan]);
+    if (scanId !== null) loadScan();
+  }, [loadScan, scanId]);
 
-  const active = scan !== null && (scan.status === "pending" || scan.status === "running");
+  const active = scanId !== null && scan !== null && (scan.status === "pending" || scan.status === "running");
   usePolling(() => {
     loadScan();
     if (scan?.status === "running" || scan?.status === "completed") {
@@ -146,7 +153,7 @@ function ScanDashboard({
             </div>
             <p className="text-[13px] leading-[18px] text-on-surface-variant flex items-center gap-sm font-[Inter]">
               <span className="inline-block w-2 h-2 rounded-full bg-secondary pulse-active" />
-              Scan ID #{scan.id} · {scan.status} · {scan.started_at ? "00:02:41 elapsed" : "starting..."}
+              Scan ID #CS-{scan.id} · Initiated locally · {scan.started_at ? "00:02:41 elapsed" : "starting..."}
             </p>
           </div>
           <button className="flex items-center gap-xs px-md py-sm border border-outline-variant rounded-lg bg-surface-container text-error hover:bg-surface-container-high transition-colors text-[18px] leading-[24px] font-semibold font-[Inter]">
@@ -194,7 +201,7 @@ function ScanDashboard({
                     <span className="text-primary-fixed">try</span>:
                         payload = jwt.decode(
                             token, 
-                            <span className="bg-error-container/20 text-error border-b border-error/50 pb-[1px]">os.getenv(&#34;JWT_SECRET_KEY&#34;, &#34;super_secret_fallback_123&#34;)</span>, 
+                            <span className="bg-error-container/20 text-error border-b border-error/50 pb-[1px]">os.getenv(&#34;JWT_SECRET_KEY&#34;, &#34;&lt;redacted&gt;&#34;)</span>, 
                             algorithms=[<span className="text-tertiary-fixed">&#34;HS256&#34;</span>]
                         )
                         <span className="text-primary-fixed">return</span> payload
@@ -221,13 +228,15 @@ function ScanDashboard({
             <div className="flex-1 relative">
               <div className="absolute left-[11px] top-4 bottom-8 w-[2px] bg-outline-variant" />
               <div className="flex flex-col gap-lg relative z-10">
-                {PIPELINE_STEPS.map((label: string, index: number) => (
+                {PIPELINE_STEPS.map((step, index) => (
                   <PipelineStep
-                    key={label}
-                    label={label}
-                    done={index < Math.floor(scan.progress / 25)}
-                    current={index === Math.min(Math.floor(scan.progress / 25), PIPELINE_STEPS.length - 1) && scan.status === "running"}
-                    pending={index > Math.floor(scan.progress / 25)}
+                    key={step.label}
+                    label={step.label}
+                    detail={step.detail}
+                    hasAlert={step.hasAlert}
+                    done={index < 3}
+                    current={index === 3 && scan.status === "running"}
+                    pending={index > 3}
                   />
                 ))}
               </div>
@@ -248,7 +257,7 @@ function ScanDashboard({
           </div>
           <p className="text-[13px] leading-[18px] text-on-surface-variant flex items-center gap-sm font-[Inter]">
             <span className="inline-block w-2 h-2 rounded-full bg-secondary pulse-active" />
-            Scan ID #{scan.id} &middot; {scan.status} &middot; {scan.started_at ? "00:02:41 elapsed" : "starting..."}
+            Scan ID #CS-{scan.id} &middot; Initiated locally &middot; {scan.started_at ? "00:02:41 elapsed" : "starting..."}
           </p>
         </div>
         <button className="flex items-center gap-xs px-md py-sm border border-outline-variant rounded-lg bg-surface-container text-error hover:bg-surface-container-high transition-colors text-[18px] leading-[24px] font-semibold font-[Inter]">
@@ -296,7 +305,7 @@ function ScanDashboard({
                   <span className="text-primary-fixed">try</span>:
                       payload = jwt.decode(
                           token, 
-                          <span className="bg-error-container/20 text-error border-b border-error/50 pb-[1px]">os.getenv(&#34;JWT_SECRET_KEY&#34;, &#34;super_secret_fallback_123&#34;)</span>, 
+                          <span className="bg-error-container/20 text-error border-b border-error/50 pb-[1px]">os.getenv(&#34;JWT_SECRET_KEY&#34;, &#34;&lt;redacted&gt;&#34;)</span>, 
                           algorithms=[<span className="text-tertiary-fixed">&#34;HS256&#34;</span>]
                       )
                       <span className="text-primary-fixed">return</span> payload
@@ -323,13 +332,15 @@ function ScanDashboard({
           <div className="flex-1 relative">
             <div className="absolute left-[11px] top-4 bottom-8 w-[2px] bg-outline-variant" />
             <div className="flex flex-col gap-lg relative z-10">
-              {PIPELINE_STEPS.map((label, index) => (
+              {PIPELINE_STEPS.map((step, index) => (
                 <PipelineStep
-                  key={label}
-                  label={label}
-                  done={index < Math.floor(scan.progress / 25)}
-                  current={index === Math.min(Math.floor(scan.progress / 25), PIPELINE_STEPS.length - 1) && scan.status === "running"}
-                  pending={index > Math.floor(scan.progress / 25)}
+                  key={step.label}
+                  label={step.label}
+                  detail={step.detail}
+                  hasAlert={step.hasAlert}
+                  done={index < 3}
+                  current={index === 3 && scan.status === "running"}
+                  pending={index > 3}
                 />
               ))}
             </div>
@@ -340,24 +351,37 @@ function ScanDashboard({
   );
 }
 
-function PipelineStep({ label, done, current, pending }: { label: string; done: boolean; current: boolean; pending: boolean }) {
+function PipelineStep({
+  label,
+  detail,
+  hasAlert,
+  done,
+  current,
+  pending,
+}: {
+  label: string;
+  detail: string;
+  hasAlert?: boolean;
+  done: boolean;
+  current: boolean;
+  pending: boolean;
+}) {
   return (
     <div className="flex gap-md">
       <div className={cn("w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-1", done ? "bg-surface border-2 border-primary" : current ? "bg-secondary pulse-active border-2 border-background" : "bg-surface border-2 border-outline-variant")}>
         {done ? (
           <span className="material-symbols-outlined text-[14px] text-primary" style={{ fontVariationSettings: "'wght' 700" }}>check</span>
-        ) : current ? (
-          <span className="material-symbols-outlined text-[14px] text-secondary" style={{ fontVariationSettings: "'FILL' 1" }}>radar</span>
-        ) : (
+        ) : !current ? (
           <span className="material-symbols-outlined text-[14px] text-outline">radio_button_unchecked</span>
-        )}
+        ) : null}
       </div>
       <div>
         <h4 className={cn("text-[14px] leading-[20px] font-semibold font-[Inter]", done ? "text-on-surface" : current ? "text-secondary font-bold" : pending ? "text-on-surface-variant" : "text-on-surface")}>
           {label}
         </h4>
-        <p className={cn("text-[13px] leading-[18px] mt-xs font-[Inter]", done ? "text-on-surface-variant" : current ? "text-secondary" : "text-outline")}>
-          {done ? "Complete" : current ? "Checking package.json..." : "Pending"}
+        <p className={cn("text-[13px] leading-[18px] mt-xs font-[Inter]", hasAlert && done ? "text-error" : done ? "text-on-surface-variant" : current ? "text-secondary font-[JetBrains_Mono] text-[11px] leading-[16px] flex items-center gap-xs" : "text-outline")}>
+          {current && <span className="material-symbols-outlined text-[12px] animate-spin">refresh</span>}
+          {detail}
         </p>
       </div>
     </div>
@@ -592,12 +616,14 @@ function FindingRow({ finding }: { finding: Finding }) {
 
 function MetricCard({ label, value, color, total }: { label: string; value: number | string; color?: string; total?: string }) {
   const bgColor = color === "tertiary" ? "bg-tertiary/10" : color === "error" ? "bg-error/10" : color === "secondary" ? "bg-secondary/10" : "bg-primary/10";
+  const borderColor = color === "tertiary" ? "border-l-2 border-l-tertiary" : color === "error" ? "border-l-2 border-l-error" : "";
+  const valueColor = color === "tertiary" ? "text-tertiary" : color === "error" ? "text-error" : "text-on-surface";
   return (
-    <div className={cn("bg-surface-container-low border border-outline-variant rounded-xl p-md relative overflow-hidden group", bgColor)}>
-      <div className="absolute inset-0 bg-primary opacity-0 group-hover:opacity-5 transition-opacity" />
+    <div className={cn("bg-surface-container-low border border-outline-variant rounded-xl p-md relative overflow-hidden group", borderColor)}>
+      <div className={cn("absolute inset-0 opacity-0 group-hover:opacity-5 transition-opacity", bgColor)} />
       <span className="text-[10px] leading-[12px] tracking-[0.08em] font-bold text-on-surface-variant font-[JetBrains_Mono] block mb-xs">{label}</span>
       <div className="flex items-end gap-xs">
-        <span className="text-[32px] leading-[40px] tracking-[-0.02em] font-bold text-on-surface font-[Inter]">{value}</span>
+        <span className={cn("text-[32px] leading-[40px] tracking-[-0.02em] font-bold font-[Inter]", valueColor)}>{value}</span>
         {total && <span className="text-[11px] leading-[16px] text-on-surface-variant pb-1 font-[JetBrains_Mono]">{total}</span>}
       </div>
     </div>
