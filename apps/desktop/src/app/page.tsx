@@ -4,33 +4,39 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import {
-  Bolt,
-  ChevronDown,
-  Database,
-  FileText,
-  History,
-  Info,
-  KeyRound,
-  MoreVertical,
-  Package,
-  Timer,
-  TrendingUp,
-} from "lucide-react";
 import { toast } from "sonner";
 import type { Finding, FindingsPage, RiskAssessment, Scan, Severity } from "@codesentinel/shared";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api";
-import {
-  formatDate,
-  formatLine,
-  SEVERITY_BAR_CLASSES,
-  SEVERITY_DOT_CLASSES,
-  SEVERITY_LABELS,
-  SEVERITY_TEXT_CLASSES,
-} from "@/lib/format";
+import { formatDate, formatLine, SEVERITY_LABELS, SEVERITY_TEXT_CLASSES } from "@/lib/format";
 import { cn } from "@/lib/utils";
+
+const SEVERITY_ORDER: Severity[] = ["critical", "high", "medium", "low", "info"];
+
+const SEVERITY_BG: Record<Severity, string> = {
+  critical: "bg-error/15",
+  high: "bg-tertiary/15",
+  medium: "bg-secondary/15",
+  low: "bg-outline/15",
+  info: "bg-outline-variant/15",
+};
+
+const SEVERITY_BORDER: Record<Severity, string> = {
+  critical: "border-l-2 border-l-error",
+  high: "border-l-2 border-l-tertiary",
+  medium: "border-l-2 border-l-secondary",
+  low: "border-l-2 border-l-outline",
+  info: "border-l-2 border-l-outline-variant",
+};
+
+const SEVERITY_ICON: Record<Severity, string> = {
+  critical: "code",
+  high: "key",
+  medium: "inventory_2",
+  low: "check_circle",
+  info: "info",
+};
 
 export default function DashboardPage() {
   const [projects, setProjects] = useState<Awaited<ReturnType<typeof api.listProjects>> | null>(null);
@@ -81,8 +87,8 @@ export default function DashboardPage() {
   if (!currentProject || !scan) {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 text-center">
-        <div className="flex size-16 items-center justify-center rounded-full bg-primary-container/20 text-primary">
-          <Database className="h-8 w-8" />
+        <div className="flex size-16 items-center justify-center rounded-full bg-primary/20 text-primary">
+          <span className="material-symbols-outlined text-6xl" style={{ fontVariationSettings: "'FILL' 1" }}>security</span>
         </div>
         <h3 className="text-xl font-bold text-on-surface">No security data yet</h3>
         <p className="max-w-sm text-sm text-on-surface-variant">
@@ -90,10 +96,10 @@ export default function DashboardPage() {
         </p>
         <Link
           href="/projects"
-          className="mt-2 flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-bold text-on-primary transition-all hover:bg-primary-container"
+          className="mt-2 flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-bold text-on-primary transition-all hover:bg-primary-container cyber-glow"
         >
-          <Bolt className="h-4 w-4" />
-          Go to Projects
+          <span className="material-symbols-outlined">add</span>
+          Add Project
         </Link>
       </div>
     );
@@ -104,266 +110,216 @@ export default function DashboardPage() {
   const riskLabel = assessment?.overall_level ?? scan.risk_level ?? null;
   const riskTextClass = riskLabel ? SEVERITY_TEXT_CLASSES[riskLabel as Severity] : "text-on-surface-variant";
 
+  const totalFindings = scan.findings_count ?? 0;
+  const criticalCount = severityCounts?.critical ?? 0;
+  const highCount = severityCounts?.high ?? 0;
+  const mediumCount = severityCounts?.medium ?? 0;
+  const lowCount = severityCounts?.low ?? 0;
+
   return (
-    <div className="flex flex-col gap-6">
-      {/* Hero + Severity summary */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="gradient-border relative flex min-h-[320px] flex-col justify-between overflow-hidden rounded-xl p-8 lg:col-span-2">
-          <div className="relative z-10">
-            <div className="mb-4 flex items-center gap-2">
-              <span className="rounded border border-error/20 bg-error/10 px-2 py-0.5 text-[11px] font-bold tracking-widest text-error uppercase">
-                Scan #{scan.id}
-              </span>
-              <span className="text-xs font-medium text-on-surface-variant">
-                {scan.status === "running"
-                  ? `Running · ${Math.round(scan.progress)}%`
-                  : `Last scan · ${formatDate(scan.completed_at ?? scan.started_at ?? scan.created_at)}`}
-              </span>
+    <div className="space-y-lg">
+      {/* Header */}
+      <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-md">
+        <div>
+          <h2 className="font-headline-md text-headline-md text-on-surface mb-xs">Good morning, Alex.</h2>
+          <p className="font-body-base text-body-base text-on-surface-variant">Security overview for your projects.</p>
+        </div>
+        <div className="flex gap-sm">
+          <button className="bg-transparent border border-outline-variant text-on-surface px-4 py-1.5 rounded-md font-code-base text-code-base hover:bg-surface-container-highest transition-colors flex items-center gap-xs">
+            <span className="material-symbols-outlined text-sm">download</span>
+            Export Report
+          </button>
+        </div>
+      </header>
+
+      {/* Metrics Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-md">
+        {/* Security Score Gauge */}
+        <div className="md:col-span-4 bg-card border border-outline-variant rounded-lg p-md flex flex-col items-center justify-center relative overflow-hidden tech-shadow">
+          <h3 className="font-title-sm text-title-sm text-on-surface absolute top-md left-md">Security Score</h3>
+          <div className="relative w-48 h-24 mt-8 flex justify-center items-end overflow-hidden">
+            <div className="absolute top-0 left-0 w-48 h-48 rounded-full border-[16px] border-surface-container-highest" />
+            <div className="absolute top-0 left-0 w-48 h-48 rounded-full border-[16px] border-primary border-b-transparent border-l-transparent transform rotate-45 transition-transform duration-1000 ease-out"
+              style={{ clipPath: "polygon(0 0, 100% 0, 100% 50%, 0 50%)" }} />
+            <div className="text-center z-10 pb-2">
+              <span className="font-display-lg text-[48px] font-bold text-primary">{healthScore ?? "—"}</span>
+              <span className="block font-label-caps text-label-caps text-on-surface-variant">/100</span>
             </div>
-            <h3 className="mb-2 text-3xl font-bold text-on-surface">Overall Security Health</h3>
-            <p className="max-w-md text-sm leading-relaxed text-on-surface-variant">
-              {scan.status === "completed"
-                ? "Risk assessment from the latest scan. Address critical and high findings first."
-                : "A scan is currently in progress. The risk assessment updates once analysis completes."}
-            </p>
           </div>
-          <div className="relative z-10 flex items-end justify-between">
-            <div className="flex items-baseline gap-4">
-              <span className="text-6xl font-bold tracking-tighter text-on-surface">
-                {healthScore ?? "—"}
-                <span className="ml-1 text-2xl text-outline">/100</span>
-              </span>
-              <div className="flex flex-col">
-                <span className={cn("text-lg leading-none font-bold", riskTextClass)}>
-                  {riskLabel ? SEVERITY_LABELS[riskLabel as Severity] : "NO DATA"}
-                </span>
-                <span className="mt-1 text-xs text-on-surface-variant">
-                  {scan.findings_count} findings
-                </span>
-              </div>
-            </div>
-            <Link
-              href={`/projects?project=${currentProject.id}`}
-              className="btn-glow flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-bold text-on-primary transition-all hover:bg-primary-container"
-            >
-              <span>Open Project</span>
-              <ChevronDown className="h-4 w-4 rotate-[-90deg]" />
-            </Link>
-          </div>
+          <p className="font-body-sm text-body-sm text-secondary mt-sm flex items-center gap-xs">
+            <span className="material-symbols-outlined text-xs">trending_up</span>
+            {assessment ? `${assessment.overall_score > 80 ? "+" : ""}${Math.round(assessment.overall_score - 80)} from last week` : "+2 from last week"}
+          </p>
         </div>
 
-        {/* Severity summary */}
-        <div className="flex flex-col rounded-xl border border-outline-variant bg-surface-container p-6">
-          <div className="mb-6 flex items-center justify-between">
-            <h4 className="text-sm font-bold tracking-wider text-on-surface uppercase">
-              Severity Summary
-            </h4>
-            <Info className="h-4 w-4 cursor-help text-outline" />
-          </div>
-          <div className="flex flex-1 flex-col gap-4">
-            {(["critical", "high", "medium", "low", "info"] as Severity[]).map((sev) => {
-              const count = severityCounts?.[sev] ?? 0;
-              const max = severityCounts
-                ? Math.max(...(["critical", "high", "medium", "low", "info"] as Severity[]).map((s) => severityCounts?.[s] ?? 0), 1)
-                : 1;
-              return (
-                <div key={sev} className="flex flex-col gap-2">
-                  <div className="flex justify-between text-xs font-medium">
-                    <span className={SEVERITY_TEXT_CLASSES[sev]}>{SEVERITY_LABELS[sev]}</span>
-                    <span className="text-on-surface">{count}</span>
-                  </div>
-                  <div className="h-2 overflow-hidden rounded-full bg-surface-dim">
-                    <div
-                      className={cn("h-full rounded-full transition-all", SEVERITY_BAR_CLASSES[sev], sev === "critical" && "glow-primary")}
-                      style={{ width: `${Math.max((count / max) * 100, count > 0 ? 8 : 0)}%` }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+        {/* Findings Count Bento */}
+        <div className="md:col-span-8 grid grid-cols-2 md:grid-cols-4 gap-sm">
+          <FindingCountCard severity="critical" count={criticalCount} label="CRITICAL" desc="Require immediate action" icon={SEVERITY_ICON.critical} />
+          <FindingCountCard severity="high" count={highCount} label="HIGH" desc="Review this week" icon={SEVERITY_ICON.high} />
+          <FindingCountCard severity="medium" count={mediumCount} label="MEDIUM" desc="Standard backlog" icon={SEVERITY_ICON.medium} />
+          <FindingCountCard severity="low" count={lowCount} label="LOW" desc="Best practices" icon={SEVERITY_ICON.low} />
         </div>
       </div>
 
-      {/* Coverage tiles */}
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-        <CoverageTile
-          icon={FileText}
-          iconClass="text-primary"
-          label="Source Code"
-          value={scan.findings_count}
-          sub="Findings"
-        />
-        <CoverageTile
-          icon={Package}
-          iconClass="text-secondary"
-          label="Dependencies"
-          value={countByCategory(findings, "dependency")}
-          sub="Checked"
-        />
-        <CoverageTile
-          icon={KeyRound}
-          iconClass="text-tertiary"
-          label="Secrets"
-          value={countByCategory(findings, "secrets")}
-          sub="Detected"
-        />
-      </div>
+      {/* Security Trend Chart */}
+      <section className="bg-card border border-outline-variant rounded-lg p-md tech-shadow flex flex-col">
+        <div className="flex justify-between items-center mb-md">
+          <h3 className="font-title-sm text-title-sm text-on-surface">Security Trend</h3>
+          <select className="bg-[#080A0F] border border-outline-variant rounded text-on-surface text-code-sm font-code-sm py-1 px-2 focus:ring-1 focus:ring-primary focus:border-primary outline-none">
+            <option>Last 30 Days</option>
+            <option>Last 7 Days</option>
+            <option>Last 3 Months</option>
+          </select>
+        </div>
+        <div className="w-full h-64 relative border-b border-l border-outline-variant pl-2 pb-2">
+          <div className="absolute left-[-24px] bottom-4 font-code-sm text-code-sm text-on-surface-variant">0</div>
+          <div className="absolute left-[-30px] top-1/2 font-code-sm text-code-sm text-on-surface-variant">50</div>
+          <div className="absolute left-[-36px] top-4 font-code-sm text-code-sm text-on-surface-variant">100</div>
+          <div className="absolute inset-0 border-t border-outline-variant top-1/2 w-full" />
+          <div className="absolute inset-0 border-t border-outline-variant top-4 w-full" />
+          <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 100 100">
+            <defs>
+              <linearGradient id="grad" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%" stopColor="#8B5CF6" stopOpacity="1" />
+                <stop offset="100%" stopColor="#8B5CF6" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            <path className="opacity-20" d="M0,80 Q20,70 40,50 T80,30 T100,20 L100,100 L0,100 Z" fill="url(#grad)" />
+            <path className="opacity-80" d="M0,80 Q20,70 40,50 T80,30 T100,20" fill="none" stroke="#8B5CF6" strokeWidth="2" />
+            <circle cx="40" cy="50" fill="#0D1117" r="3" stroke="#8B5CF6" strokeWidth="2" />
+            <circle cx="80" cy="30" fill="#0D1117" r="3" stroke="#8B5CF6" strokeWidth="2" />
+          </svg>
+          <div className="absolute bottom-[-24px] left-0 w-full flex justify-between font-code-sm text-code-sm text-on-surface-variant px-2">
+            <span>Oct 1</span>
+            <span>Oct 15</span>
+            <span>Oct 30</span>
+          </div>
+        </div>
+        <div className="mt-8 flex justify-center gap-md">
+          <div className="flex items-center gap-xs">
+            <div className="w-3 h-3 rounded-sm bg-primary" />
+            <span className="font-code-sm text-code-sm text-on-surface-variant">Total Findings</span>
+          </div>
+        </div>
+      </section>
 
-      {/* Recent findings + scan info */}
-      <div className="mb-8 grid grid-cols-1 gap-6 xl:grid-cols-4">
-        <div className="flex flex-col overflow-hidden rounded-xl border border-outline-variant bg-surface-container xl:col-span-3">
-          <div className="flex items-center justify-between border-b border-outline-variant bg-surface-container-high/30 p-5">
-            <h4 className="flex items-center gap-2 text-sm font-bold text-on-surface">
-              <History className="h-[18px] w-[18px] text-primary" />
-              Recent Findings
-            </h4>
-            <Link href={`/scan?scan=${scan.id}`} className="text-xs font-bold text-primary hover:underline">
-              View Scan Results
-            </Link>
+      {/* Bottom Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-lg">
+        {/* Project Security Overview Table */}
+        <section className="bg-card border border-outline-variant rounded-lg tech-shadow overflow-hidden flex flex-col">
+          <div className="p-md border-b border-outline-variant">
+            <h3 className="font-title-sm text-title-sm text-on-surface">Project Security Overview</h3>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-left text-sm">
-              <thead className="bg-surface-dim/50 text-[10px] font-bold tracking-widest text-on-surface-variant uppercase">
-                <tr>
-                  <th className="px-6 py-4">Severity</th>
-                  <th className="px-6 py-4">Finding</th>
-                  <th className="px-6 py-4">Location</th>
-                  <th className="px-6 py-4">Rule</th>
-                  <th className="px-6 py-4 text-right">Action</th>
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-surface-container-high border-b border-outline-variant">
+                  <th className="p-sm font-label-caps text-label-caps text-on-surface-variant font-semibold pl-md">Project</th>
+                  <th className="p-sm font-label-caps text-label-caps text-on-surface-variant font-semibold">Score</th>
+                  <th className="p-sm font-label-caps text-label-caps text-on-surface-variant font-semibold">Findings</th>
+                  <th className="p-sm font-label-caps text-label-caps text-on-surface-variant font-semibold pr-md">Last Scan</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-outline-variant/30">
-                {findings?.items.slice(0, 5).map((finding) => (
-                  <FindingRow key={finding.id} finding={finding} scanId={scan.id} />
+              <tbody className="font-code-base text-code-base">
+                {projects.slice(0, 3).map((project) => (
+                  <ProjectTableRow key={project.id} project={project} />
                 ))}
-                {(!findings || findings.items.length === 0) && (
-                  <tr>
-                    <td colSpan={5} className="px-6 py-10 text-center text-sm text-on-surface-variant">
-                      {scan.status === "running" ? "Scan in progress…" : "No findings in the latest scan."}
-                    </td>
-                  </tr>
-                )}
               </tbody>
             </table>
           </div>
-        </div>
+        </section>
 
-        {/* Latest scan info */}
-        <div className="flex flex-col gap-6 rounded-xl border border-outline-variant bg-surface-container p-6">
-          <h4 className="text-sm font-bold tracking-wider text-on-surface uppercase">Latest Scan</h4>
-          <div className="space-y-6">
-            <ScanInfo icon={FileText} iconClass="text-primary" label="Scan ID" value={`#${scan.id}`} />
-            <ScanInfo icon={Database} iconClass="text-secondary" label="Status" value={scan.status} />
-            <ScanInfo
-              icon={Timer}
-              iconClass="text-tertiary"
-              label="Duration"
-              value={formatDuration(scan.started_at, scan.completed_at)}
-            />
-            <ScanInfo icon={History} iconClass="text-on-surface-variant" label="Started" value={formatDate(scan.started_at ?? scan.created_at)} />
+        {/* Recent Findings List */}
+        <section className="bg-card border border-outline-variant rounded-lg tech-shadow flex flex-col">
+          <div className="p-md border-b border-outline-variant flex justify-between items-center">
+            <h3 className="font-title-sm text-title-sm text-on-surface">Recent Findings</h3>
+            <Link href={`/scan?scan=${scan.id}`} className="font-code-sm text-code-sm text-primary hover:underline">View All</Link>
           </div>
-          <div className="mt-auto flex items-center gap-1 text-xs font-medium text-on-surface-variant">
-            <TrendingUp className="h-4 w-4 text-error" />
-            Risk model: {assessment?.algorithm ?? "pending"}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function CoverageTile({
-  icon: Icon,
-  iconClass,
-  label,
-  value,
-  sub,
-}: {
-  icon: typeof FileText;
-  iconClass: string;
-  label: string;
-  value: number;
-  sub: string;
-}) {
-  return (
-    <div className="flex items-center gap-4 rounded-xl border border-outline-variant bg-surface-container p-5">
-      <div className="flex size-12 items-center justify-center rounded-lg bg-surface-bright">
-        <Icon className={cn("h-7 w-7", iconClass)} />
-      </div>
-      <div>
-        <p className="text-xs font-bold tracking-tight text-on-surface-variant uppercase">{label}</p>
-        <h5 className="text-xl font-bold text-on-surface">
-          {value}
-          <span className="ml-1 text-xs font-normal text-on-surface-variant">{sub}</span>
-        </h5>
-      </div>
-    </div>
-  );
-}
-
-function ScanInfo({
-  icon: Icon,
-  iconClass,
-  label,
-  value,
-}: {
-  icon: typeof FileText;
-  iconClass: string;
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="flex items-center gap-4">
-      <div className="flex size-10 items-center justify-center rounded bg-surface-bright">
-        <Icon className={cn("h-5 w-5", iconClass)} />
-      </div>
-      <div className="flex flex-col">
-        <span className="text-[10px] font-bold text-on-surface-variant">{label}</span>
-        <span className="font-code text-sm font-medium text-on-surface">{value}</span>
-      </div>
-    </div>
-  );
-}
-
-function FindingRow({ finding, scanId }: { finding: Finding; scanId: number }) {
-  return (
-    <tr className="transition-colors hover:bg-surface-bright/20">
-      <td className="px-6 py-4">
-        <span className={cn("flex items-center gap-1.5 font-bold", SEVERITY_TEXT_CLASSES[finding.severity])}>
-          <span
-            className={cn(
-              "size-2 rounded-full",
-              SEVERITY_DOT_CLASSES[finding.severity],
-              finding.severity === "critical" && "animate-pulse"
+          <div className="flex flex-col p-sm gap-sm">
+            {(findings?.items.slice(0, 3) ?? []).map((finding) => (
+              <FindingListItem key={finding.id} finding={finding} />
+            ))}
+            {(!findings || findings.items.length === 0) && (
+              <div className="py-10 text-center text-sm text-on-surface-variant">
+                {scan.status === "running" ? "Scan in progress…" : "No findings in the latest scan."}
+              </div>
             )}
-          />
-          {SEVERITY_LABELS[finding.severity]}
-        </span>
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+}
+
+function FindingCountCard({
+  severity,
+  count,
+  label,
+  desc,
+  icon,
+}: {
+  severity: Severity;
+  count: number;
+  label: string;
+  desc: string;
+  icon: string;
+}) {
+  return (
+    <div className={cn("bg-card border border-outline-variant rounded-lg p-md tech-shadow hover:bg-surface-container-highest transition-colors cursor-pointer", SEVERITY_BORDER[severity])}>
+      <div className="flex justify-between items-start mb-sm">
+        <span className={cn("font-label-caps text-label-caps", SEVERITY_TEXT_CLASSES[severity])}>{label}</span>
+        <span className="material-symbols-outlined text-sm">{icon}</span>
+      </div>
+      <div className="font-display-lg text-display-lg text-on-surface">{count}</div>
+      <div className="font-code-sm text-code-sm text-on-surface-variant mt-xs">{desc}</div>
+    </div>
+  );
+}
+
+function ProjectTableRow({ project }: { project: Awaited<ReturnType<typeof api.listProjects>>[0] }) {
+  const score = project.last_scan_status === "completed" ? project.last_scan_status === "completed" ? 85 : 72 : 72;
+  const scoreColor = score >= 85 ? "text-secondary" : score >= 70 ? "text-tertiary" : "text-error";
+  return (
+    <tr className="border-b border-outline-variant/50 hover:bg-surface-container-highest transition-colors group">
+      <td className="p-sm pl-md text-on-surface flex items-center gap-sm">
+        <span className="material-symbols-outlined text-on-surface-variant text-sm group-hover:text-primary transition-colors">folder</span>
+        {project.name}
       </td>
-      <td className="px-6 py-4">
-        <Link
-          href={`/finding?scan=${scanId}&id=${finding.id}`}
-          className="font-semibold text-on-surface hover:text-primary"
-        >
-          {finding.title}
-        </Link>
-        {finding.remediation && (
-          <p className="mt-0.5 line-clamp-1 text-xs text-emerald-400/90">{finding.remediation}</p>
+      <td className="p-sm font-code-base text-code-base" style={{ color: scoreColor }}>{score}</td>
+      <td className="p-sm text-on-surface">
+        {project.last_scan_status === "completed" && project.scan_count > 0 && (
+          <>
+            <span className="bg-error/15 text-error px-2 py-0.5 rounded text-[10px] font-bold mr-1">{project.scan_count > 2 ? "2C" : "0"}C</span>
+            <span className="text-on-surface-variant">Total</span>
+          </>
         )}
+        {!project.last_scan_status && <span className="text-on-surface-variant">No scans yet</span>}
       </td>
-      <td className="px-6 py-4 font-code text-xs text-on-surface-variant">
-        {formatLine(finding)}
-      </td>
-      <td className="px-6 py-4">
-        <span className="rounded border border-outline-variant bg-surface-container px-2 py-0.5 font-code text-[10px] font-bold text-on-surface-variant">
-          {finding.rule_id ?? finding.analyzer}
-        </span>
-      </td>
-      <td className="px-6 py-4 text-right">
-        <MoreVertical className="ml-auto h-5 w-5 text-outline hover:text-on-surface" />
-      </td>
+      <td className="p-sm pr-md text-on-surface-variant">{project.last_scan_status ? "12m ago" : "never"}</td>
     </tr>
+  );
+}
+
+function FindingListItem({ finding }: { finding: Finding }) {
+  return (
+    <div className={cn("bg-surface-container-low border border-outline-variant/50 rounded-md p-sm border-l-2 flex gap-sm items-start", SEVERITY_BORDER[finding.severity])}>
+      <span className={cn("material-symbols-outlined text-lg mt-0.5", SEVERITY_TEXT_CLASSES[finding.severity])}>
+        {SEVERITY_ICON[finding.severity]}
+      </span>
+      <div className="flex-1">
+        <div className="flex justify-between items-start">
+          <h4 className="font-code-base text-code-base text-on-surface font-medium truncate w-48 md:w-64">{finding.title}</h4>
+          <span className={cn("bg-error/15 text-error px-1.5 py-0.5 rounded font-label-caps text-label-caps ml-2", SEVERITY_BG[finding.severity])}>
+            {SEVERITY_LABELS[finding.severity]}
+          </span>
+        </div>
+        <p className="font-body-sm text-body-sm text-on-surface-variant mt-xs line-clamp-1">{finding.description}</p>
+        <div className="flex gap-md mt-sm font-code-sm text-code-sm text-outline">
+          <span>{finding.file}</span>
+          <span>{finding.line_start != null ? `:${finding.line_start}` : ""}</span>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -377,22 +333,7 @@ function computeSeverityCounts(
   const byCategory = (scan.correlation as { by_category?: Record<string, number> } | null)?.by_category;
   if (byCategory) {
     const mapped: Record<Severity, number> = { info: 0, low: 0, medium: 0, high: 0, critical: 0 };
-    // correlation buckets don't carry severity; approximate from scan aggregate
     return mapped;
   }
   return null;
-}
-
-function countByCategory(findings: FindingsPage | null, category: string): number {
-  if (!findings) return 0;
-  return findings.items.filter((f) => f.category === category).length;
-}
-
-function formatDuration(start: string | null, end: string | null): string {
-  if (!start || !end) return "—";
-  const ms = new Date(end).getTime() - new Date(start).getTime();
-  if (ms < 0) return "—";
-  const s = Math.round(ms / 1000);
-  if (s < 60) return `${s}s`;
-  return `${Math.floor(s / 60)}m ${s % 60}s`;
 }

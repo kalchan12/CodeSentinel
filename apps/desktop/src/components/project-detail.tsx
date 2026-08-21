@@ -5,18 +5,6 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  CheckCircle2,
-  Filter,
-  FolderOpen,
-  Info,
-  LockOpen,
-  Play,
-  Radar,
-  Trash2,
-  TrendingUp,
-  TriangleAlert,
-} from "lucide-react";
 import { toast } from "sonner";
 import type { Project, RiskAssessment, Scan, Severity } from "@codesentinel/shared";
 
@@ -97,12 +85,13 @@ export function ProjectDetail({ projectId }: { projectId: number }) {
   };
 
   return (
-    <div className="mx-auto max-w-[1600px] space-y-6">
+    <div className="mx-auto max-w-[1440px] space-y-6">
       <div className="flex items-center gap-2">
         <Link
           href="/projects"
           className="inline-flex items-center gap-1 text-sm text-on-surface-variant hover:text-primary"
         >
+          <span className="material-symbols-outlined text-sm">arrow_back</span>
           Projects
         </Link>
         <span className="text-on-surface-variant">/</span>
@@ -110,22 +99,22 @@ export function ProjectDetail({ projectId }: { projectId: number }) {
           onClick={removeProject}
           className="inline-flex items-center gap-1 text-sm text-on-surface-variant hover:text-error"
         >
-          <Trash2 className="h-3.5 w-3.5" />
+          <span className="material-symbols-outlined text-sm">delete</span>
           Delete
         </button>
       </div>
 
       {/* Project header bento */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        <div className="relative flex flex-col justify-between overflow-hidden rounded-xl border border-outline-variant bg-surface p-6 lg:col-span-8">
+        <div className="relative flex flex-col justify-between overflow-hidden rounded-xl border border-outline-variant bg-card p-6 lg:col-span-8">
           <div
             className="pointer-events-none absolute inset-0 opacity-[0.03]"
-            style={{ backgroundImage: "radial-gradient(#d0bcff 1px, transparent 1px)", backgroundSize: "24px 24px" }}
+            style={{ backgroundImage: "radial-gradient(#8B5CF6 1px, transparent 1px)", backgroundSize: "24px 24px" }}
           />
           <div className="relative z-10 mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
             <div>
               <div className="mb-1 flex items-center gap-1">
-                <LockOpen className="h-[18px] w-[18px] text-outline" />
+                <span className="material-symbols-outlined h-[18px] w-[18px] text-outline">lock_open</span>
                 <span className="font-code text-[11px] font-bold tracking-wider text-outline uppercase">
                   {project.source_type === "github" ? "GitHub Repository" : "Local Project"}
                 </span>
@@ -144,6 +133,7 @@ export function ProjectDetail({ projectId }: { projectId: number }) {
                 rel="noreferrer"
                 className="shrink-0 rounded border border-outline-variant bg-surface-container px-3 py-1.5 font-code text-[11px] font-bold text-on-surface transition-colors hover:bg-surface-container-high"
               >
+                <span className="material-symbols-outlined text-sm mr-1">open_in_new</span>
                 GitHub
               </a>
             )}
@@ -165,10 +155,10 @@ export function ProjectDetail({ projectId }: { projectId: number }) {
         </div>
 
         {/* Run scan CTA */}
-        <div className="relative flex flex-col items-center justify-center overflow-hidden rounded-xl border border-primary/30 bg-surface p-6 text-center lg:col-span-4">
+        <div className="relative flex flex-col items-center justify-center overflow-hidden rounded-xl border border-primary/30 bg-card p-6 text-center lg:col-span-4">
           <div className="absolute inset-0 bg-primary/5 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
           <div className="mb-4 flex size-16 items-center justify-center rounded-full border border-primary/30 bg-primary/10">
-            <Radar className="h-8 w-8 text-primary transition-transform group-hover:scale-110" />
+            <span className="material-symbols-outlined h-8 w-8 text-primary transition-transform group-hover:scale-110" style={{ fontVariationSettings: "'FILL' 1" }}>radar</span>
           </div>
           <h3 className="mb-1 text-lg font-semibold text-on-surface">Security Audit</h3>
           <p className="mb-6 font-code text-sm text-on-surface-variant">
@@ -177,9 +167,9 @@ export function ProjectDetail({ projectId }: { projectId: number }) {
           <button
             onClick={startScan}
             disabled={starting}
-            className="flex w-full max-w-[200px] items-center justify-center gap-2 rounded bg-primary px-4 py-2.5 font-code text-[11px] font-bold text-on-primary transition-all hover:bg-primary-container disabled:opacity-50"
+            className="flex w-full max-w-[200px] items-center justify-center gap-2 rounded bg-primary px-4 py-2.5 font-code text-[11px] font-bold text-on-primary transition-all hover:bg-primary-container disabled:opacity-50 cyber-glow"
           >
-            <Play className="h-4 w-4" />
+            <span className="material-symbols-outlined h-4 w-4">play_arrow</span>
             {starting ? "Starting…" : "Run Security Scan"}
           </button>
         </div>
@@ -189,12 +179,12 @@ export function ProjectDetail({ projectId }: { projectId: number }) {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         <div className="flex flex-col gap-6 lg:col-span-6">
           {/* Health score */}
-          <div className="rounded-xl border border-outline-variant bg-surface p-4">
+          <div className="rounded-xl border border-outline-variant bg-card p-4">
             <div className="mb-4 flex items-center justify-between">
               <h3 className="font-code text-[11px] font-bold tracking-wider text-outline uppercase">
                 Project Health Score
               </h3>
-              <Info className="h-4 w-4 text-outline-variant" />
+              <span className="material-symbols-outlined h-4 w-4 text-outline-variant">info</span>
             </div>
             <div className="flex items-end gap-4">
               <div className="text-[64px] leading-none font-bold tracking-tighter text-secondary">
@@ -203,7 +193,7 @@ export function ProjectDetail({ projectId }: { projectId: number }) {
               </div>
               <div className="mb-2">
                 <span className="inline-flex items-center gap-1 rounded border border-secondary bg-secondary/15 px-1 py-0.5 font-code text-xs text-secondary">
-                  <TrendingUp className="h-3.5 w-3.5" />
+                  <span className="material-symbols-outlined h-3.5 w-3.5">trending_up</span>
                   {assessment ? SEVERITY_LABELS[assessment.overall_level as Severity] : "no data"}
                 </span>
               </div>
@@ -211,7 +201,7 @@ export function ProjectDetail({ projectId }: { projectId: number }) {
           </div>
 
           {/* Vulnerability breakdown */}
-          <div className="flex-1 rounded-xl border border-outline-variant bg-surface p-4">
+          <div className="flex-1 rounded-xl border border-outline-variant bg-card p-4">
             <h3 className="mb-4 font-code text-[11px] font-bold tracking-wider text-outline uppercase">
               Vulnerability Breakdown
             </h3>
@@ -242,12 +232,12 @@ export function ProjectDetail({ projectId }: { projectId: number }) {
         </div>
 
         {/* Scan history */}
-        <div className="flex h-full flex-col rounded-xl border border-outline-variant bg-surface lg:col-span-6">
+        <div className="flex h-full flex-col rounded-xl border border-outline-variant bg-card lg:col-span-6">
           <div className="flex items-center justify-between border-b border-outline-variant p-4">
             <h3 className="font-code text-[11px] font-bold tracking-wider text-outline uppercase">
               Recent Scan History
             </h3>
-            <Filter className="h-5 w-5 text-primary transition-colors hover:text-primary-fixed" />
+            <span className="material-symbols-outlined h-5 w-5 text-primary transition-colors hover:text-primary-fixed">filter_list</span>
           </div>
           <div className="min-h-[300px] flex-1 space-y-1.5 overflow-y-auto p-2.5">
             {scans.length === 0 && (
@@ -272,13 +262,13 @@ export function ProjectDetail({ projectId }: { projectId: number }) {
                     )}
                   >
                     {scan.status === "completed" ? (
-                      <CheckCircle2 className="h-5 w-5" />
+                      <span className="material-symbols-outlined h-5 w-5" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
                     ) : scan.status === "running" ? (
-                      <Radar className="h-5 w-5 animate-pulse" />
+                      <span className="material-symbols-outlined h-5 w-5 animate-pulse" style={{ fontVariationSettings: "'FILL' 1" }}>radar</span>
                     ) : scan.status === "failed" || scan.status === "canceled" ? (
-                      <TriangleAlert className="h-5 w-5" />
+                      <span className="material-symbols-outlined h-5 w-5">warning</span>
                     ) : (
-                      <FolderOpen className="h-5 w-5" />
+                      <span className="material-symbols-outlined h-5 w-5">folder_open</span>
                     )}
                   </div>
                   <div>

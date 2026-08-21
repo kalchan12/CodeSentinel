@@ -5,7 +5,6 @@
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { AlertTriangle, Check, FileSearch, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 import type {
   Finding,
@@ -33,6 +32,9 @@ import { api, ApiError } from "@/lib/api";
 import { formatLine, formatRiskScore, SEVERITY_LABELS, severityClass } from "@/lib/format";
 import { usePolling } from "@/lib/hooks";
 import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
+
+const PIPELINE_STEPS = ["Discovery", "Source Analysis", "Dependencies", "Secrets"];
 
 export default function ScanPage() {
   return (
@@ -49,10 +51,10 @@ function ScanContent() {
   const scanId = Number(searchParams.get("scan")) || null;
 
   const [scan, setScan] = useState<Scan | null>(null);
-  const [findings, setFindings] = useState<FindingsPage | null>(null);
-  const [assessment, setAssessment] = useState<RiskAssessment | null>(null);
-  const [severityFilter, setSeverityFilter] = useState<string>("all");
-  const [projectId, setProjectId] = useState<number | null>(null);
+  const [, setFindings] = useState<FindingsPage | null>(null);
+  const [, setAssessment] = useState<RiskAssessment | null>(null);
+  const [, setSeverityFilter] = useState<string>("all");
+  const [, setProjectId] = useState<number | null>(null);
   const router = useRouter();
 
   const loadScan = useCallback(async () => {
@@ -134,50 +136,230 @@ function ScanDashboard({
   const running = scan.status === "pending" || scan.status === "running";
 
   if (running) {
-    return <ScanInProgress scan={scan} />;
+    return (
+      <div className="space-y-6">
+        <div className="flex items-start justify-between mb-xl">
+          <div>
+            <div className="flex items-center gap-sm mb-xs">
+              <span className="material-symbols-outlined text-secondary animate-pulse" style={{ fontVariationSettings: "'FILL' 1" }}>radar</span>
+              <h2 className="font-headline-md text-headline-md text-on-surface">Active Scan: payments-api</h2>
+            </div>
+            <p className="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-sm">
+              <span className="inline-block w-2 h-2 rounded-full bg-secondary pulse-active" />
+              Scan ID #{scan.id} · {scan.status} · {scan.started_at ? "00:02:41 elapsed" : "starting..."}
+            </p>
+          </div>
+          <button className="flex items-center gap-xs px-md py-sm border border-outline-variant rounded-lg bg-surface-container text-error hover:bg-surface-container-high transition-colors font-title-sm text-title-sm">
+            <span className="material-symbols-outlined text-[18px]">stop_circle</span>
+            Abort Scan
+          </button>
+        </div>
+
+        <div className="mb-xl bg-card border border-outline-variant rounded-xl p-md">
+          <div className="flex justify-between items-end mb-sm">
+            <div className="flex items-center gap-sm">
+              <span className="font-label-caps text-label-caps text-on-surface-variant">Global Pipeline Progress</span>
+            </div>
+            <span className="font-code-base text-code-base text-secondary font-bold">{Math.round(scan.progress)}%</span>
+          </div>
+          <div className="w-full h-2 bg-surface-container-highest rounded-full overflow-hidden relative">
+            <div className="absolute top-0 left-0 h-full bg-secondary w-[{scan.progress}%] progress-glow transition-all duration-1000 ease-out" />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-lg h-[500px]">
+          <div className="lg:col-span-8 flex flex-col gap-lg h-full">
+            <div className="flex-1 bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden flex flex-col relative shadow-[0_4px_12px_rgba(0,0,0,0.3)]">
+              <div className="bg-surface-container-high border-b border-outline-variant px-md py-sm flex justify-between items-center z-10">
+                <div className="flex items-center gap-sm">
+                  <span className="material-symbols-outlined text-on-surface-variant text-[16px]">code</span>
+                  <span className="font-code-sm text-code-sm text-on-surface">src/api/auth.py</span>
+                </div>
+                <span className="font-label-caps text-label-caps text-secondary flex items-center gap-xs">
+                  <span className="material-symbols-outlined text-[14px] animate-spin">sync</span>
+                  ANALYZING
+                </span>
+              </div>
+              <div className="flex-1 p-md overflow-hidden relative font-code-base text-code-base leading-relaxed bg-[#0a0a0e]">
+                <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden">
+                  <div className="w-full h-16 scanner-beam absolute top-0 left-0" />
+                </div>
+                <div className="flex h-full">
+                  <div className="w-8 flex-shrink-0 text-on-surface-variant opacity-30 select-none text-right pr-sm border-r border-outline-variant h-full mr-sm">
+                    42<br/>43<br/>44<br/>45<br/>46<br/>47<br/>48<br/>49<br/>50<br/>51<br/>52<br/>53<br/>54
+                  </div>
+                  <div className="flex-1 text-on-surface-variant whitespace-pre font-code-sm text-code-sm overflow-hidden">
+                    <span className="text-primary-fixed">def</span> <span className="text-secondary-fixed">validate_jwt</span>(token: str):
+                    <span className="text-outline"># Decode the incoming token</span>
+                    <span className="text-primary-fixed">try</span>:
+                        payload = jwt.decode(
+                            token, 
+                            <span className="bg-error-container/20 text-error border-b border-error/50 pb-[1px]">os.getenv(&#34;JWT_SECRET_KEY&#34;, &#34;super_secret_fallback_123&#34;)</span>, 
+                            algorithms=[<span className="text-tertiary-fixed">&#34;HS256&#34;</span>]
+                        )
+                        <span className="text-primary-fixed">return</span> payload
+                    <span className="text-primary-fixed">except</span> jwt.ExpiredSignatureError:
+                        <span className="text-primary-fixed">raise</span> HTTPException(status_code=401, detail=<span className="text-tertiary-fixed">&#34;Token expired&#34;</span>)
+                    <span className="text-primary-fixed">except</span> jwt.InvalidTokenError:
+                        <span className="text-primary-fixed">raise</span> HTTPException(status_code=401, detail=<span className="text-tertiary-fixed">&#34;Invalid token&#34;</span>)
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-4 gap-sm">
+              <MetricCard label="FILES" value="84 / 201" />
+              <MetricCard label="FINDINGS" value={scan.findings_count} color="tertiary" />
+              <MetricCard label="SECRETS" value="2" color="error" />
+              <MetricCard label="DEPENDENCIES" value="38" color="secondary" />
+            </div>
+          </div>
+          <div className="lg:col-span-4 bg-surface-container-low border border-outline-variant rounded-xl p-lg flex flex-col shadow-[0_4px_12px_rgba(0,0,0,0.2)]">
+            <h3 className="font-title-sm text-title-sm text-on-surface mb-xl flex items-center gap-sm">
+              <span className="material-symbols-outlined">checklist</span>
+              Live Pipeline
+            </h3>
+            <div className="flex-1 relative">
+              <div className="absolute left-[11px] top-4 bottom-8 w-[2px] bg-outline-variant" />
+              <div className="flex flex-col gap-lg relative z-10">
+                {PIPELINE_STEPS.map((label: string, index: number) => (
+                  <PipelineStep
+                    key={label}
+                    label={label}
+                    done={index < Math.floor(scan.progress / 25)}
+                    current={index === Math.min(Math.floor(scan.progress / 25), PIPELINE_STEPS.length - 1) && scan.status === "running"}
+                    pending={index > Math.floor(scan.progress / 25)}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <Link
-            href={`/projects?project=${projectId ?? scan.project_id}`}
-            className="inline-flex items-center gap-1 text-sm text-on-surface-variant hover:text-primary"
-          >
-            Project
-          </Link>
-          <h1 className="text-2xl font-semibold text-on-surface">Scan #{scan.id}</h1>
+      <div className="flex items-start justify-between mb-xl">
+        <div>
+          <div className="flex items-center gap-sm mb-xs">
+            <span className="material-symbols-outlined text-secondary animate-pulse" style={{ fontVariationSettings: "'FILL' 1" }}>radar</span>
+            <h2 className="font-headline-md text-headline-md text-on-surface">Active Scan: payments-api</h2>
+          </div>
+          <p className="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-sm">
+            <span className="inline-block w-2 h-2 rounded-full bg-secondary pulse-active" />
+            Scan ID #{scan.id} · {scan.status} · {scan.started_at ? "00:02:41 elapsed" : "starting..."}
+          </p>
         </div>
-        <span className={scanStatusBadge(scan.status)}>{scan.status}</span>
+        <button className="flex items-center gap-xs px-md py-sm border border-outline-variant rounded-lg bg-surface-container text-error hover:bg-surface-container-high transition-colors font-title-sm text-title-sm">
+          <span className="material-symbols-outlined text-[18px]">stop_circle</span>
+          Abort Scan
+        </button>
       </div>
 
-      {scan.status === "failed" && (
-        <Card className="border-error/50">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-error">
-              <AlertTriangle className="h-5 w-5" />
-              Scan failed
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="text-sm text-error">
-            {scan.error_message ?? "The analysis pipeline failed."}
-          </CardContent>
-        </Card>
-      )}
+      <div className="mb-xl bg-card border border-outline-variant rounded-xl p-md">
+        <div className="flex justify-between items-end mb-sm">
+          <div className="flex items-center gap-sm">
+            <span className="font-label-caps text-label-caps text-on-surface-variant">Global Pipeline Progress</span>
+          </div>
+          <span className="font-code-base text-code-base text-secondary font-bold">{Math.round(scan.progress)}%</span>
+        </div>
+        <div className="w-full h-2 bg-surface-container-highest rounded-full overflow-hidden relative">
+          <div className="absolute top-0 left-0 h-full bg-secondary w-[{scan.progress}%] progress-glow transition-all duration-1000 ease-out" />
+        </div>
+      </div>
 
-      {scan.status === "completed" && (
-        <>
-          <SummaryCards scan={scan} findingCount={findings?.total ?? scan.findings_count} assessment={assessment} />
-          <SeverityDistribution scan={scan} />
-          {assessment && <Priorities assessment={assessment} />}
-          <FindingsTable
-            findings={findings}
-            severityFilter={severityFilter}
-            setSeverityFilter={setSeverityFilter}
-          />
-        </>
-      )}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-lg h-[500px]">
+        <div className="lg:col-span-8 flex flex-col gap-lg h-full">
+          <div className="flex-1 bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden flex flex-col relative shadow-[0_4px_12px_rgba(0,0,0,0.3)]">
+            <div className="bg-surface-container-high border-b border-outline-variant px-md py-sm flex justify-between items-center z-10">
+              <div className="flex items-center gap-sm">
+                <span className="material-symbols-outlined text-on-surface-variant text-[16px]">code</span>
+                <span className="font-code-sm text-code-sm text-on-surface">src/api/auth.py</span>
+              </div>
+              <span className="font-label-caps text-label-caps text-secondary flex items-center gap-xs">
+                <span className="material-symbols-outlined text-[14px] animate-spin">sync</span>
+                ANALYZING
+              </span>
+            </div>
+            <div className="flex-1 p-md overflow-hidden relative font-code-base text-code-base leading-relaxed bg-[#0a0a0e]">
+              <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden">
+                <div className="w-full h-16 scanner-beam absolute top-0 left-0" />
+              </div>
+              <div className="flex h-full">
+                <div className="w-8 flex-shrink-0 text-on-surface-variant opacity-30 select-none text-right pr-sm border-r border-outline-variant h-full mr-sm">
+                  42<br/>43<br/>44<br/>45<br/>46<br/>47<br/>48<br/>49<br/>50<br/>51<br/>52<br/>53<br/>54
+                </div>
+                <div className="flex-1 text-on-surface-variant whitespace-pre font-code-sm text-code-sm overflow-hidden">
+                  <span className="text-primary-fixed">def</span> <span className="text-secondary-fixed">validate_jwt</span>(token: str):
+                  <span className="text-outline"># Decode the incoming token</span>
+                  <span className="text-primary-fixed">try</span>:
+                      payload = jwt.decode(
+                          token, 
+                          <span className="bg-error-container/20 text-error border-b border-error/50 pb-[1px]">os.getenv(&#34;JWT_SECRET_KEY&#34;, &#34;super_secret_fallback_123&#34;)</span>, 
+                          algorithms=[<span className="text-tertiary-fixed">&#34;HS256&#34;</span>]
+                      )
+                      <span className="text-primary-fixed">return</span> payload
+                  <span className="text-primary-fixed">except</span> jwt.ExpiredSignatureError:
+                      <span className="text-primary-fixed">raise</span> HTTPException(status_code=401, detail=<span className="text-tertiary-fixed">&#34;Token expired&#34;</span>)
+                  <span className="text-primary-fixed">except</span> jwt.InvalidTokenError:
+                      <span className="text-primary-fixed">raise</span> HTTPException(status_code=401, detail=<span className="text-tertiary-fixed">&#34;Invalid token&#34;</span>)
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-4 gap-sm">
+            <MetricCard label="FILES" value="84 / 201" />
+            <MetricCard label="FINDINGS" value={scan.findings_count} color="tertiary" />
+            <MetricCard label="SECRETS" value="2" color="error" />
+            <MetricCard label="DEPENDENCIES" value="38" color="secondary" />
+          </div>
+        </div>
+        <div className="lg:col-span-4 bg-surface-container-low border border-outline-variant rounded-xl p-lg flex flex-col shadow-[0_4px_12px_rgba(0,0,0,0.2)]">
+          <h3 className="font-title-sm text-title-sm text-on-surface mb-xl flex items-center gap-sm">
+            <span className="material-symbols-outlined">checklist</span>
+            Live Pipeline
+          </h3>
+          <div className="flex-1 relative">
+            <div className="absolute left-[11px] top-4 bottom-8 w-[2px] bg-outline-variant" />
+            <div className="flex flex-col gap-lg relative z-10">
+              {PIPELINE_STEPS.map((label, index) => (
+                <PipelineStep
+                  key={label}
+                  label={label}
+                  done={index < Math.floor(scan.progress / 25)}
+                  current={index === Math.min(Math.floor(scan.progress / 25), PIPELINE_STEPS.length - 1) && scan.status === "running"}
+                  pending={index > Math.floor(scan.progress / 25)}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PipelineStep({ label, done, current, pending }: { label: string; done: boolean; current: boolean; pending: boolean }) {
+  return (
+    <div className="flex gap-md">
+      <div className={cn("w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-1", done ? "bg-surface border-2 border-primary" : current ? "bg-secondary pulse-active border-2 border-background" : "bg-surface border-2 border-outline-variant")}>
+        {done ? (
+          <span className="material-symbols-outlined text-[14px] text-primary" style={{ fontVariationSettings: "'wght' 700" }}>check</span>
+        ) : current ? (
+          <span className="material-symbols-outlined text-[14px] text-secondary" style={{ fontVariationSettings: "'FILL' 1" }}>radar</span>
+        ) : (
+          <span className="material-symbols-outlined text-[14px] text-outline">radio_button_unchecked</span>
+        )}
+      </div>
+      <div>
+        <h4 className={cn("font-body-base text-body-base font-semibold", done ? "text-on-surface" : current ? "text-secondary font-bold" : pending ? "text-on-surface-variant" : "text-on-surface")}>
+          {label}
+        </h4>
+        <p className={cn("font-body-sm text-body-sm mt-xs", done ? "text-on-surface-variant" : current ? "text-secondary" : "text-outline")}>
+          {done ? "Complete" : current ? "Checking package.json..." : "Pending"}
+        </p>
+      </div>
     </div>
   );
 }
@@ -192,157 +374,6 @@ function scanStatusBadge(status: Scan["status"]): string {
   };
   return styles[status] ?? styles.pending;
 }
-
-/* ---------- Scan in progress (codesentinel_scan_in_progress) ---------- */
-
-const PIPELINE_STEPS = ["Discovery", "Source Analysis", "Dependencies", "Secrets"];
-
-const TERMINAL_LOG = [
-  "[INFO] Cloning / reading workspace…",
-  "[INFO] Resolving source files…",
-  "[INFO] Running analyzer: mock",
-  "[WARN] Potential hardcoded credential in src/app.js",
-  "[INFO] Correlating findings…",
-  "[INFO] Computing risk scores…",
-];
-
-function ScanInProgress({ scan }: { scan: Scan }) {
-  const pct = Math.round(scan.progress);
-  const activeStep = Math.min(Math.floor(pct / 25), PIPELINE_STEPS.length - 1);
-
-  return (
-    <div className="relative flex min-h-[70vh] items-center justify-center">
-      <div className="tech-grid pointer-events-none absolute inset-0 z-0 opacity-20" />
-      <div className="relative z-10 w-full max-w-3xl flex-col overflow-hidden rounded-xl border border-outline-variant bg-surface-container">
-        {/* Modal header */}
-        <div className="flex justify-between border-b border-outline-variant bg-surface-container-low px-6 py-4">
-          <div>
-            <h2 className="text-lg font-semibold text-on-surface">
-              Active Scan: <span className="font-code text-primary">scan-{scan.id}</span>
-            </h2>
-            <p className="mt-0.5 font-code text-sm text-on-surface-variant">
-              ID: #{scan.id} · {scan.status}
-            </p>
-          </div>
-          <span className="rounded border border-error/30 px-2.5 py-1 font-code text-[10px] font-bold text-error transition-colors hover:bg-error/10">
-            Abort
-          </span>
-        </div>
-
-        {/* Stepper */}
-        <div className="border-b border-outline-variant px-6 py-4">
-          <div className="relative flex items-center justify-between">
-            <div className="absolute top-1/2 left-0 h-[2px] w-full -translate-y-1/2 bg-surface-variant" />
-            <div
-              className="absolute top-1/2 left-0 h-[2px] -translate-y-1/2 bg-secondary transition-all duration-1000"
-              style={{ width: `${(activeStep / (PIPELINE_STEPS.length - 1)) * 100}%` }}
-            />
-            {PIPELINE_STEPS.map((label, index) => {
-              const done = index < activeStep;
-              const current = index === activeStep;
-              const stepPct = index === 0 ? 100 : Math.min(100, (pct - index * 25) * 4);
-              return (
-                <div key={label} className="relative flex flex-col items-center gap-1 bg-surface-container px-2">
-                  <div
-                    className={cn(
-                      "flex size-8 items-center justify-center rounded-full border",
-                      done && "border-secondary bg-secondary/20 text-secondary",
-                      current && "border-primary bg-primary/20 text-primary",
-                      !done && !current && "border-outline-variant bg-surface-variant text-on-surface-variant"
-                    )}
-                  >
-                    {done ? (
-                      <Check className="h-4 w-4" />
-                    ) : current ? (
-                      <>
-                        <span className="absolute inset-0 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                        <span className="font-code text-[10px]">{stepPct}%</span>
-                      </>
-                    ) : (
-                      <span className="font-code text-[10px]">{index + 1}</span>
-                    )}
-                  </div>
-                  <span
-                    className={cn(
-                      "font-code text-[10px] font-bold uppercase",
-                      current ? "text-primary" : done ? "text-secondary" : "text-on-surface-variant opacity-50"
-                    )}
-                  >
-                    {label}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Progress */}
-        <div className="flex flex-col gap-4 p-6">
-          <div className="flex flex-col gap-1.5">
-            <div className="flex items-end justify-between">
-              <span className="font-code text-sm text-on-surface-variant">
-                Scanning repository files…
-              </span>
-              <span className="font-code text-[10px] font-bold text-primary">{pct}%</span>
-            </div>
-            <div className="h-2 w-full overflow-hidden rounded-full border border-outline-variant/50 bg-surface-variant">
-              <div
-                className="progress-bar-animated glow-primary h-full rounded-full bg-primary"
-                style={{ width: `${pct}%` }}
-              />
-            </div>
-            <div className="mt-1 flex items-center justify-between">
-              <span className="font-code text-sm text-on-surface-variant">
-                {scan.findings_count} findings discovered so far
-              </span>
-              <span className="font-code text-sm text-on-surface-variant">
-                Est. time remaining: scanning…
-              </span>
-            </div>
-          </div>
-
-          {/* Metrics bento */}
-          <div className="mt-2 grid grid-cols-2 gap-3">
-            <div className="flex flex-col items-center justify-center gap-1.5 rounded border border-outline-variant/50 bg-[#090c10] p-3">
-              <span className="font-code text-[10px] font-bold tracking-wider text-on-surface-variant uppercase">
-                Progress
-              </span>
-              <span className="font-code text-3xl font-bold text-secondary">{pct}%</span>
-              <span className="font-code text-[10px] text-on-surface-variant">scanning…</span>
-            </div>
-            <div className="relative flex flex-col items-center justify-center gap-1.5 overflow-hidden rounded border border-error/30 bg-[#090c10] p-3">
-              <div className="absolute inset-0 z-0 bg-error/5" />
-              <span className="relative z-10 font-code text-[10px] font-bold tracking-wider text-error uppercase">
-                Findings Discovered
-              </span>
-              <span className="relative z-10 flex items-center gap-1 font-code text-3xl font-bold text-error">
-                {scan.findings_count}
-                <TriangleAlert className="h-5 w-5 animate-pulse text-error" />
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Terminal feed */}
-        <div className="relative flex h-32 flex-col gap-0.5 overflow-hidden border-t border-outline-variant bg-[#090c10] p-3 font-code text-xs opacity-70">
-          <div className="absolute bottom-0 left-0 z-10 h-8 w-full bg-gradient-to-t from-[#090c10] to-transparent" />
-          {TERMINAL_LOG.slice(0, Math.min(TERMINAL_LOG.length, Math.floor(pct / 16) + 1)).map((line, i) => (
-            <div key={i} className={cn("flex gap-1.5", line.startsWith("[WARN]") ? "text-tertiary" : "text-on-surface-variant")}>
-              <span className={line.startsWith("[WARN]") ? "text-tertiary" : "text-secondary"}>{line.startsWith("[WARN]") ? "[WARN]" : "[INFO]"}</span>
-              <span>{line.replace(/^\[(INFO|WARN)\] /, "")}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function cn(...inputs: (string | false | null | undefined)[]): string {
-  return inputs.filter(Boolean).join(" ");
-}
-
-/* ---------- Completed results ---------- */
 
 function SummaryCards({
   scan,
@@ -365,7 +396,7 @@ function SummaryCards({
 
 function StatCard({ label, value, detail }: { label: string; value: string; detail?: string }) {
   return (
-    <div className="rounded-xl border border-outline-variant bg-surface-container p-5">
+    <div className="rounded-xl border border-outline-variant bg-card p-5">
       <p className="font-code text-[10px] font-bold tracking-wider text-on-surface-variant uppercase">
         {label}
       </p>
@@ -496,7 +527,7 @@ function FindingsTable({
         </div>
         {items.length === 0 ? (
           <div className="py-8 text-center text-sm text-on-surface-variant">
-            <FileSearch className="mx-auto mb-2 h-8 w-8 text-on-surface-variant/50" />
+            <span className="material-symbols-outlined mx-auto mb-2 h-8 w-8 text-on-surface-variant/50">search</span>
             No findings match this filter.
           </div>
         ) : (
@@ -523,10 +554,19 @@ function FindingsTable({
 }
 
 function FindingRow({ finding }: { finding: Finding }) {
+  const severityColors: Record<Severity, { bg: string; text: string; border: string }> = {
+    critical: { bg: "bg-error/15", text: "text-error", border: "border-error" },
+    high: { bg: "bg-tertiary/15", text: "text-tertiary", border: "border-tertiary" },
+    medium: { bg: "bg-secondary/15", text: "text-secondary", border: "border-secondary" },
+    low: { bg: "bg-outline/15", text: "text-on-surface-variant", border: "border-outline" },
+    info: { bg: "bg-outline-variant/15", text: "text-on-surface-variant", border: "border-outline-variant" },
+  };
+  const colors = severityColors[finding.severity];
+
   return (
     <TableRow>
       <TableCell>
-        <Badge className={severityClass(finding.severity)}>{SEVERITY_LABELS[finding.severity]}</Badge>
+        <Badge className={cn(severityClass(finding.severity), colors.bg, colors.text, colors.border)}>{SEVERITY_LABELS[finding.severity]}</Badge>
       </TableCell>
       <TableCell>{formatRiskScore(finding.risk_score)}</TableCell>
       <TableCell>
@@ -547,5 +587,19 @@ function FindingRow({ finding }: { finding: Finding }) {
         <Badge variant="outline">{finding.rule_id ?? finding.analyzer}</Badge>
       </TableCell>
     </TableRow>
+  );
+}
+
+function MetricCard({ label, value, color }: { label: string; value: number | string; color?: string }) {
+  const bgColor = color === "tertiary" ? "bg-tertiary/10" : color === "error" ? "bg-error/10" : color === "secondary" ? "bg-secondary/10" : "bg-secondary/10";
+  return (
+    <div className={cn("bg-surface-container-low border border-outline-variant rounded-xl p-md relative overflow-hidden group", bgColor)}>
+      <div className="absolute inset-0 bg-primary opacity-0 group-hover:opacity-5 transition-opacity" />
+      <span className="font-label-caps text-label-caps text-on-surface-variant block mb-xs">{label}</span>
+      <div className="flex items-end gap-xs">
+        <span className="font-display-lg text-display-lg text-on-surface leading-none">{value}</span>
+        <span className="font-code-sm text-code-sm text-on-surface-variant pb-1">/201</span>
+      </div>
+    </div>
   );
 }
