@@ -58,13 +58,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {/* Nav Items */}
         <div className="flex-1 overflow-y-auto px-sm space-y-xs">
           {NAV_ITEMS.map((item) => {
-            const active =
-              (item.href === "/" && pathname === "/") ||
-              (item.href === "/scan" && pathname.startsWith("/scan")) ||
-              (item.href === "/finding" && pathname.startsWith("/finding")) ||
-              (item.href === "/projects" &&
-                pathname.startsWith("/projects") &&
-                pathname !== "/projects");
+            // Each item gets its own active-state logic.
+            // Items without their own unique route (sharing href with another
+            // primary item) stay inactive until their pages are built.
+            const active = (() => {
+              if (item.href === "/" && item.label === "Overview")
+                return pathname === "/";
+              if (item.href === "/projects" && item.label === "Projects")
+                return pathname.startsWith("/projects");
+              if (item.href === "/scan" && item.label === "Scans")
+                return pathname.startsWith("/scan");
+              if (item.href === "/finding" && item.label === "Findings")
+                return pathname.startsWith("/finding");
+              // Dependencies, Secrets, Reports, AI Analysis — no unique route yet
+              return false;
+            })();
 
             return (
               <Link
@@ -103,18 +111,35 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
         {/* Footer */}
         <div className="px-sm mt-auto pt-md border-t border-outline-variant space-y-xs">
-          {FOOTER_ITEMS.map((item) => (
-            <Link
-              key={item.label}
-              href={item.href}
-              className="sidebar-inactive flex items-center gap-sm px-md py-sm rounded-lg hover:bg-surface-container-highest"
-            >
-              <span className="material-symbols-outlined text-[20px]">
-                {item.icon}
-              </span>
-              <span className="font-[Inter]">{item.label}</span>
-            </Link>
-          ))}
+          {FOOTER_ITEMS.map((item) => {
+            const active =
+              item.href !== "#" && pathname.startsWith(item.href);
+
+            return (
+              <Link
+                key={item.label}
+                href={item.href}
+                className={cn(
+                  "flex items-center gap-sm px-md py-sm rounded-lg transition-colors",
+                  active
+                    ? "sidebar-active font-semibold"
+                    : "sidebar-inactive hover:bg-surface-container-highest"
+                )}
+              >
+                <span
+                  className="material-symbols-outlined text-[20px]"
+                  style={{
+                    fontVariationSettings: active
+                      ? "'FILL' 1"
+                      : "'FILL' 0",
+                  }}
+                >
+                  {item.icon}
+                </span>
+                <span className="font-[Inter]">{item.label}</span>
+              </Link>
+            );
+          })}
         </div>
       </nav>
 
