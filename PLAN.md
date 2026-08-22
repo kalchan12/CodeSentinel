@@ -10,10 +10,10 @@
 
 ```text
 Phase:
-Phase 1-6 — UI/UX Complete
+Phase 1-6 — UI/UX Complete (polish pass applied)
 
 Task:
-UI redesign per Material Design 3 design system from ~/stitch_codesentinel_security_platform
+Cyberpunk dark palette refinement + sidebar active-state bugfix
 
 Status:
 Completed
@@ -22,10 +22,22 @@ Owner:
 Developer + Agent
 
 Started:
-2026-08-21
+2026-08-22
 
 Dependencies:
 None
+
+Notes:
+- Darkened all surface/background tokens from MD3 purple-tinted to cyberpunk blue-black
+  (#050710 background, #080C14 surface, #0B1018 container-low, #0D1220 container, etc.)
+- Fixed sidebar nav active highlighting — Projects, Overview, Scans, Findings now
+  correctly show active state when their route is matched
+- Removed broken scale(0.95) transform from sidebar-active, replaced with translucent
+  primary tint + subtle inset glow
+- Added active-state support to footer nav items (Settings, Analyzer Status, Logs)
+- Updated scrollbar, card, popover, grid-line tokens to match the new darker palette
+- Fixed New Project dialog modal: resolved translate/transform conflict in CSS causing modal offset and wrapping; applied viewport-safe centering (top: 50%, left: 50%, transform: translate(-50%, -50%)), fixed z-index layering (999/1000), backdrop blur, and width bounds (width: min(92vw, 540px))
+- Refactored Add Project ghost card so the entire card cleanly triggers the dialog
 
 Next:
 Phase 7 — Security-Specific UI (Dependency dashboard, Secrets dashboard, etc.)
