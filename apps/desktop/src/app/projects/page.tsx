@@ -151,13 +151,24 @@ function ProjectCard({ project }: { project: Project }) {
 
 function AddProjectGhostCard() {
   return (
-    <div className="border-2 border-dashed border-outline-variant rounded-xl p-lg flex flex-col items-center justify-center text-center hover:border-primary hover:bg-primary/5 transition-all cursor-pointer min-h-[280px]">
-      <div className="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center mb-md text-on-surface-variant">
-        <span className="material-symbols-outlined text-[24px]">add</span>
-      </div>
-      <h3 className="text-[18px] leading-[24px] font-semibold text-on-surface mb-xs font-[Inter]">New Project</h3>
-      <p className="text-on-surface-variant text-[13px] leading-[18px] font-[Inter] max-w-[200px]">Connect a repository or upload local source code.</p>
-      <NewProjectDialog onCreated={() => window.location.reload()} />
-    </div>
+    <NewProjectDialog
+      onCreated={() => window.location.reload()}
+      trigger={
+        <button
+          type="button"
+          className="border-2 border-dashed border-outline-variant rounded-xl p-lg flex flex-col items-center justify-center text-center hover:border-primary hover:bg-primary/5 transition-all cursor-pointer min-h-[280px] group w-full outline-none focus:border-primary"
+        >
+          <div className="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center mb-md text-on-surface-variant group-hover:text-primary group-hover:bg-primary/10 transition-colors">
+            <span className="material-symbols-outlined text-[24px]">add</span>
+          </div>
+          <h3 className="text-[18px] leading-[24px] font-semibold text-on-surface mb-xs font-[Inter] group-hover:text-primary transition-colors">
+            New Project
+          </h3>
+          <p className="text-on-surface-variant text-[13px] leading-[18px] font-[Inter] max-w-[200px]">
+            Connect a repository or upload local source code.
+          </p>
+        </button>
+      }
+    />
   );
 }
