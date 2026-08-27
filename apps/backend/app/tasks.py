@@ -50,7 +50,8 @@ def run_scan(self, scan_id: int) -> dict:
 
         def progress(done: int, total: int) -> None:
             fraction = (done / total) if total else 0.0
-            scan_service.update_progress(db, scan_id, fraction * 90.0)
+            with SessionLocal() as progress_db:
+                scan_service.update_progress(progress_db, scan_id, fraction * 90.0)
 
     try:
         result = orchestrator.run(
