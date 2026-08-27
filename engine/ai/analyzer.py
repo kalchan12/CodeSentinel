@@ -100,12 +100,54 @@ def _project_structure(root: Path, depth: int) -> list[str]:
     return entries
 
 
+_SKIP_PARTS = {
+    ".git",
+    "node_modules",
+    "vendor",
+    ".venv",
+    "venv",
+    "__pycache__",
+    "dist",
+    "build",
+    "target",
+    ".next",
+}
+_SOURCE_EXTS = {
+    ".py",
+    ".js",
+    ".jsx",
+    ".ts",
+    ".tsx",
+    ".go",
+    ".rs",
+    ".java",
+    ".c",
+    ".cpp",
+    ".h",
+    ".rb",
+    ".php",
+    ".env",
+    ".yml",
+    ".yaml",
+    ".json",
+    ".toml",
+}
+
+
 def _extract_snippets(root: Path, limit: int) -> list[CodeSnippet]:
-    """First ``limit`` source-ish files, capped by CONTEXT_BUDGET_BYTES."""
+    """Extract targeted source-code excerpts, capped by CONTEXT_BUDGET_BYTES."""
     snippets: list[CodeSnippet] = []
     budget = CONTEXT_BUDGET_BYTES
+    if not root.is_dir():
+        return snippets
+
     for path in sorted(root.rglob("*")):
         if not path.is_file():
+            continue
+        if any(part in _SKIP_PARTS for part in path.parts):
+            continue
+        is_dotenv = path.name.lower() == ".env" or path.name.lower().startswith(".env.")
+        if path.suffix.lower() not in _SOURCE_EXTS and not is_dotenv:
             continue
         try:
             content = path.read_text(encoding="utf-8", errors="replace")

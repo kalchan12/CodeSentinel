@@ -231,7 +231,7 @@ _RULES: list[dict[str, object]] = [
     ),
     _rule(
         "javascript",
-        "child_process.exec",
+        "exec",
         FindingCategory.VULNERABILITY,
         Severity.MEDIUM,
         "js-shell-exec",
@@ -240,7 +240,7 @@ _RULES: list[dict[str, object]] = [
     ),
     _rule(
         "javascript",
-        "child_process.execSync",
+        "execSync",
         FindingCategory.VULNERABILITY,
         Severity.MEDIUM,
         "js-shell-exec",
@@ -348,20 +348,21 @@ def _analyze_file(path: Path, root: Path) -> list[Finding]:
 def _walk_calls(root: object, call_type: str) -> list[object]:
     cursor = root.walk()  # type: ignore[attr-defined]
     calls: list[object] = []
-    visited = set()
+    visited_children = False
     while True:
-        node = cursor.node
-        if id(node) not in visited:
-            visited.add(id(node))
-            if node.type == call_type:
-                calls.append(node)
-        if cursor.goto_first_child():
-            continue
+        if not visited_children:
+            if cursor.node.type == call_type:
+                calls.append(cursor.node)
+            if cursor.goto_first_child():
+                continue
         if cursor.goto_next_sibling():
+            visited_children = False
             continue
-        while not cursor.goto_parent():
-            if not cursor.goto_next_sibling():
-                return calls
+        if cursor.goto_parent():
+            visited_children = True
+            continue
+        break
+    return calls
 
 
 def _node_text(node: object, source: bytes) -> str:

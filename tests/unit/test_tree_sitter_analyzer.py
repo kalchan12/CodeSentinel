@@ -91,3 +91,30 @@ def test_skips_vendored_directories(tmp_path: Path) -> None:
     (tmp_path / "node_modules").mkdir()
     (tmp_path / "node_modules" / "bad.js").write_text("eval('x')\n")
     assert TreeSitterAnalyzer().analyze(_context(tmp_path)) == []
+
+
+@pytest.mark.skipif(not TS_AVAILABLE, reason="tree-sitter-language-pack not installed")
+def test_deeply_nested_ast_traversal_regression(tmp_path: Path) -> None:
+    """Regression test ensuring cursor traversal terminates and finds all nested calls."""
+    (tmp_path / "nested.py").write_text(
+        "class A:\n"
+        "    class B:\n"
+        "        def outer(self):\n"
+        "            for i in range(10):\n"
+        "                if i > 5:\n"
+        "                    while True:\n"
+        "                        try:\n"
+        "                            import os\n"
+        "                            os.system('echo nested')\n"
+        "                        except Exception:\n"
+        "                            pass\n"
+        "                        break\n"
+        "        def sibling(self):\n"
+        "            import pickle\n"
+        "            pickle.loads(b'data')\n"
+    )
+    findings = TreeSitterAnalyzer().analyze(_context(tmp_path))
+    rule_ids = {f.rule_id for f in findings}
+    assert "py-shell-injection" in rule_ids
+    assert "py-unsafe-deserialization" in rule_ids
+    assert len(findings) == 2
