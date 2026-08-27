@@ -9,10 +9,10 @@ const NAV_ITEMS = [
   { href: "/projects", label: "Projects", icon: "folder_open" },
   { href: "/scan", label: "Scans", icon: "radar" },
   { href: "/finding", label: "Findings", icon: "security" },
-  { href: "/projects", label: "Dependencies", icon: "inventory_2" },
-  { href: "/projects", label: "Secrets", icon: "lock" },
-  { href: "/projects", label: "Reports", icon: "assessment" },
-  { href: "/projects", label: "AI Analysis", icon: "psychology" },
+  { href: "/dependencies", label: "Dependencies", icon: "inventory_2" },
+  { href: "/secrets", label: "Secrets", icon: "lock" },
+  { href: "/reports", label: "Reports", icon: "assessment" },
+  { href: "/ai-analysis", label: "AI Analysis", icon: "psychology" },
 ];
 
 const FOOTER_ITEMS = [
@@ -58,9 +58,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {/* Nav Items */}
         <div className="flex-1 overflow-y-auto px-sm space-y-xs">
           {NAV_ITEMS.map((item) => {
-            // Each item gets its own active-state logic.
-            // Items without their own unique route (sharing href with another
-            // primary item) stay inactive until their pages are built.
             const active = (() => {
               if (item.href === "/" && item.label === "Overview")
                 return pathname === "/";
@@ -70,7 +67,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 return pathname.startsWith("/scan");
               if (item.href === "/finding" && item.label === "Findings")
                 return pathname.startsWith("/finding");
-              // Dependencies, Secrets, Reports, AI Analysis — no unique route yet
+              if (item.href === "/dependencies" && item.label === "Dependencies")
+                return pathname.startsWith("/dependencies");
+              if (item.href === "/secrets" && item.label === "Secrets")
+                return pathname.startsWith("/secrets");
+              if (item.href === "/reports" && item.label === "Reports")
+                return pathname.startsWith("/reports");
+              if (item.href === "/ai-analysis" && item.label === "AI Analysis")
+                return pathname.startsWith("/ai-analysis");
               return false;
             })();
 
