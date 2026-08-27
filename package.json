@@ -3,6 +3,7 @@
   "private": true,
   "workspaces": ["apps/desktop", "packages/shared/typescript"],
   "scripts": {
+    "dev": "npm run dev:desktop",
     "dev:desktop": "npm run dev -w @codesentinel/desktop",
     "build": "npm run build -w @codesentinel/desktop",
     "lint": "npm run lint -w @codesentinel/desktop",
