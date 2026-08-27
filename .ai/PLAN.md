@@ -6,7 +6,7 @@
 ## Current State
 
 **Current phase:** Phase 1 --- UI Foundation and Product UX\
-**Current task:** Establish design tokens, reusable UI primitives, and complete remaining primary screens (Finding Detail, Dependencies, Secrets, Settings).\
+**Current task:** Finalize Settings view and prepare Native Desktop Integration (Phase 2).\
 **Status:** In progress\
 **Blockers:** None currently known
 
@@ -22,24 +22,23 @@
 
 ## Phase 1 --- UI Foundation and Product UX
 
--   [ ] Establish design tokens and reusable UI primitives.
--   [ ] Implement consistent desktop application shell.
--   [ ] Dashboard
--   [ ] Projects
--   [ ] Project detail
--   [ ] New scan workflow
--   [ ] Scan progress
--   [ ] Findings list/filtering
--   [ ] Finding detail
--   [ ] Dependencies
--   [ ] Secrets
--   [ ] Reports
--   [ ] AI analysis
--   [ ] Settings
--   [ ] Accessibility/HCI review
+-   [x] Establish design tokens and reusable UI primitives.
+-   [x] Implement consistent desktop application shell.
+-   [x] Dashboard (`/`)
+-   [x] Projects (`/projects`)
+-   [x] Project detail (`/projects`)
+-   [x] New scan workflow (`/scan`)
+-   [x] Scan progress (`/scan`)
+-   [x] Findings list/filtering (`/scan`, `/finding`)
+-   [x] Finding detail (`/finding`)
+-   [x] Dependencies (`/dependencies`)
+-   [x] Secrets (`/secrets`)
+-   [x] Reports (`/reports`)
+-   [x] AI analysis (`/ai-analysis`)
+-   [ ] Settings (`/settings`)
+-   [x] Accessibility/HCI review
 
-**Exit criteria:** All primary workflows are usable and visually
-consistent.
+**Exit criteria:** All primary workflows are usable, responsive, and visually consistent.
 
 ## Phase 2 --- Native Desktop Integration
 
