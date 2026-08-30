@@ -39,6 +39,8 @@ def create_project(db: Session, payload: ProjectCreate) -> Project:
 
 
 def _validate_local_path(path: str) -> None:
+    if "\n" in path or "\r" in path or "\0" in path:
+        raise HTTPException(status_code=422, detail="invalid characters in path")
     resolved = Path(path).expanduser().resolve()
     if not resolved.exists():
         raise HTTPException(
@@ -53,6 +55,8 @@ def _validate_local_path(path: str) -> None:
 
 
 def _validate_repo_url(url: str) -> None:
+    if "\n" in url or "\r" in url or "\0" in url or " " in url:
+        raise HTTPException(status_code=422, detail="invalid characters in url")
     parsed = urlparse(url.strip())
     if parsed.scheme not in ("http", "https") or not parsed.netloc:
         raise HTTPException(

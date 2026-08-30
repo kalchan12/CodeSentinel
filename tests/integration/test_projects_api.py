@@ -90,3 +90,41 @@ async def test_get_and_delete(client: AsyncClient, sample_project_dir: Path, cle
 
     gone = await client.get(f"/api/projects/{created['id']}")
     assert gone.status_code == 404
+
+@requires_infrastructure
+async def test_create_project_rejects_control_chars(client: AsyncClient, clean_db) -> None:
+    # Test local path with newline
+    resp1 = await client.post(
+        "/api/projects",
+        json={
+            "name": "Bad Path",
+            "source_type": "local",
+            "local_path": "/valid/path\n/injection",
+        },
+    )
+    assert resp1.status_code == 422
+    assert "invalid characters" in resp1.text.lower()
+
+    # Test repo url with newline
+    resp2 = await client.post(
+        "/api/projects",
+        json={
+            "name": "Bad URL",
+            "source_type": "github",
+            "repo_url": "https://github.com/foo/bar\n--upload-pack",
+        },
+    )
+    assert resp2.status_code == 422
+    assert "invalid characters" in resp2.text.lower()
+
+    # Test repo url with space
+    resp3 = await client.post(
+        "/api/projects",
+        json={
+            "name": "Bad URL Space",
+            "source_type": "github",
+            "repo_url": "https://github.com/foo/bar --upload-pack",
+        },
+    )
+    assert resp3.status_code == 422
+    assert "invalid characters" in resp3.text.lower()
