@@ -16,8 +16,8 @@ const NAV_ITEMS = [
 ];
 
 const FOOTER_ITEMS = [
-  { href: "#", label: "Settings", icon: "settings" },
-  { href: "#", label: "Analyzer Status", icon: "monitor_heart" },
+  { href: "/settings", label: "Settings", icon: "settings" },
+  { href: "/analyzer-status", label: "Analyzer Status", icon: "monitor_heart" },
   { href: "#", label: "Logs", icon: "terminal" },
 ];
 
@@ -177,6 +177,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
           )}
           <div className={cn("flex items-center gap-md", isScanRoute ? "text-on-surface-variant" : "text-secondary")}>
+            <div className="flex items-center gap-2 mr-2 px-3 py-1 bg-surface-container-low border border-outline-variant rounded-full text-xs cursor-pointer hover:bg-surface-container-highest transition-colors group relative" title="AI Assistant: Ready (Local Model)">
+              <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+              <span className="font-[JetBrains_Mono] text-primary">AI Ready</span>
+            </div>
             <button className="hover:text-on-surface hover:bg-surface-container-high p-sm rounded-full transition-colors flex items-center justify-center">
               <span className="material-symbols-outlined">
                 keyboard_command_key
