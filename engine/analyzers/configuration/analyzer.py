@@ -18,6 +18,7 @@ from pathlib import Path
 from engine.core.analyzer import Analyzer
 from engine.core.context import AnalysisContext
 from engine.core.registry import AnalyzerRegistry
+from engine.normalization.configuration import normalize_configuration_finding
 from engine.models.finding import Confidence, Finding, FindingCategory, Severity
 
 #: file kinds scanned by this analyzer
@@ -127,7 +128,7 @@ class ConfigurationAnalyzer(Analyzer):
                     if not pattern.search(line):
                         continue
                     findings.append(
-                        _finding(
+                        normalize_configuration_finding(
                             rule_id=rule_id,
                             title=title,
                             severity=severity,
@@ -173,30 +174,6 @@ def _rules_for(path: Path) -> list[tuple[re.Pattern[str], str, Severity, str, st
     return _GENERIC_RULES
 
 
-def _finding(  # noqa: PLR0913
-    rule_id: str,
-    title: str,
-    severity: Severity,
-    remediation: str,
-    path: str,
-    lines: list[str],
-    line_no: int,
-) -> Finding:
-    return Finding(
-        analyzer="configuration",
-        category=FindingCategory.CONFIGURATION,
-        title=title,
-        description=f"Security-relevant setting matched in {path}:{line_no}.",
-        severity=severity,
-        confidence=Confidence.MEDIUM,
-        file=path,
-        line_start=line_no,
-        line_end=line_no,
-        code_snippet="\n".join(lines[max(0, line_no - SNIPPET_LINES) : line_no + SNIPPET_LINES]),
-        rule_id=rule_id,
-        remediation=remediation,
-        metadata={"rule": rule_id},
-    )
 
 
 AnalyzerRegistry.register(ConfigurationAnalyzer)

@@ -29,21 +29,6 @@ logger = logging.getLogger(__name__)
 
 RULES_DIR = Path(__file__).parent / "rules"
 
-#: semgrep severity -> normalized severity
-_SEVERITY_MAP = {
-    "ERROR": Severity.HIGH,
-    "WARNING": Severity.MEDIUM,
-    "INFO": Severity.LOW,
-}
-
-#: semgrep metadata.category -> Finding category (unsafe defaults to vulnerability).
-_CATEGORY_MAP = {
-    "secrets": FindingCategory.SECRETS,
-    "security": FindingCategory.VULNERABILITY,
-    "correctness": FindingCategory.CODE_QUALITY,
-    "best-practice": FindingCategory.CODE_QUALITY,
-}
-
 #: hard limits so a scan stays bounded on large trees.
 DEFAULT_TIMEOUT_S = 60
 MAX_RULE_FILES = 50
@@ -113,57 +98,10 @@ class SemgrepAnalyzer(Analyzer):
         except json.JSONDecodeError as exc:
             raise AnalyzerError(f"semgrep produced invalid JSON: {exc}") from exc
 
-        return [_to_finding(result) for result in payload.get("results", [])]
+        from engine.normalization.semgrep import normalize_semgrep_finding
+        return [normalize_semgrep_finding(result) for result in payload.get("results", [])]
 
 
-def _to_finding(result: Mapping[str, object]) -> Finding:
-    extra = result.get("extra", {}) or {}
-    metadata = extra.get("metadata", {}) or {}
-    severity = _SEVERITY_MAP.get(str(extra.get("severity", "WARNING")).upper(), Severity.MEDIUM)
-    category = _CATEGORY_MAP.get(
-        str(metadata.get("category", "")).lower(), FindingCategory.VULNERABILITY
-    )
-    check_id = str(result.get("check_id", "semgrep-rule"))
-    path = str(result.get("path", ""))
-    start = result.get("start", {}) or {}
-    end = result.get("end", {}) or {}
-    line_start = start.get("line") if isinstance(start, Mapping) else None
-    line_end = end.get("line") if isinstance(end, Mapping) else None
-    snippet = str(extra.get("lines", "") or "").strip()
-    message = str(extra.get("message", "")).strip() or check_id
-
-    return Finding(
-        analyzer="semgrep",
-        category=category,
-        title=_title_from_rule(check_id),
-        description=message,
-        severity=severity,
-        confidence=Confidence.HIGH,
-        file=path,
-        line_start=line_start,
-        line_end=line_end,
-        code_snippet=snippet or None,
-        rule_id=check_id,
-        evidence={
-            "semgrep_severity": str(extra.get("severity", "")),
-            "rule_category": str(metadata.get("category", "")),
-        },
-        remediation=_remediation_from_metadata(metadata),
-        metadata={"rule": check_id},
-    )
-
-
-def _title_from_rule(check_id: str) -> str:
-    short = check_id.rsplit(".", 1)[-1]
-    return short.replace("-", " ").replace("_", " ").title()
-
-
-def _remediation_from_metadata(metadata: Mapping[str, object]) -> str | None:
-    for key in ("fix", "remediation", "message"):
-        value = metadata.get(key)
-        if value:
-            return str(value)
-    return None
 
 
 AnalyzerRegistry.register(SemgrepAnalyzer)

@@ -21,6 +21,7 @@ from typing import Any, Protocol
 from engine.core.analyzer import Analyzer
 from engine.core.context import AnalysisContext
 from engine.core.registry import AnalyzerRegistry
+from engine.normalization.dependencies import normalize_unpinned_finding, normalize_vuln_finding
 from engine.models.finding import Confidence, Finding, FindingCategory, Severity
 
 logger = logging.getLogger(__name__)
@@ -105,10 +106,10 @@ class DependencyAnalyzer(Analyzer):
 
         findings: list[Finding] = []
         if unpinned:
-            findings.append(_unpinned_finding(unpinned))
+            findings.append(normalize_unpinned_finding(list({d.file for d in unpinned}), len(unpinned)))
 
         for dep, vulns in self._query_osv(pinned):
-            findings.extend(_vuln_findings(dep, vulns))
+            findings.extend([normalize_vuln_finding(dep.name, dep.version, dep.file, dep.line, _ECOSYSTEM[dep.kind], v) for v in vulns])
         return findings
 
     def _query_osv(
@@ -304,100 +305,6 @@ def _parse_name_version_lock(content: str, file: str) -> list[Dependency]:
     return result
 
 
-def _unpinned_finding(unpinned: list[Dependency]) -> Finding:
-    files = sorted({d.file for d in unpinned})
-    return Finding(
-        analyzer="dependencies",
-        category=FindingCategory.DEPENDENCY,
-        title=f"{len(unpinned)} dependencies without exact version pins",
-        description=(
-            "The following manifests contain unpinned version requirements "
-            f"(range, latest or path specs): {', '.join(files)}. Unpinned "
-            "dependencies cannot be checked against the vulnerability feed "
-            "and drift over time."
-        ),
-        severity=Severity.INFO,
-        confidence=Confidence.MEDIUM,
-        file=files[0] if files else "",
-        rule_id="unpinned-dependencies",
-        evidence={"count": len(unpinned), "manifests": files},
-        remediation=(
-            "Pin exact versions (== in pip, exact version in package.json) and use a lockfile."
-        ),
-        metadata={"rule": "unpinned-dependencies"},
-    )
-
-
-def _vuln_findings(dep: Dependency, vulns: list[dict[str, Any]]) -> list[Finding]:
-    findings: list[Finding] = []
-    for vuln in vulns:
-        vuln_id = str(vuln.get("id", "OSV"))
-        severity = _severity(vuln)
-        aliases = [str(a) for a in vuln.get("aliases", []) if isinstance(a, str)]
-        title = vuln.get("summary") or vuln_id
-        fixed = _fixed_version(vuln)
-        remediation = (
-            f"Upgrade {dep.name} to {fixed} or later." if fixed else f"Review advisory {vuln_id}."
-        )
-        findings.append(
-            Finding(
-                analyzer="dependencies",
-                category=FindingCategory.DEPENDENCY,
-                title=f"{dep.name} {dep.version}: {title}",
-                description=(
-                    f"{dep.name} {dep.version} (listed in {dep.file}) is affected by "
-                    f"{vuln_id}{' (' + ', '.join(aliases) + ')' if aliases else ''}. "
-                    f"{title}"
-                ),
-                severity=severity,
-                confidence=Confidence.HIGH,
-                file=dep.file,
-                line_start=dep.line,
-                line_end=dep.line,
-                rule_id=vuln_id,
-                evidence={
-                    "ecosystem": _ECOSYSTEM[dep.kind],
-                    "version": dep.version,
-                    "aliases": aliases,
-                },
-                remediation=remediation,
-                metadata={"rule": "osv-vulnerability", "osv_id": vuln_id},
-            )
-        )
-    return findings
-
-
-def _severity(vuln: dict[str, Any]) -> Severity:
-    best = 0.0
-    for entry in vuln.get("severity", []) or []:
-        if not isinstance(entry, Mapping):
-            continue
-        if entry.get("type") != "CVSS_V3":
-            continue
-        try:
-            best = max(best, float(entry.get("score", 0)))
-        except (TypeError, ValueError):
-            continue
-    if best >= 9.0:
-        return Severity.CRITICAL
-    if best >= 7.0:
-        return Severity.HIGH
-    if best >= 4.0:
-        return Severity.MEDIUM
-    return Severity.LOW if best > 0 else Severity.MEDIUM
-
-
-def _fixed_version(vuln: dict[str, Any]) -> str | None:
-    for affected in vuln.get("affected", []) or []:
-        if not isinstance(affected, Mapping):
-            continue
-        for range_ in affected.get("ranges", []) or []:
-            if not isinstance(range_, Mapping):
-                continue
-            for event in range_.get("events", []) or []:
-                if isinstance(event, Mapping) and event.get("fixed"):
-                    return str(event["fixed"])
-    return None
 
 
 AnalyzerRegistry.register(DependencyAnalyzer)

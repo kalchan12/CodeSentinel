@@ -72,9 +72,9 @@ class AnalysisOrchestrator:
         )
 
         raw_findings: list[Finding] = []
-        try:
-            for i, analyzer in enumerate(self.analyzers):
-                analyzer_started = time.monotonic()
+        for i, analyzer in enumerate(self.analyzers):
+            analyzer_started = time.monotonic()
+            try:
                 analyzer_findings = analyzer.analyze(context)
                 raw_findings.extend(analyzer_findings)
                 logger.info(
@@ -83,11 +83,11 @@ class AnalysisOrchestrator:
                     len(analyzer_findings),
                     time.monotonic() - analyzer_started,
                 )
-                if progress_callback is not None:
-                    progress_callback(i + 1, len(self.analyzers))
-        except Exception:
-            logger.exception("analysis pipeline failed")
-            raise
+            except Exception:
+                logger.exception("analyzer %s failed; continuing with remaining analyzers", analyzer.name)
+            
+            if progress_callback is not None:
+                progress_callback(i + 1, len(self.analyzers))
 
         findings = self.normalizer.normalize(raw_findings)
         correlation = self.correlator.correlate(findings)
