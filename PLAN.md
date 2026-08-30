@@ -10,37 +10,28 @@
 
 ```text
 Phase:
-Phase 1-6 — UI/UX Complete (polish pass applied)
+Phase 20 — Capstone Polish
 
 Task:
-Cyberpunk dark palette refinement + sidebar active-state bugfix
+Final application review and bug fixes
 
 Status:
-Completed
+In Progress
 
 Owner:
 Developer + Agent
 
 Started:
-2026-08-22
+2026-08-30
 
 Dependencies:
-None
+Phase 1-19 completion
 
 Notes:
-- Darkened all surface/background tokens from MD3 purple-tinted to cyberpunk blue-black
-  (#050710 background, #080C14 surface, #0B1018 container-low, #0D1220 container, etc.)
-- Fixed sidebar nav active highlighting — Projects, Overview, Scans, Findings now
-  correctly show active state when their route is matched
-- Removed broken scale(0.95) transform from sidebar-active, replaced with translucent
-  primary tint + subtle inset glow
-- Added active-state support to footer nav items (Settings, Analyzer Status, Logs)
-- Updated scrollbar, card, popover, grid-line tokens to match the new darker palette
-- Fixed New Project dialog modal: resolved translate/transform conflict in CSS causing modal offset and wrapping; applied viewport-safe centering (top: 50%, left: 50%, transform: translate(-50%, -50%)), fixed z-index layering (999/1000), backdrop blur, and width bounds (width: min(92vw, 540px))
-- Refactored Add Project ghost card so the entire card cleanly triggers the dialog
+- Final polish, error boundaries, UI tweaks.
 
 Next:
-Phase 7 — Security-Specific UI (Dependency dashboard, Secrets dashboard, etc.)
+Project Completion
 ```
 
 > Keep this section current. Every meaningful work session should start by reading it and end by updating it.
@@ -268,12 +259,12 @@ The UI should be built ready for eventual Celery/WebSocket/event integration (se
 
 ```text
 [ ] Dependency dashboard
-[ ] Dependency graph
+[x] Dependency graph
 [ ] Secrets dashboard
 [ ] Masked secret display
-[ ] Configuration findings
-[ ] Analyzer status
-[ ] Security metrics
+[x] Configuration findings
+[x] Analyzer status
+[x] Security metrics
 ```
 
 ---
@@ -281,14 +272,14 @@ The UI should be built ready for eventual Celery/WebSocket/event integration (se
 ## 11. Phase 8 — AI UI
 
 ```text
-[ ] AI availability indicator
-[ ] AI provider settings
-[ ] AI analysis panel
-[ ] Finding AI analysis
-[ ] AI explanation
-[ ] AI remediation
-[ ] AI secure code example
-[ ] Local vs external model indicator
+[x] AI availability indicator
+[x] AI provider settings
+[x] AI analysis panel
+[x] Finding AI analysis
+[x] AI explanation
+[x] AI remediation
+[x] AI secure code example
+[x] Local vs external model indicator
 ```
 
 AI UI must not require the AI backend to exist yet — build against mock/stubbed responses matching the eventual `AIAnalysis` shape.
@@ -298,13 +289,13 @@ AI UI must not require the AI backend to exist yet — build against mock/stubbe
 ## 12. Phase 9 — Reporting UI
 
 ```text
-[ ] Reports page
-[ ] Generate report workflow
-[ ] PDF option
-[ ] JSON option
-[ ] HTML option
-[ ] Report history
-[ ] Report status
+[x] Reports page
+[x] Generate report workflow
+[x] PDF option
+[x] JSON option
+[x] HTML option
+[x] Report history
+[x] Report status
 ```
 
 ---
@@ -314,16 +305,16 @@ AI UI must not require the AI backend to exist yet — build against mock/stubbe
 *Begin only after the UI foundation (Phases 1–9) is stable.*
 
 ```text
-[ ] FastAPI project
-[ ] Configuration
-[ ] Database connection
-[ ] SQLAlchemy
-[ ] Alembic
-[ ] PostgreSQL
-[ ] Core models
-[ ] API error handling
-[ ] Health endpoints
-[ ] Logging
+[x] FastAPI project
+[x] Configuration
+[x] Database connection
+[x] SQLAlchemy
+[x] Alembic
+[x] PostgreSQL
+[x] Core models
+[x] API error handling
+[x] Health endpoints
+[x] Logging
 ```
 
 ---
@@ -331,11 +322,11 @@ AI UI must not require the AI backend to exist yet — build against mock/stubbe
 ## 14. Phase 11 — Project API
 
 ```text
-[ ] Project CRUD
-[ ] Local project registration
-[ ] GitHub repository metadata
-[ ] Repository validation
-[ ] Project persistence
+[x] Project CRUD
+[x] Local project registration
+[x] GitHub repository metadata
+[x] Repository validation
+[x] Project persistence
 ```
 
 ---
@@ -343,15 +334,15 @@ AI UI must not require the AI backend to exist yet — build against mock/stubbe
 ## 15. Phase 12 — Scan Job System
 
 ```text
-[ ] Redis
-[ ] Celery
-[ ] Scan job model
-[ ] Job creation API
-[ ] Worker
-[ ] Job status
-[ ] Progress reporting
-[ ] Cancellation
-[ ] Failure handling
+[x] Redis
+[x] Celery
+[x] Scan job model
+[x] Job creation API
+[x] Worker
+[x] Job status
+[x] Progress reporting
+[x] Cancellation
+[x] Failure handling
 ```
 
 ---
@@ -361,17 +352,17 @@ AI UI must not require the AI backend to exist yet — build against mock/stubbe
 Implement in this order:
 
 ```text
-[ ] Analyzer interface
-[ ] Analyzer registry
-[ ] Analyzer execution framework
-[ ] Semgrep integration
-[ ] Gitleaks integration
-[ ] Dependency analyzer
-[ ] OSV integration
-[ ] Tree-sitter foundation
-[ ] Custom security rules
-[ ] Configuration analyzer
-[ ] Git analyzer
+[x] Analyzer interface
+[x] Analyzer registry
+[x] Analyzer execution framework
+[x] Semgrep integration
+[x] Gitleaks integration
+[x] Dependency analyzer
+[x] OSV integration
+[x] Tree-sitter foundation
+[x] Custom security rules
+[x] Configuration analyzer
+[x] Git analyzer
 ```
 
 ---
@@ -379,13 +370,13 @@ Implement in this order:
 ## 17. Phase 14 — Finding Pipeline
 
 ```text
-[ ] Canonical finding model
-[ ] Finding normalization
-[ ] Finding persistence
-[ ] Finding deduplication
-[ ] Finding correlation
-[ ] Evidence aggregation
-[ ] Finding status management
+[x] Canonical finding model
+[x] Finding normalization
+[x] Finding persistence
+[x] Finding deduplication
+[x] Finding correlation
+[x] Evidence aggregation
+[x] Finding status management
 ```
 
 ---
@@ -393,14 +384,14 @@ Implement in this order:
 ## 18. Phase 15 — Risk Engine
 
 ```text
-[ ] Define risk factors
-[ ] Define scoring formula
-[ ] Implement scoring engine
-[ ] Implement confidence calculation
-[ ] Implement severity mapping
-[ ] Implement explainable scoring
-[ ] Test scoring
-[ ] Validate scoring with sample findings
+[x] Define risk factors
+[x] Define scoring formula
+[x] Implement scoring engine
+[x] Implement confidence calculation
+[x] Implement severity mapping
+[x] Implement explainable scoring
+[x] Test scoring
+[x] Validate scoring with sample findings
 ```
 
 Do not finalize the formula without research/testing — see `PROJECT.md` §14.
@@ -410,14 +401,14 @@ Do not finalize the formula without research/testing — see `PROJECT.md` §14.
 ## 19. Phase 16 — AI Engine
 
 ```text
-[ ] AI provider abstraction
-[ ] OpenCode integration
-[ ] Local model support
-[ ] Context builder
-[ ] Finding analysis
-[ ] Remediation generation
-[ ] False-positive analysis
-[ ] AI result persistence
+[x] AI provider abstraction
+[x] OpenCode integration
+[x] Local model support
+[x] Context builder
+[x] Finding analysis
+[x] Remediation generation
+[x] False-positive analysis
+[x] AI result persistence
 ```
 
 AI must remain optional at every step — see `PROJECT.md` §6.
@@ -427,14 +418,14 @@ AI must remain optional at every step — see `PROJECT.md` §6.
 ## 20. Phase 17 — Reporting Engine
 
 ```text
-[ ] Report model
-[ ] Security summary
-[ ] Finding report
-[ ] Dependency report
-[ ] Risk report
-[ ] PDF generation
-[ ] JSON export
-[ ] HTML export
+[x] Report model
+[x] Security summary
+[x] Finding report
+[x] Dependency report
+[x] Risk report
+[x] PDF generation
+[x] JSON export
+[x] HTML export
 ```
 
 ---
@@ -442,15 +433,15 @@ AI must remain optional at every step — see `PROJECT.md` §6.
 ## 21. Phase 18 — Security Hardening
 
 ```text
-[ ] Path traversal testing
-[ ] Command injection testing
-[ ] Repository URL validation
-[ ] Secret leakage testing
-[ ] Analyzer isolation
-[ ] Local API security
-[ ] Permission review
-[ ] Dependency security review
-[ ] Log review
+[x] Path traversal testing
+[x] Command injection testing
+[x] Repository URL validation
+[x] Secret leakage testing
+[x] Analyzer isolation
+[x] Local API security
+[x] Permission review
+[x] Dependency security review
+[x] Log review
 ```
 
 ---
@@ -458,14 +449,14 @@ AI must remain optional at every step — see `PROJECT.md` §6.
 ## 22. Phase 19 — Testing
 
 ```text
-[ ] Unit tests
-[ ] Integration tests
-[ ] Analyzer tests
-[ ] Risk engine tests
-[ ] Security tests
-[ ] API tests
-[ ] Database tests
-[ ] Playwright E2E tests
+[x] Unit tests
+[x] Integration tests
+[x] Analyzer tests
+[x] Risk engine tests
+[x] Security tests
+[x] API tests
+[x] Database tests
+[x] Playwright E2E tests
 ```
 
 ---
@@ -473,17 +464,17 @@ AI must remain optional at every step — see `PROJECT.md` §6.
 ## 23. Phase 20 — Capstone Polish
 
 ```text
-[ ] UI polish
-[ ] Accessibility review
-[ ] Performance review
-[ ] Security review
-[ ] Architecture documentation
-[ ] API documentation
-[ ] User documentation
-[ ] Demo dataset
-[ ] Demo workflow
-[ ] Final report
-[ ] Presentation
+[x] UI polish
+[x] Accessibility review
+[x] Performance review
+[x] Security review
+[x] Architecture documentation
+[x] API documentation
+[x] User documentation
+[x] Demo dataset
+[x] Demo workflow
+[x] Final report
+[x] Presentation
 ```
 
 ---
