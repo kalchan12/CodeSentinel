@@ -418,7 +418,7 @@ export const DEMO_REPORT: ReportSummary = {
 
 export interface AIInsightItem {
   id: string;
-  category: "vulnerability" | "architecture" | "secret" | "refactor";
+  category: "vulnerability" | "architecture" | "secret" | "refactor" | "configuration";
   title: string;
   severity: "critical" | "high" | "medium" | "low";
   confidence: "high" | "medium" | "low";
@@ -464,7 +464,7 @@ export const DEMO_AI_INSIGHTS: AIInsightItem[] = [
   },
   {
     id: "ai-cors-wildcard",
-    category: "refactor",
+    category: "configuration",
     title: "Overly Permissive CORS Middleware Configuration",
     severity: "medium",
     confidence: "medium",
@@ -479,3 +479,34 @@ export const DEMO_AI_INSIGHTS: AIInsightItem[] = [
   },
 ];
 
+
+export interface ConfigItem {
+  id: string;
+  file: string;
+  line: number;
+  type: string;
+  status: "active" | "resolved" | "ignored";
+  severity: "critical" | "high" | "medium" | "low" | "info";
+  description: string;
+}
+
+export const DEMO_CONFIGS: ConfigItem[] = [
+  {
+    id: "cfg-1",
+    file: "docker-compose.yml",
+    line: 12,
+    type: "Insecure Defaults",
+    status: "active",
+    severity: "medium",
+    description: "Postgres container is running without a configured volume, risking data loss.",
+  },
+  {
+    id: "cfg-2",
+    file: "nginx.conf",
+    line: 45,
+    type: "Missing Headers",
+    status: "active",
+    severity: "low",
+    description: "Missing Strict-Transport-Security header.",
+  }
+];
