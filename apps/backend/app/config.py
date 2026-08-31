@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     data_dir: Path = Path.home() / ".codesentinel"
 
     #: Comma-separated analyzer names enabled for scans.
-    enabled_analyzers: str = "mock"
+    enabled_analyzers: str = "semgrep,gitleaks"
 
     #: Comma-separated CORS origins (Next.js dev server, Tauri, custom scheme).
     cors_origins: str = "http://localhost:3000,http://localhost:3001,http://localhost:1420,tauri://localhost,http://tauri.localhost"

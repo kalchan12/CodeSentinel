@@ -180,36 +180,20 @@ function ScanDashboard({
                 <div className="bg-surface-container-high border-b border-outline-variant px-md py-sm flex justify-between items-center z-10">
                   <div className="flex items-center gap-sm">
                     <span className="material-symbols-outlined text-on-surface-variant text-[16px]">code</span>
-                    <span className="text-[11px] leading-[16px] text-on-surface font-[JetBrains_Mono]">src/api/auth.py</span>
+                    <span className="text-[11px] leading-[16px] text-on-surface font-[JetBrains_Mono]">Analyzing Codebase...</span>
                   </div>
                   <span className="text-[10px] leading-[12px] tracking-[0.08em] font-bold text-secondary flex items-center gap-xs font-[JetBrains_Mono]">
                   <span className="material-symbols-outlined text-[14px] animate-spin">sync</span>
                   ANALYZING
                 </span>
               </div>
-              <div className="flex-1 p-md overflow-hidden relative text-[13px] leading-[20px] text-on-surface-variant whitespace-pre font-[JetBrains_Mono] bg-background">
+              <div className="flex-1 p-md flex items-center justify-center relative overflow-hidden bg-background">
                 <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden">
-                  <div className="w-full h-16 scanner-beam absolute top-0 left-0" />
+                  <div className="w-full h-32 scanner-beam absolute top-0 left-0" />
                 </div>
-                <div className="flex h-full">
-                  <div className="w-8 flex-shrink-0 text-on-surface-variant opacity-30 select-none text-right pr-sm border-r border-outline-variant h-full mr-sm text-[11px] leading-[16px] font-[JetBrains_Mono]">
-                    42<br/>43<br/>44<br/>45<br/>46<br/>47<br/>48<br/>49<br/>50<br/>51<br/>52<br/>53<br/>54
-                  </div>
-                  <div className="flex-1 text-on-surface-variant whitespace-pre text-[11px] leading-[16px] overflow-hidden font-[JetBrains_Mono]">
-                    <span className="text-primary-fixed">def</span> <span className="text-secondary-fixed">validate_jwt</span>(token: str):
-                    <span className="text-outline"># Decode the incoming token</span>
-                    <span className="text-primary-fixed">try</span>:
-                        payload = jwt.decode(
-                            token, 
-                            <span className="bg-error-container/20 text-error border-b border-error/50 pb-[1px]">os.getenv(&#34;JWT_SECRET_KEY&#34;, &#34;&lt;redacted&gt;&#34;)</span>, 
-                            algorithms=[<span className="text-tertiary-fixed">&#34;HS256&#34;</span>]
-                        )
-                        <span className="text-primary-fixed">return</span> payload
-                    <span className="text-primary-fixed">except</span> jwt.ExpiredSignatureError:
-                        <span className="text-primary-fixed">raise</span> HTTPException(status_code=401, detail=<span className="text-tertiary-fixed">&#34;Token expired&#34;</span>)
-                    <span className="text-primary-fixed">except</span> jwt.InvalidTokenError:
-                        <span className="text-primary-fixed">raise</span> HTTPException(status_code=401, detail=<span className="text-tertiary-fixed">&#34;Invalid token&#34;</span>)
-                  </div>
+                <div className="flex flex-col items-center gap-4 text-on-surface-variant">
+                  <span className="material-symbols-outlined text-4xl animate-spin text-secondary">sync</span>
+                  <p className="font-code text-sm animate-pulse">Running security analyzers on your project...</p>
                 </div>
               </div>
             </div>
