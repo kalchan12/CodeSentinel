@@ -12,6 +12,11 @@ else
   echo "[codesentinel] no .env found — using built-in defaults (see docs/environment.md)"
 fi
 
+echo "[codesentinel] cleaning up orphaned ports..."
+fuser -k 8000/tcp 2>/dev/null || true
+fuser -k 3000/tcp 2>/dev/null || true
+sleep 1
+
 echo "[codesentinel] starting backend (FastAPI on :8000)"
 cd apps/backend
 PYTHONPATH=. ../../.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload &
