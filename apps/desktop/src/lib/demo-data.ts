@@ -482,31 +482,60 @@ export const DEMO_AI_INSIGHTS: AIInsightItem[] = [
 
 export interface ConfigItem {
   id: string;
+  ruleId: string;
+  title: string;
   file: string;
   line: number;
   type: string;
   status: "active" | "resolved" | "ignored";
   severity: "critical" | "high" | "medium" | "low" | "info";
   description: string;
+  remediation?: string;
+  codeSnippet?: string;
+  detectedAt?: string;
 }
 
 export const DEMO_CONFIGS: ConfigItem[] = [
   {
     id: "cfg-1",
+    ruleId: "cfg-docker-no-volume",
+    title: "Postgres Container Missing Persistent Volume",
     file: "docker-compose.yml",
     line: 12,
     type: "Insecure Defaults",
     status: "active",
     severity: "medium",
     description: "Postgres container is running without a configured volume, risking data loss.",
+    remediation: "Mount a named volume or host directory under /var/lib/postgresql/data.",
+    codeSnippet: "image: postgres:16-alpine",
+    detectedAt: "2026-08-30T10:00:00Z",
   },
   {
     id: "cfg-2",
+    ruleId: "cfg-nginx-missing-hsts",
+    title: "Missing Strict-Transport-Security Header",
     file: "nginx.conf",
     line: 45,
     type: "Missing Headers",
     status: "active",
     severity: "low",
-    description: "Missing Strict-Transport-Security header.",
-  }
+    description: "Missing Strict-Transport-Security header in HTTPS server block.",
+    remediation: 'Add \'add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;\'',
+    codeSnippet: "server { listen 443 ssl; }",
+    detectedAt: "2026-08-30T10:05:00Z",
+  },
+  {
+    id: "cfg-3",
+    ruleId: "cfg-fastapi-cors-wildcard",
+    title: "Overly Permissive CORS Origin",
+    file: "apps/backend/app/main.py",
+    line: 28,
+    type: "Open CORS",
+    status: "active",
+    severity: "high",
+    description: "Wildcard CORS origin '*' used with credentials enabled.",
+    remediation: "Specify explicit trusted origins in CORS middleware settings.",
+    codeSnippet: "allow_origins=['*'], allow_credentials=True",
+    detectedAt: "2026-08-30T10:10:00Z",
+  },
 ];

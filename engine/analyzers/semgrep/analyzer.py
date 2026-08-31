@@ -25,6 +25,8 @@ from engine.core.errors import AnalyzerError, AnalyzerNotAvailableError
 from engine.core.registry import AnalyzerRegistry
 from engine.models.finding import Confidence, Finding, FindingCategory, Severity
 
+from engine.normalization.semgrep import normalize_semgrep_finding as _to_finding
+
 logger = logging.getLogger(__name__)
 
 RULES_DIR = Path(__file__).parent / "rules"

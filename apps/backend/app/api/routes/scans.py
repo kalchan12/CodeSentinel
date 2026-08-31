@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -26,6 +26,7 @@ router = APIRouter(tags=["scans"])
 def create_scan(
     project_id: int,
     payload: ScanCreate,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
 ) -> ScanRead:
     if project_service.get_project(db, project_id) is None:
@@ -36,8 +37,8 @@ def create_scan(
     from app.tasks import run_scan
 
     try:
-        run_scan.delay(scan.id)
-    except Exception as exc:  # noqa: BLE001 - broker unreachable (worker down)
+        background_tasks.add_task(run_scan, scan.id)
+    except Exception as exc:
         logger.exception("failed to enqueue scan %d", scan.id)
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,

@@ -43,6 +43,8 @@ class ProjectRead(BaseModel):
     scan_count: int = 0
     last_scan_status: str | None = None
     last_scan_id: int | None = None
+    last_scan_score: float | None = None
+    last_scan_findings_count: int | None = None
     created_at: datetime
 
     @classmethod
@@ -57,5 +59,7 @@ class ProjectRead(BaseModel):
             scan_count=scan_count,
             last_scan_status=last_scan.status if last_scan else None,
             last_scan_id=last_scan.id if last_scan else None,
+            last_scan_score=last_scan.risk_score if last_scan else None,
+            last_scan_findings_count=last_scan.findings_count if last_scan else None,
             created_at=project.created_at,
         )

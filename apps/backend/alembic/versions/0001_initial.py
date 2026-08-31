@@ -9,7 +9,6 @@ from collections.abc import Sequence
 
 import sqlalchemy as sa
 from alembic import op
-from sqlalchemy.dialects import postgresql
 
 revision: str = "0001"
 down_revision: str | None = None
@@ -29,13 +28,13 @@ def upgrade() -> None:
         sa.Column(
             "created_at",
             sa.DateTime(timezone=True),
-            server_default=sa.text("now()"),
+            server_default=sa.text("CURRENT_TIMESTAMP"),
             nullable=False,
         ),
         sa.Column(
             "updated_at",
             sa.DateTime(timezone=True),
-            server_default=sa.text("now()"),
+            server_default=sa.text("CURRENT_TIMESTAMP"),
             nullable=False,
         ),
     )
@@ -49,13 +48,13 @@ def upgrade() -> None:
         sa.Column("celery_task_id", sa.String(length=64), nullable=True),
         sa.Column("error_message", sa.Text(), nullable=True),
         sa.Column("findings_count", sa.Integer(), nullable=False),
-        sa.Column("correlation", postgresql.JSON(astext_type=sa.Text()), nullable=True),
+        sa.Column("correlation", sa.JSON(), nullable=True),
         sa.Column("started_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("completed_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column(
             "created_at",
             sa.DateTime(timezone=True),
-            server_default=sa.text("now()"),
+            server_default=sa.text("CURRENT_TIMESTAMP"),
             nullable=False,
         ),
         sa.ForeignKeyConstraint(
@@ -71,7 +70,7 @@ def upgrade() -> None:
 
     op.create_table(
         "findings",
-        sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
+        sa.Column("id", sa.Uuid(), primary_key=True),
         sa.Column("scan_id", sa.Integer(), nullable=False),
         sa.Column("analyzer", sa.String(length=64), nullable=False),
         sa.Column("category", sa.String(length=32), nullable=False),
@@ -85,15 +84,15 @@ def upgrade() -> None:
         sa.Column("line_end", sa.Integer(), nullable=True),
         sa.Column("code_snippet", sa.Text(), nullable=True),
         sa.Column("rule_id", sa.String(length=128), nullable=True),
-        sa.Column("evidence", postgresql.JSON(astext_type=sa.Text()), nullable=True),
-        sa.Column("metadata", postgresql.JSON(astext_type=sa.Text()), nullable=True),
+        sa.Column("evidence", sa.JSON(), nullable=True),
+        sa.Column("metadata", sa.JSON(), nullable=True),
         sa.Column("remediation", sa.Text(), nullable=True),
         sa.Column("risk_score", sa.Float(), nullable=True),
         sa.Column("risk_level", sa.String(length=16), nullable=True),
         sa.Column(
             "created_at",
             sa.DateTime(timezone=True),
-            server_default=sa.text("now()"),
+            server_default=sa.text("CURRENT_TIMESTAMP"),
             nullable=False,
         ),
         sa.ForeignKeyConstraint(
@@ -116,11 +115,11 @@ def upgrade() -> None:
         sa.Column("version", sa.String(length=64), nullable=True),
         sa.Column("ecosystem", sa.String(length=64), nullable=True),
         sa.Column("status", sa.String(length=16), nullable=False),
-        sa.Column("advisory_ids", postgresql.JSON(astext_type=sa.Text()), nullable=True),
+        sa.Column("advisory_ids", sa.JSON(), nullable=True),
         sa.Column(
             "created_at",
             sa.DateTime(timezone=True),
-            server_default=sa.text("now()"),
+            server_default=sa.text("CURRENT_TIMESTAMP"),
             nullable=False,
         ),
         sa.ForeignKeyConstraint(
@@ -140,13 +139,13 @@ def upgrade() -> None:
         sa.Column("overall_level", sa.String(length=16), nullable=False),
         sa.Column("algorithm", sa.String(length=64), nullable=True),
         sa.Column("rationale", sa.Text(), nullable=True),
-        sa.Column("breakdown", postgresql.JSON(astext_type=sa.Text()), nullable=True),
-        sa.Column("top_priorities", postgresql.JSON(astext_type=sa.Text()), nullable=True),
-        sa.Column("finding_risks", postgresql.JSON(astext_type=sa.Text()), nullable=True),
+        sa.Column("breakdown", sa.JSON(), nullable=True),
+        sa.Column("top_priorities", sa.JSON(), nullable=True),
+        sa.Column("finding_risks", sa.JSON(), nullable=True),
         sa.Column(
             "created_at",
             sa.DateTime(timezone=True),
-            server_default=sa.text("now()"),
+            server_default=sa.text("CURRENT_TIMESTAMP"),
             nullable=False,
         ),
         sa.ForeignKeyConstraint(
@@ -166,13 +165,13 @@ def upgrade() -> None:
         sa.Column("provider", sa.String(length=64), nullable=False),
         sa.Column("model", sa.String(length=128), nullable=True),
         sa.Column("status", sa.String(length=32), nullable=False),
-        sa.Column("input_summary", postgresql.JSON(astext_type=sa.Text()), nullable=True),
-        sa.Column("output", postgresql.JSON(astext_type=sa.Text()), nullable=True),
+        sa.Column("input_summary", sa.JSON(), nullable=True),
+        sa.Column("output", sa.JSON(), nullable=True),
         sa.Column("error_message", sa.Text(), nullable=True),
         sa.Column(
             "created_at",
             sa.DateTime(timezone=True),
-            server_default=sa.text("now()"),
+            server_default=sa.text("CURRENT_TIMESTAMP"),
             nullable=False,
         ),
         sa.ForeignKeyConstraint(

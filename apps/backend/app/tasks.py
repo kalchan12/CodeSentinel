@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import logging
 
-from app.celery_app import celery_app
+
 from app.db.session import SessionLocal
 from app.services import scan_service
 import engine.analyzers  # noqa: F401 - imports register analyzers in AnalyzerRegistry
@@ -20,8 +20,9 @@ from engine.models.source import ProjectSource, SourceType
 logger = logging.getLogger(__name__)
 
 
-@celery_app.task(name="scans.run_scan", bind=True, max_retries=0)
-def run_scan(self, scan_id: int) -> dict:
+import uuid
+
+def run_scan(scan_id: int) -> dict:
     """Run one full analysis pipeline for ``scan_id``."""
     from app.config import settings
 
@@ -41,7 +42,7 @@ def run_scan(self, scan_id: int) -> dict:
             local_path=project.local_path,
             repo_url=project.repo_url,
         )
-        scan_service.start_scan(db, scan_id, self.request.id)
+        scan_service.start_scan(db, scan_id, str(uuid.uuid4()))
 
         orchestrator = build_orchestrator(
             enabled_analyzers=settings.analyzer_list,
