@@ -24,9 +24,7 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     api_prefix: str = "/api"
 
-    database_url: str = "postgresql+psycopg://codesentinel:codesentinel@localhost:5432/codesentinel"
-    redis_url: str = "redis://localhost:6379/0"
-
+    database_url: str = f"sqlite:///{Path.home()}/.codesentinel/codesentinel.db"
     #: Local-first workspace: clones and local data live here.
     data_dir: Path = Path.home() / ".codesentinel"
 
