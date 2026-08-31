@@ -25,6 +25,8 @@ from engine.core.errors import AnalyzerError, AnalyzerNotAvailableError
 from engine.core.registry import AnalyzerRegistry
 from engine.models.finding import Confidence, Finding, FindingCategory, Severity
 
+from engine.normalization.gitleaks import normalize_gitleaks_finding as _to_finding
+
 logger = logging.getLogger(__name__)
 
 DEFAULT_TIMEOUT_S = 120
