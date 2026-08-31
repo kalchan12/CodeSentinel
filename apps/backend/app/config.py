@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     enabled_analyzers: str = "mock"
 
     #: Comma-separated CORS origins (Next.js dev server, Tauri, custom scheme).
-    cors_origins: str = "http://localhost:3000,http://localhost:1420,tauri://localhost"
+    cors_origins: str = "http://localhost:3000,http://localhost:3001,http://localhost:1420,tauri://localhost,http://tauri.localhost"
 
     @property
     def workspace_root(self) -> Path:
