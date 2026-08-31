@@ -52,7 +52,7 @@ function ProjectList() {
     try {
       setProjects(await api.listProjects());
     } catch {
-      setProjects(DEMO_PROJECTS);
+      setProjects([]);
     }
   }, []);
 
@@ -84,12 +84,8 @@ function ProjectList() {
 }
 
 function ProjectCard({ project }: { project: Project }) {
-  const score = project.id === 1 ? 72 : project.id === 2 ? 91 : project.id === 3 ? 85 : 72;
-  const findings = project.id === 1
-    ? { critical: 2, high: 4, medium: 6 }
-    : project.id === 3
-      ? { critical: 0, high: 3, medium: 9 }
-      : { critical: 0, high: 0, medium: 0 };
+  const score = project.last_scan_score !== null ? Math.round(project.last_scan_score) : "—";
+  const findingsCount = project.last_scan_findings_count ?? 0;
 
   return (
     <div className="bg-surface-container-low border border-outline-variant rounded-xl p-lg tech-shadow hover:border-primary/50 transition-colors group cursor-pointer relative overflow-hidden">
@@ -116,7 +112,7 @@ function ProjectCard({ project }: { project: Project }) {
         <div className="bg-background border border-outline-variant rounded-lg p-sm flex items-center justify-between">
           <span className="text-on-surface-variant text-[10px] leading-[12px] tracking-[0.08em] font-bold font-[JetBrains_Mono] uppercase">Security Score</span>
           <div className="flex items-center gap-1">
-            <span className={cn("text-[13px] leading-[20px] font-[JetBrains_Mono]", score >= 85 ? "text-secondary" : "text-tertiary")}>{score}</span>
+            <span className={cn("text-[13px] leading-[20px] font-[JetBrains_Mono]", project.last_scan_score && project.last_scan_score >= 85 ? "text-secondary" : "text-tertiary")}>{score}</span>
             <span className="text-[11px] leading-[16px] text-on-surface-variant font-[JetBrains_Mono]">/100</span>
           </div>
         </div>
@@ -124,24 +120,20 @@ function ProjectCard({ project }: { project: Project }) {
       <div className="mb-md relative z-10">
         <span className="text-on-surface-variant text-[10px] leading-[12px] tracking-[0.08em] font-bold font-[JetBrains_Mono] uppercase block mb-2">Findings</span>
         <div className="flex gap-2">
-          <div className="flex items-center gap-1 bg-error/20 px-2 py-1 rounded border border-error/50">
-            <span className="w-2 h-2 rounded-full bg-error" />
-            <span className="text-[10px] leading-[12px] tracking-[0.08em] font-bold text-error font-[JetBrains_Mono]">{findings.critical} CRIT</span>
-          </div>
-          <div className="flex items-center gap-1 bg-tertiary/20 px-2 py-1 rounded border border-tertiary/50">
-            <span className="w-2 h-2 rounded-full bg-tertiary" />
-            <span className="text-[10px] leading-[12px] tracking-[0.08em] font-bold text-tertiary font-[JetBrains_Mono]">{findings.high} HIGH</span>
-          </div>
-          <div className="flex items-center gap-1 bg-secondary/20 px-2 py-1 rounded border border-secondary/50">
-            <span className="w-2 h-2 rounded-full bg-secondary" />
-            <span className="text-[10px] leading-[12px] tracking-[0.08em] font-bold text-secondary font-[JetBrains_Mono]">{findings.medium} MED</span>
-          </div>
+          {project.last_scan_status ? (
+            <div className="flex items-center gap-1 bg-primary/20 px-2 py-1 rounded border border-primary/50">
+              <span className="w-2 h-2 rounded-full bg-primary" />
+              <span className="text-[10px] leading-[12px] tracking-[0.08em] font-bold text-primary font-[JetBrains_Mono]">{findingsCount} TOTAL</span>
+            </div>
+          ) : (
+            <span className="text-[11px] leading-[16px] text-on-surface-variant font-[JetBrains_Mono]">No scans yet</span>
+          )}
         </div>
       </div>
       <div className="border-t border-outline-variant pt-sm mt-md flex justify-between items-center relative z-10">
         <div className="flex items-center gap-1 text-on-surface-variant">
           <span className="material-symbols-outlined text-[14px]">history</span>
-          <span className="text-[11px] leading-[16px] font-[JetBrains_Mono]">Last scan: {project.last_scan_status ? "12m ago" : "never"}</span>
+          <span className="text-[11px] leading-[16px] font-[JetBrains_Mono]">Last scan: {project.last_scan_status ? project.last_scan_status : "never"}</span>
         </div>
         <span className="text-primary text-[13px] leading-[18px] font-[Inter] group-hover:underline">View Details &rarr;</span>
       </div>

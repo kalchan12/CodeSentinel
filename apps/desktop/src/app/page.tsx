@@ -67,12 +67,10 @@ export default function DashboardPage() {
         setAssessment(a);
       }
     } catch {
-      // Keep the reference dashboard useful before the local API is started.
-      // Fixtures are typed against the shared, canonical API model.
-      setProjects(DEMO_PROJECTS);
-      setScan(DEMO_DASHBOARD_SCAN);
-      setFindings(DEMO_FINDINGS_PAGE);
-      setAssessment(DEMO_RISK_ASSESSMENT);
+      setProjects([]);
+      setScan(null);
+      setFindings(null);
+      setAssessment(null);
     }
   }, []);
 
@@ -332,8 +330,8 @@ function FindingCountCard({
 }
 
 function ProjectTableRow({ project }: { project: Awaited<ReturnType<typeof api.listProjects>>[0] }) {
-  const score = project.id === 1 ? 72 : project.id === 2 ? 91 : project.id === 3 ? 85 : 72;
-  const scoreColor = score >= 85 ? "text-secondary" : score >= 70 ? "text-tertiary" : "text-error";
+  const score = project.last_scan_score !== null ? Math.round(project.last_scan_score) : "—";
+  const scoreColor = project.last_scan_score && project.last_scan_score >= 85 ? "text-secondary" : project.last_scan_score && project.last_scan_score >= 70 ? "text-tertiary" : "text-error";
   return (
     <tr className="border-b border-outline-variant/50 hover:bg-surface-container transition-colors group">
       <td className="p-sm pl-md text-on-surface flex items-center gap-sm">
@@ -344,19 +342,16 @@ function ProjectTableRow({ project }: { project: Awaited<ReturnType<typeof api.l
       </td>
       <td className={cn("p-sm", scoreColor)}>{score}</td>
       <td className="p-sm text-on-surface">
-        {project.last_scan_status === "completed" && project.scan_count > 0 ? (
-          <>
-            <span className="bg-error/15 text-error px-2 py-0.5 rounded text-[10px] font-bold mr-1">
-              {project.scan_count > 2 ? "2C" : "0"}C
-            </span>
-            <span className="text-on-surface-variant">{project.scan_count} Total</span>
-          </>
+        {project.last_scan_status === "completed" && project.last_scan_findings_count !== null ? (
+          <span className="bg-error/15 text-error px-2 py-0.5 rounded text-[10px] font-bold mr-1">
+            {project.last_scan_findings_count} Total
+          </span>
         ) : (
           <span className="text-on-surface-variant">0 Total</span>
         )}
       </td>
-      <td className="p-sm pr-md text-on-surface-variant">
-        {project.last_scan_status ? "12m ago" : "never"}
+      <td className="p-sm pr-md text-on-surface-variant uppercase text-[10px]">
+        {project.last_scan_status ? project.last_scan_status : "never"}
       </td>
     </tr>
   );
