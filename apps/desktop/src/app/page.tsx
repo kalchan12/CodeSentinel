@@ -4,6 +4,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { Finding, FindingsPage, RiskAssessment, Scan, Severity } from "@codesentinel/shared";
 
 import { Skeleton } from "@/components/ui/skeleton";
@@ -330,10 +331,14 @@ function FindingCountCard({
 }
 
 function ProjectTableRow({ project }: { project: Awaited<ReturnType<typeof api.listProjects>>[0] }) {
+  const router = useRouter();
   const score = project.last_scan_score !== null ? Math.round(project.last_scan_score) : "—";
   const scoreColor = project.last_scan_score && project.last_scan_score >= 85 ? "text-secondary" : project.last_scan_score && project.last_scan_score >= 70 ? "text-tertiary" : "text-error";
   return (
-    <tr className="border-b border-outline-variant/50 hover:bg-surface-container transition-colors group">
+    <tr 
+      onClick={() => router.push(`/projects?project=${project.id}`)}
+      className="cursor-pointer border-b border-outline-variant/50 hover:bg-surface-container transition-colors group"
+    >
       <td className="p-sm pl-md text-on-surface flex items-center gap-sm">
         <span className="material-symbols-outlined text-on-surface-variant text-sm group-hover:text-primary transition-colors">
           folder

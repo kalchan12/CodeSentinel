@@ -3,7 +3,7 @@
 /* eslint-disable react-hooks/set-state-in-effect -- data loading on mount/refresh */
 
 import { Suspense, useCallback, useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import type { Project } from "@codesentinel/shared";
 
 import { NewProjectDialog } from "@/components/new-project-dialog";
@@ -84,11 +84,15 @@ function ProjectList() {
 }
 
 function ProjectCard({ project }: { project: Project }) {
+  const router = useRouter();
   const score = project.last_scan_score !== null ? Math.round(project.last_scan_score) : "—";
   const findingsCount = project.last_scan_findings_count ?? 0;
 
   return (
-    <div className="bg-surface-container-low border border-outline-variant rounded-xl p-lg tech-shadow hover:border-primary/50 transition-colors group cursor-pointer relative overflow-hidden">
+    <div 
+      onClick={() => router.push(`?project=${project.id}`)}
+      className="bg-surface-container-low border border-outline-variant rounded-xl p-lg tech-shadow hover:border-primary/50 transition-colors group cursor-pointer relative overflow-hidden"
+    >
       <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 blur-2xl rounded-full -mr-16 -mt-16 group-hover:bg-primary/20 transition-all" />
       <div className="flex justify-between items-start mb-md relative z-10">
         <div className="flex items-center gap-sm">
