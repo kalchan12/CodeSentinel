@@ -49,6 +49,8 @@ export interface Project {
   scan_count: number;
   last_scan_status: ScanStatus | null;
   last_scan_id: number | null;
+  last_scan_score: number | null;
+  last_scan_findings_count: number | null;
   created_at: string;
 }
 
