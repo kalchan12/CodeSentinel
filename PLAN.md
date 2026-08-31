@@ -494,6 +494,16 @@ AI must remain optional at every step — see `PROJECT.md` §6.
 ## 25. Plan Change Log
 
 ```text
+### 2026-08-31
+Changed:
+Refactored architecture to "Zero-Docker" (removed PostgreSQL, Redis, Celery in favor of SQLite and FastAPI BackgroundTasks).
+
+Reason:
+To simplify local deployment and remove Docker dependencies as requested by the developer.
+
+Impact:
+Removed docker-compose.yml and updated dev scripts. Updated PROJECT.md architecture decisions.
+
 ### 2026-08-21
 
 Changed:

@@ -158,7 +158,7 @@ Local Database
 ```
 
 - Source code never leaves the developer's machine by default.
-- Scan results are stored in a local database (PostgreSQL, run locally via Docker).
+- Scan results are stored in a local database (SQLite, stored locally).
 - The full non-AI pipeline (discovery → analyzers → normalization → correlation → risk scoring → reporting) must function **fully offline**.
 - Any feature that talks to an external service (AI providers, live CVE feeds, GitHub API) must be:
   - clearly optional,
@@ -215,7 +215,7 @@ AI may be used for:
                │
                ▼
 ┌─────────────────────────────┐
-│     Redis + Celery Queue     │
+│   BackgroundTasks Queue      │
 └──────────────┬──────────────┘
                │
                ▼
@@ -246,7 +246,7 @@ AI may be used for:
                │
        ┌───────┴────────┐
        ▼                ▼
-  PostgreSQL         AI Provider
+  SQLite             AI Provider
                           │
                        OpenCode
                           │
@@ -257,12 +257,12 @@ AI may be used for:
 
 - **Tauri Desktop App** — the user-facing shell. Hosts a Next.js/React/TypeScript frontend and exposes native desktop capabilities (filesystem access for "local project" selection) via Tauri's Rust bridge.
 - **FastAPI Application API** — the local backend service the desktop app talks to. Owns all business logic, validation, and persistence access. The frontend never talks to the database or analyzers directly.
-- **Redis + Celery Queue** — decouples long-running scans from the request/response cycle. A scan is *created* synchronously via the API but *executed* asynchronously by a worker.
+- **BackgroundTasks Queue** — decouples long-running scans from the request/response cycle. A scan is *created* synchronously via the API but *executed* asynchronously by a worker.
 - **Analysis Engine** — a registry of independent analyzers, each responsible for one concern (see §10).
 - **Finding Normalization** — converts each analyzer's raw output into the canonical `Finding` schema (see §11–12).
 - **Finding Correlation** — merges findings that represent the same underlying issue (see §13).
 - **Risk Assessment Engine** — computes an explainable 0–100 score per finding/project (see §14).
-- **PostgreSQL** — system of record for projects, scans, findings, and history.
+- **SQLite** — system of record for projects, scans, findings, and history.
 - **AI Provider layer** — optional, pluggable enrichment (OpenCode planned; local models proposed).
 
 ---
@@ -303,18 +303,18 @@ Each entry includes *why* it was chosen. Technologies are not to be added becaus
 ### Background Processing
 | Tech | Reason |
 |---|---|
-| Celery | Mature async task queue for long-running scan jobs. |
-| Redis | Broker/result backend for Celery; also useful for lightweight caching. |
+| BackgroundTasks | Built-in async task queue for long-running scan jobs. |
+| asyncio | Native Python concurrency. |
 
 ### Database
 | Tech | Reason |
 |---|---|
-| PostgreSQL | Relational model fits the Project → Scan → Finding → Evidence structure well; strong JSON support for flexible metadata fields. |
+| SQLite | Relational model fits the Project → Scan → Finding → Evidence structure well. |
 
 ### Infrastructure
 | Tech | Reason |
 |---|---|
-| Docker / Docker Compose | Reproducible local dev environment (Postgres, Redis, backend) without polluting the host machine. |
+| Native / pip | Direct local dev environment (SQLite, backend). |
 | GitHub Actions | CI for tests/lint on push and PR. |
 
 ### Testing
@@ -360,7 +360,6 @@ codesentinel/
 │   └── research/                 # Risk-formula research, correlation research, etc.
 │
 ├── scripts/                      # Dev/setup/utility scripts
-├── docker/                       # Dockerfiles, compose overrides
 ├── .github/
 │   └── workflows/                # CI pipelines
 │
@@ -369,7 +368,6 @@ codesentinel/
 ├── PLAN.md
 ├── SKILLS.md
 ├── SUGGESTIONS.md
-├── docker-compose.yml
 └── README.md
 ```
 
@@ -600,9 +598,9 @@ FastAPI
    ↓
 Create Scan Job
    ↓
-Redis
+FastAPI
    ↓
-Celery Worker
+Background Task
    ↓
 Analyzer
    ↓
@@ -753,8 +751,8 @@ Every feature tracked in `PLAN.md` should be tagged against one of these levels 
 | Local-first | Accepted | Privacy and core project requirement |
 | Tauri | Accepted | Desktop/local-first architecture |
 | FastAPI | Accepted | Python analysis ecosystem |
-| PostgreSQL | Accepted | Relational scan/finding model |
-| Celery + Redis | Accepted | Async analysis |
+| SQLite | Accepted | Relational scan/finding model (Zero-Docker architecture) |
+| BackgroundTasks | Accepted | Async analysis (Zero-Docker architecture) |
 | Semgrep | Planned | Static security analysis |
 | Gitleaks | Planned | Secret detection |
 | OSV | Planned | Dependency vulnerabilities |
