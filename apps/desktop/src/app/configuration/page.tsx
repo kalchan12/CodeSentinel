@@ -14,16 +14,15 @@ import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 const TYPE_COLORS: Record<string, string> = {
-  "Cloud Credential": "bg-tertiary/15 text-tertiary border-tertiary/30",
-  "API Token": "bg-primary/15 text-primary border-primary/30",
-  "Auth Config": "bg-error/15 text-error border-error/30",
-  "Database URI": "bg-secondary/15 text-secondary border-secondary/30",
+  "Insecure Defaults": "bg-tertiary/15 text-tertiary border-tertiary/30",
+  "Open CORS": "bg-error/15 text-error border-error/30",
+  "Missing Headers": "bg-primary/15 text-primary border-primary/30",
+  "Debug Mode": "bg-secondary/15 text-secondary border-secondary/30",
 };
 
 export default function ConfigurationPage() {
   const [config, setConfigs] = useState<ConfigItem[] | null>(null);
   const [selectedConfig, setSelectedConfig] = useState<ConfigItem | null>(null);
-  const [revealedIds, setRevealedIds] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -37,23 +36,23 @@ export default function ConfigurationPage() {
         const page = await api.getFindings(latestScanId, { category: "config" });
         if (page.items.length > 0) {
           const mapped: ConfigItem[] = page.items.map((f: Finding, i: number) => ({
-            id: f.id || `sec-${i}`,
-            ruleId: f.rule_id || "gitleaks-config",
+            id: f.id || `cfg-${i}`,
+            ruleId: f.rule_id || "cfg-rule",
             title: f.title,
-            type: String(f.evidence?.leak_type ?? "").includes("aws")
-              ? "Cloud Credential"
-              : String(f.evidence?.leak_type ?? "").includes("key")
-                ? "API Token"
-                : "Auth Config",
+            type: f.title.toLowerCase().includes("cors")
+              ? "Open CORS"
+              : f.title.toLowerCase().includes("header")
+                ? "Missing Headers"
+                : f.title.toLowerCase().includes("debug")
+                  ? "Debug Mode"
+                  : "Insecure Defaults",
             file: f.file || "unknown",
             line: f.line_start || 1,
-            commit: (f.evidence?.commit as string) || "HEAD",
-            maskedConfig: f.code_snippet
-              ? f.code_snippet.slice(0, 8) + "****************"
-              : "****************",
-            severity: (f.severity as "critical" | "high" | "medium") || "high",
-            confidence: (f.confidence as "high" | "medium" | "low") || "high",
+            severity: (f.severity as "critical" | "high" | "medium" | "low" | "info") || "medium",
             status: "active",
+            description: f.description || f.title,
+            remediation: f.remediation || "Review and update configuration parameters according to security baselines.",
+            codeSnippet: f.code_snippet || undefined,
             detectedAt: f.created_at || new Date().toISOString(),
           }));
           setConfigs(mapped);
@@ -82,16 +81,7 @@ export default function ConfigurationPage() {
     );
   }
 
-  const toggleReveal = (id: string) => {
-    setRevealedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  const handleUpdateStatus = (id: string, newStatus: "active" | "rotated" | "ignored") => {
+  const handleUpdateStatus = (id: string, newStatus: "active" | "resolved" | "ignored") => {
     setConfigs((prev) =>
       prev
         ? prev.map((s) => (s.id === id ? { ...s, status: newStatus } : s))
@@ -100,22 +90,23 @@ export default function ConfigurationPage() {
     if (selectedConfig?.id === id) {
       setSelectedConfig((prev) => (prev ? { ...prev, status: newStatus } : null));
     }
-    toast.success(`Config status updated to ${newStatus}`);
+    toast.success(`Configuration issue status updated to ${newStatus}`);
   };
 
-  const filtered = config.filter((sec) => {
+  const filtered = config.filter((item) => {
     const matchesSearch =
-      sec.title.toLowerCase().includes(search.toLowerCase()) ||
-      sec.file.toLowerCase().includes(search.toLowerCase()) ||
-      sec.ruleId.toLowerCase().includes(search.toLowerCase());
-    const matchesType = typeFilter === "all" || sec.type === typeFilter;
-    const matchesStatus = statusFilter === "all" || sec.status === statusFilter;
+      item.title.toLowerCase().includes(search.toLowerCase()) ||
+      item.file.toLowerCase().includes(search.toLowerCase()) ||
+      item.ruleId.toLowerCase().includes(search.toLowerCase()) ||
+      item.description.toLowerCase().includes(search.toLowerCase());
+    const matchesType = typeFilter === "all" || item.type === typeFilter;
+    const matchesStatus = statusFilter === "all" || item.status === statusFilter;
     return matchesSearch && matchesType && matchesStatus;
   });
 
   const totalConfigs = config.length;
   const activeCount = config.filter((s) => s.status === "active").length;
-  const rotatedCount = config.filter((s) => s.status === "rotated").length;
+  const resolvedCount = config.filter((s) => s.status === "resolved").length;
 
   return (
     <div className="max-w-[1440px] mx-auto space-y-lg">
@@ -123,22 +114,22 @@ export default function ConfigurationPage() {
       <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-md border-b border-outline-variant pb-md">
         <div>
           <div className="flex items-center gap-sm mb-xs">
-            <span className="material-symbols-outlined text-primary text-[28px]">lock</span>
+            <span className="material-symbols-outlined text-primary text-[28px]">settings_suggest</span>
             <h2 className="text-[24px] leading-[32px] tracking-[-0.01em] font-semibold text-on-surface font-[Inter]">
-              Config Detection & Credential Hygiene
+              Configuration & Hardening Assessment
             </h2>
           </div>
           <p className="text-[14px] leading-[20px] text-on-surface-variant font-[Inter]">
-            Gitleaks & Git-hygiene scanner results with automated token redaction and rotation tracking.
+            Static analysis of framework settings, CORS policies, environment defaults, and security headers.
           </p>
         </div>
         <div className="flex gap-sm">
           <button
-            onClick={() => toast.success("Git history scan triggered for all commits")}
+            onClick={() => toast.success("Configuration audit re-triggered")}
             className="bg-transparent border border-outline-variant text-on-surface px-4 py-1.5 rounded-md text-[13px] leading-[20px] font-[JetBrains_Mono] hover:bg-surface-container-highest transition-colors flex items-center gap-xs"
           >
-            <span className="material-symbols-outlined text-sm">history</span>
-            Full Git Scan
+            <span className="material-symbols-outlined text-sm">refresh</span>
+            Re-audit Config
           </button>
         </div>
       </header>
@@ -146,31 +137,31 @@ export default function ConfigurationPage() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-md">
         <StatCard
-          label="ACTIVE LEAKS"
+          label="ACTIVE ISSUES"
           value={activeCount}
-          icon="key_off"
-          desc="Unresolved credential exposures"
+          icon="warning"
+          desc="Unmitigated misconfigurations"
           highlight={activeCount > 0 ? "text-error" : "text-secondary"}
         />
         <StatCard
-          label="ROTATED SECRETS"
-          value={rotatedCount}
+          label="RESOLVED ISSUES"
+          value={resolvedCount}
           icon="verified"
-          desc="Safely rotated & invalidated"
+          desc="Hardened & validated"
           highlight="text-secondary"
         />
         <StatCard
-          label="TOTAL DETECTIONS"
+          label="TOTAL AUDITED"
           value={totalConfigs}
-          icon="lock"
-          desc="Tracked across repositories"
+          icon="tune"
+          desc="Evaluated configuration points"
           highlight="text-primary"
         />
         <StatCard
-          label="REDACTION ENGINE"
+          label="HARDENING POLICY"
           value="ENFORCED"
-          icon="shield_lock"
-          desc="Zero raw config persisted"
+          icon="shield"
+          desc="Security baseline checks"
           highlight="text-tertiary"
         />
       </div>
@@ -183,7 +174,7 @@ export default function ConfigurationPage() {
           </span>
           <input
             className="bg-background border border-outline-variant rounded-md pl-10 pr-4 py-1.5 text-sm w-full focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary text-on-background placeholder:text-on-surface-variant font-[JetBrains_Mono]"
-            placeholder="Search config by rule, file, or token type..."
+            placeholder="Search configurations by rule, title, or file..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -194,11 +185,11 @@ export default function ConfigurationPage() {
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
           >
-            <option value="all">All Config Types</option>
-            <option value="Cloud Credential">Cloud Credentials</option>
-            <option value="API Token">API Tokens</option>
-            <option value="Auth Config">Auth Configs</option>
-            <option value="Database URI">Database URIs</option>
+            <option value="all">All Issue Types</option>
+            <option value="Insecure Defaults">Insecure Defaults</option>
+            <option value="Open CORS">Open CORS</option>
+            <option value="Missing Headers">Missing Headers</option>
+            <option value="Debug Mode">Debug Mode</option>
           </select>
 
           <select
@@ -208,7 +199,7 @@ export default function ConfigurationPage() {
           >
             <option value="all">All Statuses</option>
             <option value="active">Active Only</option>
-            <option value="rotated">Rotated</option>
+            <option value="resolved">Resolved</option>
             <option value="ignored">Ignored</option>
           </select>
         </div>
@@ -223,13 +214,13 @@ export default function ConfigurationPage() {
               <thead>
                 <tr className="bg-surface-container-highest border-b border-outline-variant">
                   <th className="p-sm text-[10px] leading-[12px] tracking-[0.08em] font-bold text-on-surface-variant font-[JetBrains_Mono] pl-md">
-                    EXPOSED SECRET
+                    CONFIGURATION CHECK
                   </th>
                   <th className="p-sm text-[10px] leading-[12px] tracking-[0.08em] font-bold text-on-surface-variant font-[JetBrains_Mono]">
                     TYPE
                   </th>
                   <th className="p-sm text-[10px] leading-[12px] tracking-[0.08em] font-bold text-on-surface-variant font-[JetBrains_Mono]">
-                    MASKED VALUE
+                    SEVERITY
                   </th>
                   <th className="p-sm text-[10px] leading-[12px] tracking-[0.08em] font-bold text-on-surface-variant font-[JetBrains_Mono]">
                     STATUS
@@ -240,13 +231,12 @@ export default function ConfigurationPage() {
                 </tr>
               </thead>
               <tbody className="text-[13px] leading-[20px] font-[JetBrains_Mono]">
-                {filtered.map((sec) => {
-                  const isSelected = selectedConfig?.id === sec.id;
-                  const isRevealed = revealedIds.has(sec.id);
+                {filtered.map((item) => {
+                  const isSelected = selectedConfig?.id === item.id;
                   return (
                     <tr
-                      key={sec.id}
-                      onClick={() => setSelectedConfig(sec)}
+                      key={item.id}
+                      onClick={() => setSelectedConfig(item)}
                       className={cn(
                         "border-b border-outline-variant/40 hover:bg-surface-container transition-colors cursor-pointer",
                         isSelected && "bg-surface-container-high border-l-2 border-l-primary"
@@ -257,62 +247,57 @@ export default function ConfigurationPage() {
                           <span
                             className={cn(
                               "material-symbols-outlined text-[16px]",
-                              sec.status === "active" ? "text-error" : "text-secondary"
+                              item.status === "active" ? "text-error" : "text-secondary"
                             )}
                           >
-                            {sec.status === "active" ? "lock_open" : "lock"}
+                            {item.status === "active" ? "rule" : "check_circle"}
                           </span>
-                          <span>{sec.title}</span>
+                          <span>{item.title}</span>
                         </div>
-                        <span className="text-[10px] text-outline block">{sec.ruleId}</span>
+                        <span className="text-[10px] text-outline block">{item.ruleId}</span>
                       </td>
                       <td className="p-sm">
                         <span
                           className={cn(
                             "px-2 py-0.5 rounded text-[10px] font-bold border",
-                            TYPE_COLORS[sec.type] ?? "border-outline text-on-surface-variant"
+                            TYPE_COLORS[item.type] ?? "border-outline text-on-surface-variant"
                           )}
                         >
-                          {sec.type}
+                          {item.type}
                         </span>
-                      </td>
-                      <td className="p-sm text-[12px] text-on-surface-variant">
-                        <div className="flex items-center gap-xs">
-                          <span>
-                            {isRevealed
-                              ? sec.maskedConfig
-                              : "••••••••••••••••"}
-                          </span>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleReveal(sec.id);
-                            }}
-                            className="text-on-surface-variant hover:text-on-surface"
-                            title={isRevealed ? "Hide" : "Show preview"}
-                          >
-                            <span className="material-symbols-outlined text-[15px]">
-                              {isRevealed ? "visibility_off" : "visibility"}
-                            </span>
-                          </button>
-                        </div>
                       </td>
                       <td className="p-sm">
                         <span
                           className={cn(
                             "px-2 py-0.5 rounded text-[10px] font-bold border uppercase",
-                            sec.status === "active"
+                            item.severity === "critical"
                               ? "bg-error/15 text-error border-error/30"
-                              : sec.status === "rotated"
+                              : item.severity === "high"
+                                ? "bg-error/15 text-error border-error/30"
+                                : item.severity === "medium"
+                                  ? "bg-tertiary/15 text-tertiary border-tertiary/30"
+                                  : "bg-outline/15 text-on-surface-variant border-outline/30"
+                          )}
+                        >
+                          {item.severity}
+                        </span>
+                      </td>
+                      <td className="p-sm">
+                        <span
+                          className={cn(
+                            "px-2 py-0.5 rounded text-[10px] font-bold border uppercase",
+                            item.status === "active"
+                              ? "bg-error/15 text-error border-error/30"
+                              : item.status === "resolved"
                                 ? "bg-secondary/15 text-secondary border-secondary/30"
                                 : "bg-outline/15 text-on-surface-variant border-outline/30"
                           )}
                         >
-                          {sec.status}
+                          {item.status}
                         </span>
                       </td>
                       <td className="p-sm pr-md text-[11px] text-outline truncate max-w-[130px]">
-                        {sec.file}:{sec.line}
+                        {item.file}:{item.line}
                       </td>
                     </tr>
                   );
@@ -320,7 +305,7 @@ export default function ConfigurationPage() {
                 {filtered.length === 0 && (
                   <tr>
                     <td colSpan={5} className="py-12 text-center text-on-surface-variant">
-                      No config found matching the filters.
+                      No configuration issues found matching the filters.
                     </td>
                   </tr>
                 )}
@@ -336,7 +321,7 @@ export default function ConfigurationPage() {
               <div className="flex justify-between items-start border-b border-outline-variant pb-sm">
                 <div>
                   <span className="text-[10px] leading-[12px] tracking-[0.08em] font-bold text-on-surface-variant font-[JetBrains_Mono] uppercase">
-                    Config Incident Detail
+                    Configuration Finding Detail
                   </span>
                   <h3 className="text-[18px] leading-[24px] font-bold text-on-surface font-[Inter] mt-0.5">
                     {selectedConfig.title}
@@ -363,52 +348,57 @@ export default function ConfigurationPage() {
                   <span className="text-on-surface">{selectedConfig.line}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-on-surface-variant">LAST COMMIT</span>
-                  <span className="text-secondary">{selectedConfig.commit}</span>
+                  <span className="text-on-surface-variant">RULE ID</span>
+                  <span className="text-secondary">{selectedConfig.ruleId}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-on-surface-variant">DETECTED</span>
-                  <span className="text-on-surface-variant">{formatDate(selectedConfig.detectedAt)}</span>
-                </div>
+                {selectedConfig.detectedAt && (
+                  <div className="flex justify-between">
+                    <span className="text-on-surface-variant">DETECTED</span>
+                    <span className="text-on-surface-variant">{formatDate(selectedConfig.detectedAt)}</span>
+                  </div>
+                )}
               </div>
 
-              {/* Redacted Token Box */}
-              <div className="bg-background border border-error/30 rounded p-sm space-y-1">
-                <div className="flex justify-between items-center text-[10px] font-bold text-error font-[JetBrains_Mono] uppercase">
-                  <span>Redacted Config Preview</span>
-                  <span className="text-[9px] text-outline">NEVER EXPOSED IN LOGS</span>
-                </div>
-                <pre className="text-[12px] font-[JetBrains_Mono] text-on-surface truncate select-all">
-                  {selectedConfig.maskedConfig}
-                </pre>
+              {/* Description */}
+              <div className="space-y-xs">
+                <h4 className="text-[11px] leading-[16px] tracking-[0.08em] font-bold text-on-surface-variant font-[JetBrains_Mono] uppercase">
+                  Description
+                </h4>
+                <p className="text-[13px] leading-[20px] text-on-surface-variant font-[Inter]">
+                  {selectedConfig.description}
+                </p>
               </div>
 
-              {/* Rotation Playbook */}
+              {/* Code / Config Snippet */}
+              {selectedConfig.codeSnippet && (
+                <div className="bg-background border border-outline-variant rounded p-sm space-y-1">
+                  <div className="flex justify-between items-center text-[10px] font-bold text-on-surface-variant font-[JetBrains_Mono] uppercase">
+                    <span>Config Snippet</span>
+                  </div>
+                  <pre className="text-[12px] font-[JetBrains_Mono] text-on-surface truncate select-all overflow-x-auto">
+                    {selectedConfig.codeSnippet}
+                  </pre>
+                </div>
+              )}
+
+              {/* Remediation Guide */}
               <div className="space-y-sm">
                 <h4 className="text-[11px] leading-[16px] tracking-[0.08em] font-bold text-on-surface-variant font-[JetBrains_Mono] uppercase">
-                  Rotation & Remediation Playbook
+                  Remediation Guidance
                 </h4>
-                <ol className="text-[12px] leading-[18px] text-on-surface-variant font-[Inter] space-y-xs list-decimal pl-4">
-                  <li>
-                    <strong className="text-on-surface">Revoke Immediately:</strong> Invalidate this credential in your provider console.
-                  </li>
-                  <li>
-                    <strong className="text-on-surface">Erase from Git:</strong> Use <code className="text-secondary font-[JetBrains_Mono]">git filter-repo</code> or BFG Repo-Cleaner to rewrite history.
-                  </li>
-                  <li>
-                    <strong className="text-on-surface">Re-issue safely:</strong> Inject the new config into environment variables or a vault.
-                  </li>
-                </ol>
+                <p className="text-[12px] leading-[18px] text-on-surface-variant font-[Inter]">
+                  {selectedConfig.remediation || "Update the configuration file to comply with secure baseline defaults."}
+                </p>
               </div>
 
               {/* Action Buttons */}
               <div className="pt-sm border-t border-outline-variant grid grid-cols-2 gap-sm">
                 <button
-                  onClick={() => handleUpdateStatus(selectedConfig.id, "rotated")}
+                  onClick={() => handleUpdateStatus(selectedConfig.id, "resolved")}
                   className="py-2 bg-secondary/15 text-secondary hover:bg-secondary/25 border border-secondary/40 rounded text-[11px] font-[JetBrains_Mono] font-semibold transition-colors flex items-center justify-center gap-xs"
                 >
                   <span className="material-symbols-outlined text-sm">task_alt</span>
-                  Mark Rotated
+                  Mark Resolved
                 </button>
                 <button
                   onClick={() => handleUpdateStatus(selectedConfig.id, "ignored")}
@@ -421,7 +411,7 @@ export default function ConfigurationPage() {
             </div>
           ) : (
             <div className="bg-surface-container-low border border-outline-variant rounded-lg p-xl text-center text-on-surface-variant">
-              Select a config to inspect leak history and rotation playbook.
+              Select a configuration issue to inspect details and remediation guidance.
             </div>
           )}
         </div>
