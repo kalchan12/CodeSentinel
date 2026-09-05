@@ -13,10 +13,10 @@ Phase:
 Phase 20 — Capstone Polish
 
 Task:
-Final application review and bug fixes
+Scan pipeline & UI mock removal (Completed)
 
 Status:
-In Progress
+Complete
 
 Owner:
 Developer + Agent
@@ -28,10 +28,15 @@ Dependencies:
 Phase 1-19 completion
 
 Notes:
-- Final polish, error boundaries, UI tweaks.
+- Removed all UI mock data, DEMO_* fallbacks, and dummy constants across the desktop frontend.
+- Fixed backend scan assessment schema serialization bug preventing project/scan listings.
+- Fixed Semgrep & Gitleaks binary resolution across system and virtualenv paths.
+- Built interactive NewScanDialog to select added projects and launch live scans.
+- Added ScanProjectSelector for scan management.
+- All backend tests passing (79 unit, 5 security) and Next.js production build passing via npm.
 
 Next:
-Project Completion
+Capstone final verification and presentation demo
 ```
 
 > Keep this section current. Every meaningful work session should start by reading it and end by updating it.
@@ -494,6 +499,21 @@ AI must remain optional at every step — see `PROJECT.md` §6.
 ## 25. Plan Change Log
 
 ```text
+### 2026-09-05
+Changed:
+- Fixed backend scan schema serialization (Scan.risk_score property & assessment fallback).
+- Fixed Semgrep and Gitleaks binary resolution in Python engine.
+- Completely removed all UI mock data, `demo-data.ts`, and fallback demo constants from desktop app.
+- Created `NewScanDialog` allowing users to pick added projects and trigger scans.
+- Added `ScanProjectSelector` to handle empty `/scan` view gracefully.
+- Prerender/Suspense boundary fixes in AppShell.
+
+Reason:
+Developer requested fixing scan functionality, verifying project persistence, enabling selection of existing projects for scans, and removing all mockups across the codebase.
+
+Impact:
+Full end-to-end scanning pipeline from UI to SQLite and engine analyzers is operational; production Next.js build passes cleanly.
+
 ### 2026-08-31
 Changed:
 Refactored architecture to "Zero-Docker" (removed PostgreSQL, Redis, Celery in favor of SQLite and FastAPI BackgroundTasks).
