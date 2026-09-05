@@ -44,6 +44,8 @@ class ScanRead(BaseModel):
             "completed_at": scan.completed_at,
             "created_at": scan.created_at,
         }
+        if assessment is None and getattr(scan, "assessment", None) is not None:
+            assessment = scan.assessment
         if assessment is not None:
             data["risk_score"] = assessment.overall_score
             data["risk_level"] = assessment.overall_level

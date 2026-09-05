@@ -9,8 +9,20 @@ import type { Finding } from "@codesentinel/shared";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api";
-import { DEMO_AI_INSIGHTS, type AIInsightItem } from "@/lib/demo-data";
 import { cn } from "@/lib/utils";
+
+export interface AIInsightItem {
+  id: string;
+  category: "vulnerability" | "architecture" | "secret" | "refactor" | "configuration";
+  title: string;
+  severity: "critical" | "high" | "medium" | "low";
+  confidence: "high" | "medium" | "low";
+  summary: string;
+  affectedFiles: string[];
+  rootCause: string;
+  remediationSnippet: string;
+  tokenCost: number;
+}
 
 const SEVERITY_CHIPS: Record<string, string> = {
   critical: "bg-error/15 text-error border-error/30",
@@ -38,30 +50,32 @@ export default function AIAnalysisPage() {
       const withScans = projects.filter((p) => p.last_scan_id != null);
       if (withScans.length > 0) {
         const latestScanId = withScans[0].last_scan_id!;
-        const page = await api.getFindings(latestScanId, { category: "ai_insight" });
-        if (page.items.length > 0) {
-          const mapped: AIInsightItem[] = page.items.map((f: Finding, i: number) => ({
+        const page = await api.getFindings(latestScanId, {});
+        // Find findings with ai_summary or high risk findings that have remediation
+        const aiFindings = page.items.filter((f) => f.metadata?.ai_summary || f.remediation);
+        if (aiFindings.length > 0) {
+          const mapped: AIInsightItem[] = aiFindings.map((f: Finding, i: number) => ({
             id: f.id || `ai-${i}`,
-            category: "vulnerability",
+            category: (f.category as any) || "vulnerability",
             title: f.title,
             severity: (f.severity as "critical" | "high" | "medium" | "low") || "medium",
             confidence: (f.confidence as "high" | "medium" | "low") || "high",
-            summary: f.description,
+            summary: (f.metadata?.ai_summary as string) || f.description,
             affectedFiles: [f.file].filter(Boolean),
-            rootCause: (f.metadata?.root_cause as string) || "Identified during AST contextual review.",
-            remediationSnippet: f.remediation || "// Review code path and apply safe input validation",
-            tokenCost: 320,
+            rootCause: (f.metadata?.root_cause as string) || `Flagged by ${f.analyzer} rule ${f.rule_id ?? ""}`,
+            remediationSnippet: (f.metadata?.remediation_example as string) || f.remediation || "// Review code path and apply parameterization",
+            tokenCost: 280,
           }));
           setInsights(mapped);
           setSelectedInsight(mapped[0]);
           return;
         }
       }
-      setInsights(DEMO_AI_INSIGHTS);
-      setSelectedInsight(DEMO_AI_INSIGHTS[0]);
+      setInsights([]);
+      setSelectedInsight(null);
     } catch {
-      setInsights(DEMO_AI_INSIGHTS);
-      setSelectedInsight(DEMO_AI_INSIGHTS[0]);
+      setInsights([]);
+      setSelectedInsight(null);
     }
   }, []);
 

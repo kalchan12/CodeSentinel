@@ -66,4 +66,6 @@ export const api = {
     return request<FindingsPage>(`/scans/${scanId}/findings${query ? `?${query}` : ""}`);
   },
   getAssessment: (scanId: number) => request<RiskAssessment>(`/scans/${scanId}/assessment`),
+  getAnalyzers: () =>
+    request<{ name: string; description: string; enabled: boolean; status: string }[]>("/analyzers"),
 };

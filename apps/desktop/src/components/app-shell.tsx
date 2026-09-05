@@ -1,8 +1,40 @@
 "use client";
 
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
+import { NewScanDialog } from "@/components/new-scan-dialog";
+import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
+
+function ActiveProjectBreadcrumb() {
+  const searchParams = useSearchParams();
+  const [activeProjectName, setActiveProjectName] = useState<string>("CodeSentinel");
+
+  useEffect(() => {
+    api.listProjects()
+      .then((data) => {
+        if (data.length > 0) {
+          const projectParam = searchParams?.get("project");
+          if (projectParam) {
+            const found = data.find((p) => p.id === Number(projectParam));
+            if (found) {
+              setActiveProjectName(found.name);
+              return;
+            }
+          }
+          setActiveProjectName(data[0].name);
+        }
+      })
+      .catch(() => {});
+  }, [searchParams]);
+
+  return (
+    <span className="text-primary font-bold border-b-2 border-primary pb-1 font-[JetBrains_Mono] text-[10px] tracking-[0.08em] uppercase h-full flex items-center pt-1">
+      {activeProjectName}
+    </span>
+  );
+}
 
 const NAV_ITEMS = [
   { href: "/", label: "Overview", icon: "dashboard" },
@@ -49,10 +81,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
         {/* Run New Scan CTA */}
         <div className="px-md mb-lg">
-          <Link href="/scan" className="w-full bg-primary text-on-primary py-sm rounded-lg font-semibold text-[18px] leading-[24px] flex items-center justify-center gap-xs hover:bg-primary-container transition-colors shadow-[0_0_15px_rgba(208,188,255,0.15)]">
-            <span className="material-symbols-outlined">add</span>
-            Run New Scan
-          </Link>
+          <NewScanDialog
+            trigger={
+              <button className="w-full bg-primary text-on-primary py-sm rounded-lg font-semibold text-[18px] leading-[24px] flex items-center justify-center gap-xs hover:bg-primary-container transition-colors shadow-[0_0_15px_rgba(208,188,255,0.15)] cursor-pointer">
+                <span className="material-symbols-outlined">add</span>
+                Run New Scan
+              </button>
+            }
+          />
         </div>
 
         {/* Nav Items */}
@@ -153,9 +189,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <header className="hidden md:flex justify-between items-center px-lg h-16 fixed top-0 right-0 w-[calc(100%-280px)] bg-surface border-b border-outline-variant z-10 shadow-sm">
           {isScanRoute ? (
             <nav className="flex h-full items-center">
-              <span className="text-primary font-bold border-b-2 border-primary pb-1 font-[JetBrains_Mono] text-[10px] tracking-[0.08em] uppercase h-full flex items-center pt-1">
-                payments-api
-              </span>
+              <Suspense
+                fallback={
+                  <span className="text-primary font-bold border-b-2 border-primary pb-1 font-[JetBrains_Mono] text-[10px] tracking-[0.08em] uppercase h-full flex items-center pt-1">
+                    CodeSentinel
+                  </span>
+                }
+              >
+                <ActiveProjectBreadcrumb />
+              </Suspense>
             </nav>
           ) : (
             <div className="flex items-center gap-md">
@@ -170,9 +212,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 />
               </div>
               <nav className="flex items-center gap-md ml-lg">
-                <span className="text-primary font-bold border-b-2 border-primary pb-1 font-[JetBrains_Mono] text-[10px] tracking-[0.08em] uppercase h-full flex items-center pt-1">
-                  payments-api
-                </span>
+                <Suspense
+                  fallback={
+                    <span className="text-primary font-bold border-b-2 border-primary pb-1 font-[JetBrains_Mono] text-[10px] tracking-[0.08em] uppercase h-full flex items-center pt-1">
+                      CodeSentinel
+                    </span>
+                  }
+                >
+                  <ActiveProjectBreadcrumb />
+                </Suspense>
               </nav>
             </div>
           )}

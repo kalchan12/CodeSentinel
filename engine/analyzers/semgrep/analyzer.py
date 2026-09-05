@@ -51,6 +51,11 @@ class SemgrepAnalyzer(Analyzer):
     def analyze(self, context: AnalysisContext) -> list[Finding]:
         binary = shutil.which(self.binary)
         if binary is None:
+            import sys
+            venv_bin = Path(sys.prefix) / "bin" / self.binary
+            if venv_bin.exists():
+                binary = str(venv_bin)
+        if binary is None:
             raise AnalyzerNotAvailableError(
                 f"semgrep binary {self.binary!r} not found on PATH; "
                 "install it with `pip install semgrep` or set CODESENTINEL_SEMGREP_PATH"

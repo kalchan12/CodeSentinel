@@ -46,3 +46,11 @@ class Scan(Base):
     dependencies: Mapped[list[Dependency]] = relationship(  # noqa: F821
         back_populates="scan", cascade="all, delete-orphan"
     )
+
+    @property
+    def risk_score(self) -> float | None:
+        return self.assessment.overall_score if self.assessment else None
+
+    @property
+    def risk_level(self) -> str | None:
+        return self.assessment.overall_level if self.assessment else None

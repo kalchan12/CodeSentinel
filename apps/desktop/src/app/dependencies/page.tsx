@@ -9,8 +9,25 @@ import type { Finding } from "@codesentinel/shared";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api";
-import { DEMO_DEPENDENCIES, type DependencyItem } from "@/lib/demo-data";
 import { cn } from "@/lib/utils";
+
+export interface DependencyItem {
+  id: string;
+  name: string;
+  version: string;
+  latestVersion: string;
+  ecosystem: "npm" | "PyPI" | "Go" | "crates.io";
+  manifest: string;
+  license: string;
+  vulnerabilityCount: number;
+  maxSeverity: "critical" | "high" | "medium" | "low" | "none";
+  advisories: {
+    id: string;
+    title: string;
+    severity: "critical" | "high" | "medium" | "low";
+    fixedIn?: string;
+  }[];
+}
 
 const ECOSYSTEM_BADGES: Record<string, string> = {
   npm: "bg-error/15 text-error border-error/30",
@@ -71,11 +88,11 @@ export default function DependenciesPage() {
           return;
         }
       }
-      setDependencies(DEMO_DEPENDENCIES);
-      setSelectedDep(DEMO_DEPENDENCIES[0]);
+      setDependencies([]);
+      setSelectedDep(null);
     } catch {
-      setDependencies(DEMO_DEPENDENCIES);
-      setSelectedDep(DEMO_DEPENDENCIES[0]);
+      setDependencies([]);
+      setSelectedDep(null);
     }
   }, []);
 

@@ -9,9 +9,23 @@ import type { Finding } from "@codesentinel/shared";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api";
-import { DEMO_CONFIGS, type ConfigItem } from "@/lib/demo-data";
 import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
+
+export interface ConfigItem {
+  id: string;
+  ruleId: string;
+  title: string;
+  file: string;
+  line: number;
+  type: string;
+  status: "active" | "resolved" | "ignored";
+  severity: "critical" | "high" | "medium" | "low" | "info";
+  description: string;
+  remediation?: string;
+  codeSnippet?: string;
+  detectedAt?: string;
+}
 
 const TYPE_COLORS: Record<string, string> = {
   "Insecure Defaults": "bg-tertiary/15 text-tertiary border-tertiary/30",
@@ -33,7 +47,7 @@ export default function ConfigurationPage() {
       const withScans = projects.filter((p) => p.last_scan_id != null);
       if (withScans.length > 0) {
         const latestScanId = withScans[0].last_scan_id!;
-        const page = await api.getFindings(latestScanId, { category: "config" });
+        const page = await api.getFindings(latestScanId, { category: "configuration" });
         if (page.items.length > 0) {
           const mapped: ConfigItem[] = page.items.map((f: Finding, i: number) => ({
             id: f.id || `cfg-${i}`,
@@ -60,11 +74,11 @@ export default function ConfigurationPage() {
           return;
         }
       }
-      setConfigs(DEMO_CONFIGS);
-      setSelectedConfig(DEMO_CONFIGS[0]);
+      setConfigs([]);
+      setSelectedConfig(null);
     } catch {
-      setConfigs(DEMO_CONFIGS);
-      setSelectedConfig(DEMO_CONFIGS[0]);
+      setConfigs([]);
+      setSelectedConfig(null);
     }
   }, []);
 

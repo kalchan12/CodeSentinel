@@ -9,9 +9,23 @@ import type { Finding } from "@codesentinel/shared";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api";
-import { DEMO_SECRETS, type SecretItem } from "@/lib/demo-data";
 import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
+
+export interface SecretItem {
+  id: string;
+  ruleId: string;
+  title: string;
+  type: string;
+  file: string;
+  line: number;
+  commit?: string;
+  maskedSecret: string;
+  severity: "critical" | "high" | "medium";
+  confidence: "high" | "medium" | "low";
+  status: "active" | "rotated" | "ignored";
+  detectedAt: string;
+}
 
 const TYPE_COLORS: Record<string, string> = {
   "Cloud Credential": "bg-tertiary/15 text-tertiary border-tertiary/30",
@@ -61,11 +75,11 @@ export default function SecretsPage() {
           return;
         }
       }
-      setSecrets(DEMO_SECRETS);
-      setSelectedSecret(DEMO_SECRETS[0]);
+      setSecrets([]);
+      setSelectedSecret(null);
     } catch {
-      setSecrets(DEMO_SECRETS);
-      setSelectedSecret(DEMO_SECRETS[0]);
+      setSecrets([]);
+      setSelectedSecret(null);
     }
   }, []);
 

@@ -49,6 +49,12 @@ class ProjectRead(BaseModel):
 
     @classmethod
     def from_model(cls, project, scan_count: int = 0, last_scan=None) -> ProjectRead:
+        score = None
+        if last_scan:
+            if hasattr(last_scan, "risk_score") and last_scan.risk_score is not None:
+                score = last_scan.risk_score
+            elif getattr(last_scan, "assessment", None) is not None:
+                score = last_scan.assessment.overall_score
         return cls(
             id=project.id,
             name=project.name,
@@ -59,7 +65,7 @@ class ProjectRead(BaseModel):
             scan_count=scan_count,
             last_scan_status=last_scan.status if last_scan else None,
             last_scan_id=last_scan.id if last_scan else None,
-            last_scan_score=last_scan.risk_score if last_scan else None,
+            last_scan_score=score,
             last_scan_findings_count=last_scan.findings_count if last_scan else None,
             created_at=project.created_at,
         )
