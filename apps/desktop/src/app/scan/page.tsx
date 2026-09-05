@@ -3,12 +3,13 @@
 /* eslint-disable react-hooks/set-state-in-effect -- polling page; state synced to fetched scan state */
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import type {
   Finding,
   FindingsPage,
+  Project,
   RiskAssessment,
   Scan,
   Severity,
@@ -28,19 +29,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { NewProjectDialog } from "@/components/new-project-dialog";
 import { api, ApiError } from "@/lib/api";
-import { DEMO_ACTIVE_SCAN } from "@/lib/demo-data";
-import { formatLine, formatRiskScore, SEVERITY_LABELS, severityClass } from "@/lib/format";
+import { formatDate, formatLine, formatRiskScore, SCAN_STATUS_LABELS, SEVERITY_LABELS, severityClass } from "@/lib/format";
 import { usePolling } from "@/lib/hooks";
 import { cn } from "@/lib/utils";
-
-const PIPELINE_STEPS = [
-  { label: "Repository Discovery", detail: "201 files indexed in 1.2s" },
-  { label: "Source Analysis", detail: "AST parsing complete" },
-  { label: "Secret Detection", detail: "2 high-entropy strings found", hasAlert: true },
-  { label: "Dependency Analysis", detail: "Checking package.json..." },
-  { label: "Report Generation", detail: "Pending" },
-];
 
 export default function ScanPage() {
   return (
@@ -56,7 +49,9 @@ function ScanContent() {
   const searchParams = useSearchParams();
   const scanId = Number(searchParams.get("scan")) || null;
 
-  const [scan, setScan] = useState<Scan | null>(scanId === null ? DEMO_ACTIVE_SCAN : null);
+  const [scan, setScan] = useState<Scan | null>(null);
+  const [loading, setLoading] = useState<boolean>(scanId !== null);
+  const [notFound, setNotFound] = useState<boolean>(false);
   const [findings, setFindings] = useState<FindingsPage | null>(null);
   const [assessment, setAssessment] = useState<RiskAssessment | null>(null);
   const [severityFilter, setSeverityFilter] = useState<string>("all");
@@ -68,12 +63,15 @@ function ScanContent() {
       const data = await api.getScan(scanId);
       setScan(data);
       setProjectId(data.project_id);
+      setNotFound(false);
     } catch (error) {
       if (error instanceof ApiError && error.status === 404) {
-        setScan(DEMO_ACTIVE_SCAN);
+        setNotFound(true);
         return;
       }
       toast.error(error instanceof Error ? error.message : "Failed to load scan");
+    } finally {
+      setLoading(false);
     }
   }, [scanId]);
 
@@ -92,7 +90,9 @@ function ScanContent() {
   }, [scanId, severityFilter]);
 
   useEffect(() => {
-    if (scanId !== null) loadScan();
+    if (scanId !== null) {
+      loadScan();
+    }
   }, [loadScan, scanId]);
 
   const active = scanId !== null && scan !== null && (scan.status === "pending" || scan.status === "running");
@@ -109,6 +109,19 @@ function ScanContent() {
     }
   }, [scan?.status, loadResults]);
 
+  if (scanId === null || notFound) {
+    return <ScanProjectSelector notFoundId={notFound ? scanId : null} />;
+  }
+
+  if (loading && scan === null) {
+    return (
+      <div className="space-y-6 max-w-[1440px] mx-auto">
+        <Skeleton className="h-24 w-full" />
+        <Skeleton className="h-96 w-full" />
+      </div>
+    );
+  }
+
   return (
     <ScanDashboard
       scan={scan}
@@ -118,6 +131,205 @@ function ScanContent() {
       setSeverityFilter={setSeverityFilter}
       projectId={projectId}
     />
+  );
+}
+
+function ScanProjectSelector({ notFoundId }: { notFoundId: number | null }) {
+  const router = useRouter();
+  const [projects, setProjects] = useState<Project[] | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [startingProjectId, setStartingProjectId] = useState<number | null>(null);
+
+  useEffect(() => {
+    api
+      .listProjects()
+      .then((data) => setProjects(data))
+      .catch((err) => {
+        toast.error(err instanceof Error ? err.message : "Failed to load projects");
+        setProjects([]);
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  async function handleStartScan(project: Project) {
+    setStartingProjectId(project.id);
+    try {
+      const scan = await api.createScan(project.id);
+      toast.success(`Scan #${scan.id} started for ${project.name}`);
+      router.push(`/scan?scan=${scan.id}`);
+    } catch (error) {
+      toast.error(error instanceof ApiError ? error.message : "Could not start scan");
+    } finally {
+      setStartingProjectId(null);
+    }
+  }
+
+  return (
+    <div className="max-w-[1440px] mx-auto space-y-6">
+      {notFoundId && (
+        <div className="p-4 bg-error/10 border border-error/30 rounded-xl flex items-center justify-between text-error">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined">warning</span>
+            <span className="text-sm font-semibold">Scan #{notFoundId} was not found.</span>
+          </div>
+          <span className="text-xs text-on-surface-variant font-[JetBrains_Mono]">Select a project below to start a new scan</span>
+        </div>
+      )}
+
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b border-outline-variant pb-6">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="material-symbols-outlined text-primary text-[28px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+              radar
+            </span>
+            <h2 className="text-[24px] leading-[32px] tracking-[-0.01em] font-semibold text-on-surface font-[Inter]">
+              Security Scans
+            </h2>
+          </div>
+          <p className="text-[14px] leading-[20px] text-on-surface-variant font-[Inter]">
+            Choose a target project from your workspace to run code analysis, secret discovery, and dependency checks.
+          </p>
+        </div>
+        <NewProjectDialog
+          onCreated={() => {
+            api.listProjects().then(setProjects);
+          }}
+          trigger={
+            <button className="bg-primary hover:bg-primary/90 text-on-primary font-semibold text-xs px-4 py-2 rounded-lg flex items-center gap-1.5 transition-all cyber-glow cursor-pointer">
+              <span className="material-symbols-outlined text-[16px]">add</span>
+              Add Project
+            </button>
+          }
+        />
+      </div>
+
+      {loading ? (
+        <div className="space-y-4">
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
+        </div>
+      ) : projects && projects.length === 0 ? (
+        <div className="flex min-h-[50vh] flex-col items-center justify-center gap-4 text-center bg-surface-container-low border border-outline-variant rounded-xl p-12">
+          <div className="w-16 h-16 rounded-full bg-surface-container-high flex items-center justify-center text-primary">
+            <span className="material-symbols-outlined text-3xl">folder_off</span>
+          </div>
+          <h3 className="text-xl font-bold text-on-surface font-[Inter]">No projects added yet</h3>
+          <p className="max-w-md text-sm text-on-surface-variant font-[Inter]">
+            CodeSentinel requires at least one local codebase or GitHub repository registered in your local database before running security scans.
+          </p>
+          <NewProjectDialog
+            onCreated={() => {
+              api.listProjects().then(setProjects);
+            }}
+            trigger={
+              <button className="mt-2 flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-bold text-on-primary transition-all hover:bg-primary/90 cyber-glow cursor-pointer">
+                <span className="material-symbols-outlined">add</span>
+                Add Your First Project
+              </button>
+            }
+          />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-4">
+          <h3 className="text-xs font-bold text-on-surface-variant font-[JetBrains_Mono] uppercase tracking-[0.08em]">
+            Available Projects ({projects?.length ?? 0})
+          </h3>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {projects?.map((project) => {
+              const isStarting = startingProjectId === project.id;
+              const isLocal = project.source_type === "local";
+
+              return (
+                <div
+                  key={project.id}
+                  className="bg-surface-container-low border border-outline-variant rounded-xl p-5 hover:border-primary/50 transition-all flex flex-col justify-between gap-4 tech-shadow"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3 min-w-0">
+                      <div className="w-12 h-12 rounded-xl bg-surface-container-high border border-outline-variant flex items-center justify-center shrink-0 text-primary">
+                        <span className="material-symbols-outlined text-[24px]">
+                          {isLocal ? "folder_open" : "code"}
+                        </span>
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-base font-bold text-on-surface font-[Inter] truncate">
+                            {project.name}
+                          </h4>
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold font-[JetBrains_Mono] uppercase bg-surface-container border border-outline-variant text-on-surface-variant">
+                            {isLocal ? "Local" : "GitHub"}
+                          </span>
+                        </div>
+                        <p className="text-xs text-on-surface-variant font-[JetBrains_Mono] truncate mt-1">
+                          {project.local_path ?? project.repo_url}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 bg-background/50 border border-outline-variant/50 rounded-lg p-2.5 text-center font-[JetBrains_Mono]">
+                    <div>
+                      <span className="text-[10px] text-outline uppercase block">Scans</span>
+                      <span className="text-xs font-bold text-on-surface">{project.scan_count}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-outline uppercase block">Last Status</span>
+                      <span className="text-xs font-bold text-secondary">
+                        {project.last_scan_status ? SCAN_STATUS_LABELS[project.last_scan_status] ?? project.last_scan_status : "None"}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-outline uppercase block">Risk Score</span>
+                      <span className="text-xs font-bold text-tertiary">
+                        {project.last_scan_score !== null ? `${Math.round(project.last_scan_score)}/100` : "—"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2 border-t border-outline-variant/60">
+                    <Link
+                      href={`/projects?project=${project.id}`}
+                      className="text-xs text-on-surface-variant hover:text-primary font-[Inter] flex items-center gap-1"
+                    >
+                      <span>Project Details</span>
+                      <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                    </Link>
+
+                    <div className="flex items-center gap-2">
+                      {project.last_scan_id && (
+                        <Link
+                          href={`/scan?scan=${project.last_scan_id}`}
+                          className="px-3 py-1.5 border border-outline-variant rounded-lg text-xs font-semibold text-on-surface hover:bg-surface-container transition-colors"
+                        >
+                          View Last Scan
+                        </Link>
+                      )}
+                      <button
+                        onClick={() => handleStartScan(project)}
+                        disabled={isStarting || startingProjectId !== null}
+                        className="bg-primary hover:bg-primary/90 text-on-primary font-semibold text-xs px-4 py-1.5 rounded-lg flex items-center gap-1.5 transition-all cyber-glow disabled:opacity-50 cursor-pointer"
+                      >
+                        {isStarting ? (
+                          <>
+                            <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>
+                            <span>Starting…</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="material-symbols-outlined text-sm">play_arrow</span>
+                            <span>Scan Now</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -143,8 +355,17 @@ function ScanDashboard({
   const running = scan.status === "pending" || scan.status === "running";
 
   if (running) {
+    const progress = Math.round(scan.progress);
+    const pipelineSteps = [
+      { label: "Repository Discovery", detail: "Resolving source files and structure", done: progress >= 20, current: progress < 20 },
+      { label: "Static Code Analysis", detail: "Semgrep SAST & Tree-sitter AST checks", done: progress >= 50, current: progress >= 20 && progress < 50 },
+      { label: "Secret Detection", detail: "Gitleaks high-entropy credential scanner", done: progress >= 75, current: progress >= 50 && progress < 75 },
+      { label: "Dependency Vulnerabilities", detail: "OSV lockfile database matching", done: progress >= 90, current: progress >= 75 && progress < 90 },
+      { label: "Risk Scoring & Correlation", detail: "Multi-factor explainable ranking", done: progress >= 100, current: progress >= 90 },
+    ];
+
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 max-w-[1440px] mx-auto">
         <div className="flex items-start justify-between mb-xl">
           <div>
             <div className="flex items-center gap-sm mb-xs">
@@ -153,28 +374,31 @@ function ScanDashboard({
             </div>
             <p className="text-[13px] leading-[18px] text-on-surface-variant flex items-center gap-sm font-[Inter]">
               <span className="inline-block w-2 h-2 rounded-full bg-secondary pulse-active" />
-              Scan ID #CS-{scan.id} · Initiated locally · {scan.started_at ? "00:02:41 elapsed" : "starting..."}
+              Scan ID #CS-{scan.id} · Status: <span className="font-semibold text-secondary uppercase">{scan.status}</span> · Started {formatDate(scan.started_at ?? scan.created_at)}
             </p>
           </div>
-          <button className="flex items-center gap-xs px-md py-sm border border-outline-variant rounded-lg bg-surface-container text-error hover:bg-surface-container-high transition-colors text-[18px] leading-[24px] font-semibold font-[Inter]">
-            <span className="material-symbols-outlined text-[18px]">stop_circle</span>
-            Abort Scan
-          </button>
+          <Link
+            href="/scan"
+            className="flex items-center gap-xs px-md py-sm border border-outline-variant rounded-lg bg-surface-container text-on-surface hover:bg-surface-container-high transition-colors text-xs font-semibold font-[Inter]"
+          >
+            <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+            All Scans
+          </Link>
         </div>
 
         <div className="mb-xl bg-surface-container-low border border-outline-variant rounded-xl p-md">
           <div className="flex justify-between items-end mb-sm">
             <div className="flex items-center gap-sm">
-              <span className="text-[10px] leading-[12px] tracking-[0.08em] font-bold text-on-surface-variant font-[JetBrains_Mono]">Global Pipeline Progress</span>
+              <span className="text-[10px] leading-[12px] tracking-[0.08em] font-bold text-on-surface-variant font-[JetBrains_Mono]">Pipeline Execution Progress</span>
             </div>
-            <span className="text-[13px] leading-[20px] text-secondary font-bold font-[JetBrains_Mono]">{Math.round(scan.progress)}%</span>
+            <span className="text-[13px] leading-[20px] text-secondary font-bold font-[JetBrains_Mono]">{progress}%</span>
           </div>
           <div className="w-full h-2 bg-surface-container-highest rounded-full overflow-hidden relative">
-            <div className="absolute top-0 left-0 h-full bg-secondary progress-glow transition-all duration-1000 ease-out" style={{ width: `${scan.progress}%` }} />
+            <div className="absolute top-0 left-0 h-full bg-secondary progress-glow transition-all duration-1000 ease-out" style={{ width: `${progress}%` }} />
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-lg h-[500px]">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-lg min-h-[480px]">
           <div className="lg:col-span-8 flex flex-col gap-lg h-full">
             <div className="flex-1 bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden flex flex-col relative shadow-[0_4px_12px_rgba(0,0,0,0.3)]">
                 <div className="bg-surface-container-high border-b border-outline-variant px-md py-sm flex justify-between items-center z-10">
@@ -191,36 +415,35 @@ function ScanDashboard({
                 <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden">
                   <div className="w-full h-32 scanner-beam absolute top-0 left-0" />
                 </div>
-                <div className="flex flex-col items-center gap-4 text-on-surface-variant">
+                <div className="flex flex-col items-center gap-4 text-on-surface-variant z-10">
                   <span className="material-symbols-outlined text-4xl animate-spin text-secondary">sync</span>
                   <p className="font-code text-sm animate-pulse">Running security analyzers on your project...</p>
+                  <p className="text-xs text-outline font-[JetBrains_Mono]">Orchestrating Semgrep, Gitleaks, Tree-sitter AST, and OSV</p>
                 </div>
               </div>
             </div>
-            <div className="grid grid-cols-4 gap-sm">
-              <MetricCard label="FILES" value="84" total="/201" />
+            <div className="grid grid-cols-3 gap-sm">
+              <MetricCard label="PROGRESS" value={`${progress}%`} color="secondary" />
               <MetricCard label="FINDINGS" value={scan.findings_count} color="tertiary" />
-              <MetricCard label="SECRETS" value="2" color="error" />
-              <MetricCard label="DEPENDENCIES" value="38" />
+              <MetricCard label="STATUS" value={scan.status.toUpperCase()} />
             </div>
           </div>
           <div className="lg:col-span-4 bg-surface-container-low border border-outline-variant rounded-xl p-lg flex flex-col shadow-[0_4px_12px_rgba(0,0,0,0.2)]">
             <h3 className="text-[18px] leading-[24px] font-semibold text-on-surface mb-xl flex items-center gap-sm font-[Inter]">
               <span className="material-symbols-outlined">checklist</span>
-              Live Pipeline
+              Analysis Pipeline
             </h3>
             <div className="flex-1 relative">
               <div className="absolute left-[11px] top-4 bottom-8 w-[2px] bg-outline-variant" />
               <div className="flex flex-col gap-lg relative z-10">
-                {PIPELINE_STEPS.map((step, index) => (
+                {pipelineSteps.map((step) => (
                   <PipelineStep
                     key={step.label}
                     label={step.label}
                     detail={step.detail}
-                    hasAlert={step.hasAlert}
-                    done={index < 3}
-                    current={index === 3 && scan.status === "running"}
-                    pending={index > 3}
+                    done={step.done}
+                    current={step.current}
+                    pending={!step.done && !step.current}
                   />
                 ))}
               </div>
@@ -232,14 +455,23 @@ function ScanDashboard({
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-sm mb-xl">
-        <span className="material-symbols-outlined text-secondary" style={{ fontVariationSettings: "'FILL' 1" }}>task_alt</span>
-        <h2 className="text-[24px] leading-[32px] tracking-[-0.01em] font-semibold text-on-surface font-[Inter]">
-          Scan Completed: #CS-{scan.id}
-        </h2>
+    <div className="space-y-6 max-w-[1440px] mx-auto">
+      <div className="flex items-center justify-between border-b border-outline-variant pb-4">
+        <div className="flex items-center gap-sm">
+          <span className="material-symbols-outlined text-secondary" style={{ fontVariationSettings: "'FILL' 1" }}>task_alt</span>
+          <h2 className="text-[24px] leading-[32px] tracking-[-0.01em] font-semibold text-on-surface font-[Inter]">
+            Scan Completed: #CS-{scan.id}
+          </h2>
+        </div>
+        <Link
+          href="/scan"
+          className="flex items-center gap-xs px-3 py-1.5 border border-outline-variant rounded-lg text-xs font-semibold text-on-surface hover:bg-surface-container transition-colors"
+        >
+          <span className="material-symbols-outlined text-[16px]">radar</span>
+          All Scans / New Scan
+        </Link>
       </div>
-      <SummaryCards scan={scan} findingCount={findings?.total ?? 0} assessment={assessment} />
+      <SummaryCards scan={scan} findingCount={findings?.total ?? scan.findings_count} assessment={assessment} />
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <SeverityDistribution scan={scan} />
         {assessment && <Priorities assessment={assessment} />}
@@ -252,14 +484,12 @@ function ScanDashboard({
 function PipelineStep({
   label,
   detail,
-  hasAlert,
   done,
   current,
   pending,
 }: {
   label: string;
   detail: string;
-  hasAlert?: boolean;
   done: boolean;
   current: boolean;
   pending: boolean;
@@ -277,24 +507,13 @@ function PipelineStep({
         <h4 className={cn("text-[14px] leading-[20px] font-semibold font-[Inter]", done ? "text-on-surface" : current ? "text-secondary font-bold" : pending ? "text-on-surface-variant" : "text-on-surface")}>
           {label}
         </h4>
-        <p className={cn("text-[13px] leading-[18px] mt-xs font-[Inter]", hasAlert && done ? "text-error" : done ? "text-on-surface-variant" : current ? "text-secondary font-[JetBrains_Mono] text-[11px] leading-[16px] flex items-center gap-xs" : "text-outline")}>
+        <p className={cn("text-[13px] leading-[18px] mt-xs font-[Inter]", done ? "text-on-surface-variant" : current ? "text-secondary font-[JetBrains_Mono] text-[11px] leading-[16px] flex items-center gap-xs" : "text-outline")}>
           {current && <span className="material-symbols-outlined text-[12px] animate-spin">refresh</span>}
           {detail}
         </p>
       </div>
     </div>
   );
-}
-
-function scanStatusBadge(status: Scan["status"]): string {
-  const styles: Record<string, string> = {
-    pending: "rounded border border-outline-variant bg-surface-container px-2 py-1 font-code text-[10px] font-bold text-on-surface-variant uppercase",
-    running: "rounded border border-primary/30 bg-primary/10 px-2 py-1 font-code text-[10px] font-bold text-primary uppercase",
-    completed: "rounded border border-secondary/30 bg-secondary/10 px-2 py-1 font-code text-[10px] font-bold text-secondary uppercase",
-    failed: "rounded border border-error/30 bg-error/10 px-2 py-1 font-code text-[10px] font-bold text-error uppercase",
-    canceled: "rounded border border-outline-variant bg-surface-container px-2 py-1 font-code text-[10px] font-bold text-on-surface-variant uppercase",
-  };
-  return styles[status] ?? styles.pending;
 }
 
 function SummaryCards({
@@ -311,7 +530,7 @@ function SummaryCards({
       <StatCard label="Overall risk" value={assessment ? `${assessment.overall_score.toFixed(0)} / 100` : "—"} detail={assessment?.overall_level ? SEVERITY_LABELS[assessment.overall_level as Severity] : undefined} />
       <StatCard label="Findings" value={String(findingCount)} />
       <StatCard label="Top risk score" value={assessment ? formatRiskScore(assessment.breakdown?.max_score) : "—"} />
-      <StatCard label="Analyzer" value={scan.correlation ? "mock" : "—"} />
+      <StatCard label="Analysis Pipeline" value="Multi-Engine" detail="Semgrep, Gitleaks, Tree-sitter, OSV" />
     </div>
   );
 }
