@@ -9,21 +9,40 @@ import type { RiskAssessment, Scan } from "@codesentinel/shared";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api";
-import { DEMO_PROJECTS, DEMO_REPORT, type ReportSummary } from "@/lib/demo-data";
 import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
+
+export interface ReportSummary {
+  projectName: string;
+  scanId: number;
+  generatedAt: string;
+  overallScore: number;
+  grade: string;
+  totalFindings: number;
+  criticalCount: number;
+  highCount: number;
+  mediumCount: number;
+  lowCount: number;
+  compliance: {
+    framework: string;
+    score: number;
+    status: "compliant" | "warning" | "failing";
+    violations: number;
+  }[];
+}
 
 export default function ReportsPage() {
   const [report, setReport] = useState<ReportSummary | null>(null);
   const [projects, setProjects] = useState<Awaited<ReturnType<typeof api.listProjects>> | null>(null);
-  const [selectedProjectId, setSelectedProjectId] = useState<number>(1);
+  const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     try {
       const projectList = await api.listProjects();
       setProjects(projectList);
       if (projectList.length > 0) {
-        const target = projectList.find((p) => p.id === selectedProjectId) ?? projectList[0];
+        const target = (selectedProjectId ? projectList.find((p) => p.id === selectedProjectId) : null) ?? projectList[0];
+        setSelectedProjectId(target.id);
         if (target.last_scan_id != null) {
           const [scan, assessment, findings] = await Promise.all([
             api.getScan(target.last_scan_id),
@@ -39,6 +58,40 @@ export default function ReportsPage() {
           };
           const score = assessment ? Math.round(assessment.overall_score) : 75;
           const grade = score >= 90 ? "A" : score >= 80 ? "B+" : score >= 70 ? "B-" : score >= 60 ? "C" : "F";
+          
+          const items = findings?.items ?? [];
+          const secretCount = items.filter((f) => f.category === "secrets").length;
+          const depCount = items.filter((f) => f.category === "dependency").length;
+          const vulnCount = items.filter((f) => f.category === "vulnerability").length;
+          const configCount = items.filter((f) => f.category === "configuration" || f.category === "repository").length;
+
+          const compliance = [
+            {
+              framework: "OWASP Top 10 (2021)",
+              score: Math.max(20, 100 - vulnCount * 12),
+              status: vulnCount === 0 ? "compliant" : vulnCount <= 2 ? "warning" : "failing",
+              violations: vulnCount,
+            },
+            {
+              framework: "CWE Top 25 Standards",
+              score: Math.max(30, 100 - (counts.critical * 20 + counts.high * 10)),
+              status: counts.critical === 0 && counts.high <= 1 ? "compliant" : counts.critical <= 1 ? "warning" : "failing",
+              violations: counts.critical + counts.high,
+            },
+            {
+              framework: "Secret Hygiene & Credentials",
+              score: Math.max(10, 100 - secretCount * 25),
+              status: secretCount === 0 ? "compliant" : secretCount === 1 ? "warning" : "failing",
+              violations: secretCount,
+            },
+            {
+              framework: "SCA / Dependency Health",
+              score: Math.max(25, 100 - depCount * 8),
+              status: depCount === 0 ? "compliant" : depCount <= 3 ? "warning" : "failing",
+              violations: depCount,
+            },
+          ] as ReportSummary["compliance"];
+
           setReport({
             projectName: target.name,
             scanId: target.last_scan_id,
@@ -50,15 +103,15 @@ export default function ReportsPage() {
             highCount: counts.high,
             mediumCount: counts.medium,
             lowCount: counts.low,
-            compliance: DEMO_REPORT.compliance,
+            compliance,
           });
           return;
         }
       }
-      setReport(DEMO_REPORT);
+      setReport(null);
     } catch {
-      setProjects(DEMO_PROJECTS);
-      setReport(DEMO_REPORT);
+      setProjects([]);
+      setReport(null);
     }
   }, [selectedProjectId]);
 
@@ -68,9 +121,21 @@ export default function ReportsPage() {
 
   if (report === null) {
     return (
-      <div className="space-y-lg max-w-[1440px] mx-auto">
-        <Skeleton className="h-28 w-full" />
-        <Skeleton className="h-96 w-full" />
+      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 text-center">
+        <div className="flex size-16 items-center justify-center rounded-full bg-primary/20 text-primary">
+          <span className="material-symbols-outlined text-4xl">assessment</span>
+        </div>
+        <h3 className="text-xl font-bold text-on-surface font-[Inter]">No Completed Scans Found</h3>
+        <p className="max-w-sm text-sm text-on-surface-variant font-[Inter]">
+          Executive compliance reports require at least one completed scan. Run a security scan to generate audit-ready metrics.
+        </p>
+        <Link
+          href="/scan"
+          className="mt-2 flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-bold text-on-primary transition-all hover:bg-primary/90 cyber-glow"
+        >
+          <span className="material-symbols-outlined">radar</span>
+          Go to Scans
+        </Link>
       </div>
     );
   }
@@ -124,7 +189,7 @@ export default function ReportsPage() {
           {projects && projects.length > 0 && (
             <select
               className="bg-background border border-outline-variant rounded text-on-surface text-[12px] leading-[18px] font-[JetBrains_Mono] py-1.5 px-3 focus:ring-1 focus:ring-primary outline-none"
-              value={selectedProjectId}
+              value={selectedProjectId ?? ""}
               onChange={(e) => setSelectedProjectId(Number(e.target.value))}
             >
               {projects.map((p) => (

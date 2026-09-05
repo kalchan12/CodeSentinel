@@ -10,7 +10,6 @@ import { NewProjectDialog } from "@/components/new-project-dialog";
 import { ProjectDetail } from "@/components/project-detail";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api";
-import { DEMO_PROJECTS } from "@/lib/demo-data";
 import { formatDate, SCAN_STATUS_LABELS } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -110,8 +109,8 @@ function ProjectCard({ project }: { project: Project }) {
       </div>
       <div className="grid grid-cols-2 gap-md mb-lg relative z-10">
         <div className="bg-background border border-outline-variant rounded-lg p-sm">
-          <span className="text-on-surface-variant text-[10px] leading-[12px] tracking-[0.08em] font-bold font-[JetBrains_Mono] uppercase block mb-1">Tech Stack</span>
-          <span className="text-[13px] leading-[20px] text-secondary font-[JetBrains_Mono]">Python &middot; FastAPI</span>
+          <span className="text-on-surface-variant text-[10px] leading-[12px] tracking-[0.08em] font-bold font-[JetBrains_Mono] uppercase block mb-1">Target Type</span>
+          <span className="text-[13px] leading-[20px] text-secondary font-[JetBrains_Mono] capitalize">{project.source_type === "github" ? "GitHub Repository" : "Local Workspace"}</span>
         </div>
         <div className="bg-background border border-outline-variant rounded-lg p-sm flex items-center justify-between">
           <span className="text-on-surface-variant text-[10px] leading-[12px] tracking-[0.08em] font-bold font-[JetBrains_Mono] uppercase">Security Score</span>

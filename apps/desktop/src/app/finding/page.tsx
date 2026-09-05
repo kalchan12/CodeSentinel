@@ -10,7 +10,6 @@ import type { Finding } from "@codesentinel/shared";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api";
-import { DEMO_FINDINGS } from "@/lib/demo-data";
 import { formatDate, SEVERITY_LABELS, SEVERITY_TEXT_CLASSES } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -28,12 +27,12 @@ function FindingContent() {
   const findingId = searchParams.get("id") ?? null;
 
   const hasLiveFinding = scanId !== null && findingId !== null;
-  const [finding, setFinding] = useState<Finding | null>(hasLiveFinding ? null : DEMO_FINDINGS[0]);
+  const [finding, setFinding] = useState<Finding | null>(null);
   const [loading, setLoading] = useState(hasLiveFinding);
 
   const load = useCallback(async () => {
     if (scanId === null || findingId === null) {
-      setFinding(DEMO_FINDINGS[0]);
+      setFinding(null);
       setLoading(false);
       return;
     }
@@ -59,10 +58,14 @@ function FindingContent() {
   if (!finding) {
     return (
       <div className="flex min-h-[50vh] flex-col items-center justify-center gap-3 text-center">
-        <span className="material-symbols-outlined h-10 w-10 text-error" style={{ fontVariationSettings: "'FILL' 1" }}>warning</span>
-        <h3 className="text-lg font-semibold text-on-surface">Finding not found</h3>
-        <Link href={`/scan?scan=${scanId ?? ""}`} className="text-sm text-primary hover:underline">
-          Back to scan results
+        <span className="material-symbols-outlined h-10 w-10 text-primary">security</span>
+        <h3 className="text-lg font-semibold text-on-surface font-[Inter]">No Finding Selected</h3>
+        <p className="max-w-md text-xs text-on-surface-variant font-[Inter]">
+          Select a finding from your scan results to inspect the vulnerable code line, AI analysis, and remediation steps.
+        </p>
+        <Link href={`/scan${scanId ? `?scan=${scanId}` : ""}`} className="mt-2 text-xs font-semibold text-primary hover:underline flex items-center gap-1">
+          <span className="material-symbols-outlined text-sm">arrow_back</span>
+          {scanId ? "Back to Scan Results" : "Browse Scans & Findings"}
         </Link>
       </div>
     );

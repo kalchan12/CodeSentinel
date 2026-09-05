@@ -9,12 +9,6 @@ import type { Finding, FindingsPage, RiskAssessment, Scan, Severity } from "@cod
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api";
-import {
-  DEMO_DASHBOARD_SCAN,
-  DEMO_FINDINGS_PAGE,
-  DEMO_PROJECTS,
-  DEMO_RISK_ASSESSMENT,
-} from "@/lib/demo-data";
 import { formatDate, formatLine, SEVERITY_LABELS, SEVERITY_TEXT_CLASSES } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -126,17 +120,20 @@ export default function DashboardPage() {
       <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-md">
         <div>
           <h2 className="text-[24px] leading-[32px] tracking-[-0.01em] font-semibold text-on-surface mb-xs font-[Inter]">
-            Good morning, Alex.
+            Security Overview
           </h2>
           <p className="text-[14px] leading-[20px] text-on-surface-variant font-[Inter]">
-            Security overview for your projects.
+            Live posture for <span className="text-on-surface font-semibold">{currentProject.name}</span>
           </p>
         </div>
         <div className="flex gap-sm">
-          <button className="bg-transparent border border-outline-variant text-on-surface px-4 py-1.5 rounded-md text-[13px] leading-[20px] font-[JetBrains_Mono] hover:bg-surface-container-highest transition-colors flex items-center gap-xs">
-            <span className="material-symbols-outlined text-sm">download</span>
-            Export Report
-          </button>
+          <Link
+            href={`/scan?scan=${scan.id}`}
+            className="bg-transparent border border-outline-variant text-on-surface px-4 py-1.5 rounded-md text-[13px] leading-[20px] font-[JetBrains_Mono] hover:bg-surface-container-highest transition-colors flex items-center gap-xs"
+          >
+            <span className="material-symbols-outlined text-sm">radar</span>
+            View Scan Details
+          </Link>
         </div>
       </header>
 
@@ -161,10 +158,10 @@ export default function DashboardPage() {
             </div>
           </div>
           <p className="text-[13px] leading-[18px] text-secondary mt-sm flex items-center gap-xs font-[Inter]">
-            <span className="material-symbols-outlined text-xs">trending_up</span>
+            <span className="material-symbols-outlined text-xs">verified</span>
             {assessment
-              ? `${assessment.overall_score > 80 ? "+" : ""}${Math.round(assessment.overall_score - 80)} from last week`
-              : "+2 from last week"}
+              ? `Level: ${assessment.overall_level.toUpperCase()}`
+              : "Score evaluated locally"}
           </p>
         </div>
 
