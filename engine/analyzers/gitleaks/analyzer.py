@@ -46,6 +46,10 @@ class GitleaksAnalyzer(Analyzer):
     def analyze(self, context: AnalysisContext) -> list[Finding]:
         binary = shutil.which(self.binary)
         if binary is None:
+            local_bin = Path.home() / ".local" / "bin" / self.binary
+            if local_bin.exists():
+                binary = str(local_bin)
+        if binary is None:
             raise AnalyzerNotAvailableError(
                 f"gitleaks binary {self.binary!r} not found on PATH; "
                 "install it (e.g. scripts/install_gitleaks.sh) or set "
