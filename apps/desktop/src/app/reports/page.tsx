@@ -171,24 +171,24 @@ export default function ReportsPage() {
   };
 
   return (
-    <div className="max-w-[1440px] mx-auto space-y-lg">
+    <div className="max-w-[1440px] mx-auto space-y-lg overflow-hidden">
       {/* Header */}
-      <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-md border-b border-outline-variant pb-md">
-        <div>
+      <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-md border-b border-outline-variant pb-md relative before:absolute before:inset-0 before:-z-10 before:bg-gradient-to-r before:from-primary/5 before:to-transparent before:rounded-lg before:opacity-50">
+        <div className="min-w-0">
           <div className="flex items-center gap-sm mb-xs">
-            <span className="material-symbols-outlined text-primary text-[28px]">assessment</span>
-            <h2 className="text-[24px] leading-[32px] tracking-[-0.01em] font-semibold text-on-surface font-[Inter]">
+            <span className="material-symbols-outlined text-primary text-[28px] shrink-0">assessment</span>
+            <h2 className="text-[24px] leading-[32px] tracking-[-0.01em] font-semibold text-on-surface font-[Inter] break-words">
               Executive Security Reports & Compliance
             </h2>
           </div>
-          <p className="text-[14px] leading-[20px] text-on-surface-variant font-[Inter]">
+          <p className="text-[14px] leading-[20px] text-on-surface-variant font-[Inter] break-words">
             Audit-ready security syntheses, OWASP/CWE benchmarks, and exportable reports.
           </p>
         </div>
-        <div className="flex flex-wrap gap-sm">
+        <div className="flex flex-wrap items-center gap-sm shrink-0">
           {projects && projects.length > 0 && (
             <select
-              className="bg-background border border-outline-variant rounded text-on-surface text-[12px] leading-[18px] font-[JetBrains_Mono] py-1.5 px-3 focus:ring-1 focus:ring-primary outline-none"
+              className="bg-background border border-outline-variant rounded text-on-surface text-[12px] leading-[18px] font-[JetBrains_Mono] py-1.5 px-3 focus:ring-1 focus:ring-primary outline-none min-w-[180px] hover:border-primary/50 transition-colors"
               value={selectedProjectId ?? ""}
               onChange={(e) => setSelectedProjectId(Number(e.target.value))}
             >
@@ -202,21 +202,21 @@ export default function ReportsPage() {
 
           <button
             onClick={handleExportJson}
-            className="bg-transparent border border-outline-variant text-on-surface px-3 py-1.5 rounded text-[12px] leading-[18px] font-[JetBrains_Mono] hover:bg-surface-container-highest transition-colors flex items-center gap-xs"
+            className="bg-transparent border border-outline-variant text-on-surface px-3 py-1.5 rounded text-[12px] leading-[18px] font-[JetBrains_Mono] hover:bg-surface-container-highest hover:border-primary/50 transition-colors flex items-center gap-xs focus:ring-2 focus:ring-primary/50 outline-none"
           >
             <span className="material-symbols-outlined text-sm">code</span>
             JSON
           </button>
           <button
             onClick={handleExportCsv}
-            className="bg-transparent border border-outline-variant text-on-surface px-3 py-1.5 rounded text-[12px] leading-[18px] font-[JetBrains_Mono] hover:bg-surface-container-highest transition-colors flex items-center gap-xs"
+            className="bg-transparent border border-outline-variant text-on-surface px-3 py-1.5 rounded text-[12px] leading-[18px] font-[JetBrains_Mono] hover:bg-surface-container-highest hover:border-primary/50 transition-colors flex items-center gap-xs focus:ring-2 focus:ring-primary/50 outline-none"
           >
             <span className="material-symbols-outlined text-sm">table_view</span>
             CSV
           </button>
           <button
             onClick={handlePrint}
-            className="bg-primary text-on-primary px-4 py-1.5 rounded text-[12px] leading-[18px] font-[JetBrains_Mono] font-semibold hover:bg-primary-container transition-colors flex items-center gap-xs shadow-[0_0_10px_rgba(208,188,255,0.15)]"
+            className="bg-primary text-on-primary px-4 py-1.5 rounded text-[12px] leading-[18px] font-[JetBrains_Mono] font-semibold hover:bg-primary-container transition-all flex items-center gap-xs shadow-[0_0_10px_rgba(139,92,246,0.3)] hover:shadow-[0_0_15px_rgba(139,92,246,0.5)] focus:ring-2 focus:ring-primary/50 outline-none"
           >
             <span className="material-symbols-outlined text-sm">print</span>
             Print / PDF
@@ -232,7 +232,7 @@ export default function ReportsPage() {
             Executive Security Rating
           </span>
           <div className="my-md">
-            <div className="size-28 rounded-full border-4 border-primary/40 bg-primary/10 flex flex-col items-center justify-center tech-shadow mx-auto">
+            <div className="size-28 rounded-full border-4 border-primary/40 bg-primary/10 flex flex-col items-center justify-center mx-auto shadow-[0_0_20px_rgba(139,92,246,0.4)] transition-shadow duration-500 hover:shadow-[0_0_30px_rgba(139,92,246,0.6)]">
               <span className="text-[44px] font-extrabold text-primary font-[Inter] leading-none">
                 {report.grade}
               </span>
@@ -250,7 +250,7 @@ export default function ReportsPage() {
         </div>
 
         {/* Severity Metrics (8 cols) */}
-        <div className="md:col-span-8 bg-surface-container-low border border-outline-variant rounded-lg p-lg tech-shadow flex flex-col justify-between">
+        <div className="md:col-span-8 bg-surface-container-low border border-outline-variant rounded-lg p-lg tech-shadow flex flex-col justify-between overflow-hidden min-w-0">
           <div className="flex justify-between items-center border-b border-outline-variant pb-sm mb-md">
             <h3 className="text-[18px] leading-[24px] font-semibold text-on-surface font-[Inter]">
               Findings Severity Distribution
@@ -267,11 +267,11 @@ export default function ReportsPage() {
             <SeverityBox label="LOW" count={report.lowCount} color="text-on-surface-variant" bg="bg-outline/10 border-outline/30" />
           </div>
 
-          <div className="w-full bg-background rounded-full h-3 flex overflow-hidden border border-outline-variant/60">
-            <div style={{ width: `${(report.criticalCount / Math.max(1, report.totalFindings)) * 100}%` }} className="bg-error" />
-            <div style={{ width: `${(report.highCount / Math.max(1, report.totalFindings)) * 100}%` }} className="bg-tertiary" />
-            <div style={{ width: `${(report.mediumCount / Math.max(1, report.totalFindings)) * 100}%` }} className="bg-secondary" />
-            <div style={{ width: `${(report.lowCount / Math.max(1, report.totalFindings)) * 100}%` }} className="bg-outline" />
+          <div className="w-full bg-background rounded-full h-3 flex overflow-hidden border border-outline-variant/60 gap-[1px]">
+            <div style={{ width: `${(report.criticalCount / Math.max(1, report.totalFindings)) * 100}%` }} className="bg-error rounded-sm group relative" title={`${report.criticalCount} Critical`} />
+            <div style={{ width: `${(report.highCount / Math.max(1, report.totalFindings)) * 100}%` }} className="bg-tertiary rounded-sm group relative" title={`${report.highCount} High`} />
+            <div style={{ width: `${(report.mediumCount / Math.max(1, report.totalFindings)) * 100}%` }} className="bg-secondary rounded-sm group relative" title={`${report.mediumCount} Medium`} />
+            <div style={{ width: `${(report.lowCount / Math.max(1, report.totalFindings)) * 100}%` }} className="bg-outline rounded-sm group relative" title={`${report.lowCount} Low`} />
           </div>
         </div>
       </div>
@@ -293,15 +293,15 @@ export default function ReportsPage() {
           {report.compliance.map((c) => (
             <div
               key={c.framework}
-              className="bg-background border border-outline-variant/60 rounded-lg p-md space-y-sm tech-shadow"
+              className="bg-background border border-outline-variant/60 rounded-lg p-md space-y-sm tech-shadow overflow-hidden bg-gradient-to-br from-background to-surface-container-low transition-all hover:border-primary/30 min-w-0"
             >
-              <div className="flex justify-between items-start">
-                <h4 className="text-[14px] font-bold text-on-surface font-[Inter]">
+              <div className="flex justify-between items-start gap-sm">
+                <h4 className="text-[14px] font-bold text-on-surface font-[Inter] break-words min-w-0">
                   {c.framework}
                 </h4>
                 <span
                   className={cn(
-                    "px-2 py-0.5 rounded text-[10px] font-bold font-[JetBrains_Mono] uppercase border",
+                    "px-2 py-0.5 rounded text-[10px] font-bold font-[JetBrains_Mono] uppercase border whitespace-nowrap shrink-0",
                     c.status === "compliant"
                       ? "bg-secondary/15 text-secondary border-secondary/30"
                       : c.status === "warning"
@@ -318,21 +318,21 @@ export default function ReportsPage() {
                 <span className="font-bold text-primary">{c.score}%</span>
               </div>
 
-              <div className="w-full bg-surface-container-highest rounded-full h-2 overflow-hidden">
+              <div className="w-full bg-surface-container-highest rounded-full h-2 overflow-hidden shadow-inner">
                 <div
                   style={{ width: `${c.score}%` }}
                   className={cn(
-                    "h-full rounded-full",
-                    c.score >= 80 ? "bg-secondary" : c.score >= 60 ? "bg-tertiary" : "bg-error"
+                    "h-full rounded-full transition-all duration-1000",
+                    c.score >= 80 ? "bg-secondary shadow-[0_0_8px_rgba(34,197,94,0.5)]" : c.score >= 60 ? "bg-tertiary shadow-[0_0_8px_rgba(234,179,8,0.5)]" : "bg-error shadow-[0_0_8px_rgba(244,63,94,0.5)]"
                   )}
                 />
               </div>
 
-              <div className="flex justify-between text-[11px] text-outline font-[JetBrains_Mono] pt-1">
-                <span>{c.violations} Active Rule Violations</span>
+              <div className="flex justify-between items-center text-[11px] text-outline font-[JetBrains_Mono] pt-1 gap-sm">
+                <span className="truncate min-w-0">{c.violations} Active Rule Violations</span>
                 <Link
                   href={`/scan?scan=${report.scanId}`}
-                  className="text-primary hover:underline"
+                  className="text-primary hover:underline whitespace-nowrap shrink-0 hover:text-primary/80 transition-colors"
                 >
                   Review Findings →
                 </Link>
@@ -343,22 +343,22 @@ export default function ReportsPage() {
       </section>
 
       {/* Audit Checklist Footer */}
-      <div className="bg-surface-container-low border border-outline-variant rounded-lg p-md flex flex-col md:flex-row justify-between items-center gap-md">
-        <div className="flex items-center gap-sm">
-          <span className="material-symbols-outlined text-secondary text-2xl">verified_user</span>
-          <div>
-            <h4 className="text-[14px] font-semibold text-on-surface font-[Inter]">
+      <div className="bg-surface-container-low border border-outline-variant rounded-lg p-md flex flex-col md:flex-row justify-between items-center gap-md min-w-0">
+        <div className="flex items-center gap-sm min-w-0">
+          <span className="material-symbols-outlined text-secondary text-2xl shrink-0">verified_user</span>
+          <div className="min-w-0">
+            <h4 className="text-[14px] font-semibold text-on-surface font-[Inter] break-words">
               Local-First Audit Integrity
             </h4>
-            <p className="text-[12px] text-on-surface-variant font-[Inter]">
+            <p className="text-[12px] text-on-surface-variant font-[Inter] break-words">
               All analysis was calculated deterministically on host without uploading source files.
             </p>
           </div>
         </div>
-        <div className="flex gap-sm">
+        <div className="flex gap-sm shrink-0">
           <Link
             href="/scan"
-            className="px-4 py-2 bg-surface-container-highest hover:bg-surface-container-high border border-outline-variant rounded text-[12px] font-[JetBrains_Mono] text-on-surface transition-colors"
+            className="px-4 py-2 bg-surface-container-highest hover:bg-surface-container-high border border-outline-variant rounded text-[12px] font-[JetBrains_Mono] text-on-surface transition-colors hover:border-primary/50 focus:ring-2 focus:ring-primary/50 outline-none whitespace-nowrap"
           >
             Launch Re-Scan
           </Link>
@@ -380,8 +380,8 @@ function SeverityBox({
   bg: string;
 }) {
   return (
-    <div className={cn("p-sm rounded border flex flex-col items-center justify-center", bg)}>
-      <span className={cn("text-[10px] font-bold tracking-wider font-[JetBrains_Mono]", color)}>
+    <div className={cn("p-sm rounded border flex flex-col items-center justify-center min-w-0 transition-colors hover:bg-opacity-80", bg)}>
+      <span className={cn("text-[10px] font-bold tracking-wider font-[JetBrains_Mono] truncate w-full text-center", color)}>
         {label}
       </span>
       <span className={cn("text-[24px] font-bold font-[Inter] mt-0.5", color)}>{count}</span>
