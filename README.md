@@ -18,19 +18,19 @@ functional without any AI model.
 Repository / local directory
           │
           ▼
-  Analysis Orchestrator (Celery worker)
+  Analysis Orchestrator (FastAPI BackgroundTasks / Zero-Docker)
           │
           ▼
-  Analyzers (mock today; Semgrep, Gitleaks, tree-sitter, OSV, ... planned)
+  Analyzers (Semgrep, Gitleaks, Tree-sitter AST, Dependencies, Git, AI)
           │
           ▼
   Finding normalization ──► Finding correlation
           │
           ▼
-  Risk assessment (explainable scoring)
+  Risk assessment (explainable codesentinel-risk-v1 scoring)
           │
           ▼
-  PostgreSQL ──► UI dashboard (status, findings, severity, priorities)
+  SQLite Persistence ──► UI Dashboard & Embedded PTY Terminal
 ```
 
 **Local-first:** source code stays on your machine. GitHub URLs are cloned
@@ -214,6 +214,7 @@ failing that scan loudly. Follow the "Adding an analyzer" guide in
 
 ## Docs
 
+- **Capstone Problem Analysis Document (PAD / SRS)** — [docs/PROBLEM_ANALYSIS_DOCUMENT.md](docs/PROBLEM_ANALYSIS_DOCUMENT.md)
 - Architecture & data flow — [docs/architecture/overview.md](docs/architecture/overview.md)
 - Analyzer architecture & adding analyzers — [docs/architecture/analyzer-architecture.md](docs/architecture/analyzer-architecture.md)
 - Environment variables — [docs/environment.md](docs/environment.md)
