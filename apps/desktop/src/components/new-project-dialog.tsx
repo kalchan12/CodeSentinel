@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import type { SourceType } from "@codesentinel/shared";
 
 import {
@@ -17,6 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api, ApiError } from "@/lib/api";
+import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import { isTauri } from "@/lib/tauri";
 import { cn } from "@/lib/utils";
 
@@ -32,12 +33,14 @@ export function NewProjectDialog({
   onCreated: () => void;
   trigger?: React.ReactNode;
 }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [sourceType, setSourceType] = useState<SourceType>("local");
   const [pathOrUrl, setPathOrUrl] = useState("");
+  const [autoScan, setAutoScan] = useState(true);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -52,13 +55,23 @@ export function NewProjectDialog({
               source_type: "github" as SourceType,
               repo_url: pathOrUrl,
             };
-      await api.createProject(payload);
+      const created = await api.createProject(payload);
       toast.success("Project created successfully");
       setOpen(false);
       setName("");
       setDescription("");
       setPathOrUrl("");
       onCreated();
+
+      if (autoScan) {
+        try {
+          toast.info("Launching initial security scan...");
+          const scan = await api.createScan(created.id);
+          router.push(`/scan?scan=${scan.id}`);
+        } catch (scanErr) {
+          toast.error("Project added, but could not start scan: " + (scanErr instanceof Error ? scanErr.message : "Unknown error"));
+        }
+      }
     } catch (error) {
       toast.error(error instanceof ApiError ? error.message : "Could not create project");
     } finally {
@@ -214,6 +227,21 @@ export function NewProjectDialog({
                   className="w-full bg-background border border-outline-variant px-3.5 py-2 text-sm text-on-background placeholder:text-on-surface-variant/60 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
                 />
               </div>
+            </div>
+
+            {/* Auto-start scan toggle */}
+            <div className="flex items-center gap-2.5 p-3 bg-primary/5 border border-primary/20 rounded-lg">
+              <input
+                type="checkbox"
+                id="autoScan"
+                checked={autoScan}
+                onChange={(e) => setAutoScan(e.target.checked)}
+                className="h-4 w-4 rounded border-outline-variant text-primary focus:ring-primary accent-primary cursor-pointer"
+              />
+              <label htmlFor="autoScan" className="text-xs text-on-surface font-medium cursor-pointer flex items-center gap-1.5 select-none">
+                <span className="material-symbols-outlined text-primary text-[16px]">bolt</span>
+                Start security scan immediately after adding
+              </label>
             </div>
           </div>
 

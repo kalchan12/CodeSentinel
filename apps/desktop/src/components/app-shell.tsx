@@ -38,8 +38,7 @@ function ActiveProjectBreadcrumb() {
 
 const NAV_ITEMS = [
   { href: "/overview", label: "Overview", icon: "dashboard" },
-  { href: "/projects", label: "Projects", icon: "folder_open" },
-  { href: "/scan", label: "Scans", icon: "radar" },
+  { href: "/projects", label: "Projects & Scans", icon: "folder_open" },
   { href: "/finding", label: "Findings", icon: "security" },
   { href: "/dependencies", label: "Dependencies", icon: "inventory_2" },
   { href: "/secrets", label: "Secrets", icon: "lock" },
@@ -97,10 +96,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             const active = (() => {
               if (item.href === "/overview" && item.label === "Overview")
                 return pathname.startsWith("/overview");
-              if (item.href === "/projects" && item.label === "Projects")
-                return pathname.startsWith("/projects");
-              if (item.href === "/scan" && item.label === "Scans")
-                return pathname.startsWith("/scan");
+              if (item.href === "/projects")
+                return pathname.startsWith("/projects") || pathname.startsWith("/scan");
               if (item.href === "/finding" && item.label === "Findings")
                 return pathname.startsWith("/finding");
               if (item.href === "/dependencies" && item.label === "Dependencies")
