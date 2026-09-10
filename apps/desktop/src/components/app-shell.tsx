@@ -37,7 +37,7 @@ function ActiveProjectBreadcrumb() {
 }
 
 const NAV_ITEMS = [
-  { href: "/", label: "Overview", icon: "dashboard" },
+  { href: "/overview", label: "Overview", icon: "dashboard" },
   { href: "/projects", label: "Projects", icon: "folder_open" },
   { href: "/scan", label: "Scans", icon: "radar" },
   { href: "/finding", label: "Findings", icon: "security" },
@@ -95,8 +95,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="flex-1 overflow-y-auto px-sm space-y-xs">
           {NAV_ITEMS.map((item) => {
             const active = (() => {
-              if (item.href === "/" && item.label === "Overview")
-                return pathname === "/";
+              if (item.href === "/overview" && item.label === "Overview")
+                return pathname.startsWith("/overview");
               if (item.href === "/projects" && item.label === "Projects")
                 return pathname.startsWith("/projects");
               if (item.href === "/scan" && item.label === "Scans")
