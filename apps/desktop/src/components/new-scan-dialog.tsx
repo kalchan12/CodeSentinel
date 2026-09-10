@@ -77,13 +77,13 @@ export function NewScanDialog({
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
       <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
         <DialogHeader className="border-b border-outline-variant pb-3">
-          <DialogTitle className="text-xl font-bold text-on-surface font-[Inter] flex items-center gap-2">
+          <DialogTitle className="text-xl font-bold text-on-surface font-[Inter] flex items-center gap-2 break-words">
             <span className="material-symbols-outlined text-primary text-[24px]" style={{ fontVariationSettings: "'FILL' 1" }}>
               radar
             </span>
             Run New Security Scan
           </DialogTitle>
-          <DialogDescription className="text-sm text-on-surface-variant font-[Inter] mt-1">
+          <DialogDescription className="text-sm text-on-surface-variant font-[Inter] mt-1 break-words">
             Select a project from your workspace to run static analysis, secrets detection, and dependency audits.
           </DialogDescription>
         </DialogHeader>
@@ -117,7 +117,7 @@ export function NewScanDialog({
                   <span className="material-symbols-outlined text-2xl">folder_off</span>
                 </div>
                 <h4 className="text-base font-semibold text-on-surface font-[Inter]">No Projects Found</h4>
-                <p className="text-xs text-on-surface-variant font-[Inter] max-w-sm">
+                <p className="text-xs text-on-surface-variant font-[Inter] max-w-sm break-words">
                   Add your first local codebase or GitHub repository before launching a scan.
                 </p>
                 <div className="mt-2">
@@ -126,7 +126,7 @@ export function NewScanDialog({
                       api.listProjects().then(setProjects);
                     }}
                     trigger={
-                      <button className="bg-primary hover:bg-primary/90 text-on-primary font-semibold text-xs px-4 py-2 rounded-lg flex items-center gap-1.5 transition-all cyber-glow cursor-pointer">
+                      <button className="bg-primary hover:bg-primary/90 text-on-primary font-semibold text-xs px-4 py-2 rounded-lg flex items-center gap-1.5 transition-all cyber-glow cursor-pointer whitespace-nowrap">
                         <span className="material-symbols-outlined text-[16px]">add</span>
                         Add Project
                       </button>
@@ -135,7 +135,7 @@ export function NewScanDialog({
                 </div>
               </div>
             ) : filteredProjects.length === 0 ? (
-              <div className="py-8 text-center text-sm text-on-surface-variant font-[Inter]">
+              <div className="py-8 text-center text-sm text-on-surface-variant font-[Inter] break-words">
                 No projects match &ldquo;{search}&rdquo;.
               </div>
             ) : (
@@ -146,7 +146,7 @@ export function NewScanDialog({
                 return (
                   <div
                     key={project.id}
-                    className="p-3 bg-surface-container border border-outline-variant rounded-xl hover:border-primary/50 transition-all flex items-center justify-between gap-4 group"
+                    className="p-3 bg-surface-container border border-outline-variant rounded-xl hover:border-primary/50 transition-all flex items-center justify-between gap-4 group overflow-hidden"
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="w-10 h-10 rounded-lg bg-surface-container-high border border-outline-variant flex items-center justify-center shrink-0 text-primary group-hover:border-primary/50 transition-colors">
@@ -159,14 +159,14 @@ export function NewScanDialog({
                           <h4 className="text-sm font-semibold text-on-surface font-[Inter] truncate">
                             {project.name}
                           </h4>
-                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold font-[JetBrains_Mono] uppercase bg-surface-container-high border border-outline-variant text-on-surface-variant">
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-bold font-[JetBrains_Mono] uppercase bg-surface-container-high border border-outline-variant text-on-surface-variant shrink-0">
                             {isLocal ? "Local" : "GitHub"}
                           </span>
                         </div>
                         <p className="text-xs text-on-surface-variant font-[JetBrains_Mono] truncate mt-0.5">
                           {project.local_path ?? project.repo_url}
                         </p>
-                        <div className="flex items-center gap-3 mt-1 text-[11px] text-outline font-[JetBrains_Mono]">
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-[11px] text-outline font-[JetBrains_Mono]">
                           <span>
                             {project.scan_count === 0
                               ? "Never scanned"
@@ -193,7 +193,7 @@ export function NewScanDialog({
                     <button
                       onClick={() => handleStartScan(project)}
                       disabled={isStarting || startingProjectId !== null}
-                      className="shrink-0 bg-primary hover:bg-primary/90 text-on-primary font-semibold text-xs px-4 py-2 rounded-lg flex items-center gap-1.5 transition-all cyber-glow disabled:opacity-50 cursor-pointer"
+                      className="shrink-0 whitespace-nowrap bg-primary hover:bg-primary/90 text-on-primary font-semibold text-xs px-4 py-2 rounded-lg flex items-center gap-1.5 transition-all cyber-glow disabled:opacity-50 cursor-pointer"
                     >
                       {isStarting ? (
                         <>

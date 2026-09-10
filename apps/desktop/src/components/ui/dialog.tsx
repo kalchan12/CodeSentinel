@@ -32,13 +32,13 @@ const DialogContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        "dialog-content border border-outline-variant bg-surface-container-low p-6 shadow-2xl rounded-xl text-on-surface tech-shadow",
+        "dialog-content border border-outline-variant/60 bg-surface-container-low p-6 shadow-2xl rounded-xl text-on-surface tech-shadow cyber-glow w-[92vw] max-w-[540px]",
         className
       )}
       {...props}
     >
       {children}
-      <DialogPrimitive.Close className="absolute right-4 top-4 rounded-lg p-1 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors focus:outline-none disabled:pointer-events-none cursor-pointer">
+      <DialogPrimitive.Close className="absolute right-3 top-3 rounded-md p-1.5 text-on-surface-variant/70 hover:text-on-surface hover:bg-surface-container-high hover:shadow-[0_0_8px_rgba(255,255,255,0.1)] transition-all focus:outline-none disabled:pointer-events-none cursor-pointer z-10">
         <X className="h-4 w-4" />
         <span className="sr-only">Close</span>
       </DialogPrimitive.Close>
@@ -48,7 +48,7 @@ const DialogContent = React.forwardRef<
 DialogContent.displayName = DialogPrimitive.Content.displayName;
 
 const DialogHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-  <div className={cn("flex flex-col space-y-1.5 text-left", className)} {...props} />
+  <div className={cn("flex flex-col space-y-1.5 text-left relative before:absolute before:inset-0 before:bg-gradient-to-b before:from-primary/5 before:to-transparent before:-m-6 before:pb-6 before:-z-10", className)} {...props} />
 );
 DialogHeader.displayName = "DialogHeader";
 

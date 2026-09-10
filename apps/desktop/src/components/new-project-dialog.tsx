@@ -78,8 +78,8 @@ export function NewProjectDialog({
       <DialogContent>
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-on-surface font-[Inter]">New Project</DialogTitle>
-            <DialogDescription className="text-sm text-on-surface-variant font-[Inter] mt-1">
+            <DialogTitle className="text-xl font-bold text-on-surface font-[Inter] break-words">New Project</DialogTitle>
+            <DialogDescription className="text-sm text-on-surface-variant font-[Inter] mt-1 break-words">
               Local-first: source code is analyzed securely on your machine.
             </DialogDescription>
           </DialogHeader>
@@ -90,14 +90,16 @@ export function NewProjectDialog({
               <Label htmlFor="name" className="text-[11px] font-bold text-on-surface-variant font-[JetBrains_Mono] uppercase tracking-[0.08em]">
                 Project Name <span className="text-error">*</span>
               </Label>
-              <Input
-                id="name"
-                required
-                placeholder="e.g. payments-api"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="bg-background border border-outline-variant rounded-lg px-3.5 py-2 text-sm text-on-background placeholder:text-on-surface-variant/60 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-              />
+              <div className="overflow-hidden rounded-lg">
+                <Input
+                  id="name"
+                  required
+                  placeholder="e.g. payments-api"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full bg-background border border-outline-variant px-3.5 py-2 text-sm text-on-background placeholder:text-on-surface-variant/60 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                />
+              </div>
             </div>
 
             {/* Source Type Selector */}
@@ -149,14 +151,16 @@ export function NewProjectDialog({
                 {sourceType === "local" ? "Local Directory Path" : "GitHub Repository URL"} <span className="text-error">*</span>
               </Label>
               <div className="flex gap-2">
-                <Input
-                  id="path-or-url"
-                  required
-                  placeholder={sourceType === "local" ? "/home/user/projects/my-app" : "https://github.com/organization/repo"}
-                  value={pathOrUrl}
-                  onChange={(e) => setPathOrUrl(e.target.value)}
-                  className="flex-1 bg-background border border-outline-variant rounded-lg px-3.5 py-2 text-sm text-on-background placeholder:text-on-surface-variant/60 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-[JetBrains_Mono]"
-                />
+                <div className="flex-1 overflow-hidden rounded-lg">
+                  <Input
+                    id="path-or-url"
+                    required
+                    placeholder={sourceType === "local" ? "/home/user/projects/my-app" : "https://github.com/organization/repo"}
+                    value={pathOrUrl}
+                    onChange={(e) => setPathOrUrl(e.target.value)}
+                    className="w-full bg-background border border-outline-variant px-3.5 py-2 text-sm text-on-background placeholder:text-on-surface-variant/60 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all font-[JetBrains_Mono]"
+                  />
+                </div>
                 {sourceType === "local" && (
                   <button
                     type="button"
@@ -187,13 +191,15 @@ export function NewProjectDialog({
               <Label htmlFor="description" className="text-[11px] font-bold text-on-surface-variant font-[JetBrains_Mono] uppercase tracking-[0.08em]">
                 Description <span className="text-on-surface-variant/50 normal-case font-normal">(optional)</span>
               </Label>
-              <Input
-                id="description"
-                placeholder="Brief description of this target..."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className="bg-background border border-outline-variant rounded-lg px-3.5 py-2 text-sm text-on-background placeholder:text-on-surface-variant/60 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-              />
+              <div className="overflow-hidden rounded-lg">
+                <Input
+                  id="description"
+                  placeholder="Brief description of this target..."
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="w-full bg-background border border-outline-variant px-3.5 py-2 text-sm text-on-background placeholder:text-on-surface-variant/60 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+                />
+              </div>
             </div>
           </div>
 
@@ -201,14 +207,14 @@ export function NewProjectDialog({
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="bg-transparent border border-outline-variant text-on-surface font-semibold text-xs px-4 py-2 rounded-lg hover:bg-surface-container transition-colors cursor-pointer"
+              className="bg-transparent border border-outline-variant text-on-surface font-semibold text-xs px-4 py-2 rounded-lg hover:bg-surface-container transition-colors cursor-pointer whitespace-nowrap shrink-0"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="bg-primary text-on-primary font-semibold text-xs px-5 py-2 rounded-lg hover:bg-primary/90 transition-all cyber-glow disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
+              className="bg-primary text-on-primary font-semibold text-xs px-5 py-2 rounded-lg hover:bg-primary/90 transition-all cyber-glow disabled:opacity-50 cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0"
             >
               {submitting ? (
                 <>
