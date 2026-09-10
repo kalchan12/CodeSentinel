@@ -13,7 +13,7 @@ Phase:
 Phase 20 — Capstone Polish
 
 Task:
-Scan pipeline & UI mock removal (Completed)
+AI CLI Scanning & Embedded Interactive Terminal (Completed)
 
 Status:
 Complete
@@ -22,21 +22,21 @@ Owner:
 Developer + Agent
 
 Started:
-2026-08-30
+2026-09-10
 
 Dependencies:
-Phase 1-19 completion
+Phase 1-20 completion
 
 Notes:
-- Removed all UI mock data, DEMO_* fallbacks, and dummy constants across the desktop frontend.
-- Fixed backend scan assessment schema serialization bug preventing project/scan listings.
-- Fixed Semgrep & Gitleaks binary resolution across system and virtualenv paths.
-- Built interactive NewScanDialog to select added projects and launch live scans.
-- Added live hardware duration estimation, tool execution matrix, and broken code viewer during active scans.
-- Redesigned the completed scan view into an executive Bento dashboard with interactive split master-detail vulnerability inspector, inline broken code viewer, and filtering pills.
-- Merged Projects and Scans into a unified Projects & Scans Hub with 1-click Run Scan on cards, auto-start scan on project creation, and combined scan history tab while keeping deep routes fully backward-compatible.
-- Fixed /finding empty state by introducing a full Findings Explorer Hub with severity KPI overview, project scope dropdown, search, category filters, and seamless navigation to single finding inspector. Added backend GET /api/findings route.
-- All backend tests passing (84 unit/security) and Next.js production build passing via npm (17/17 static routes).
+- Integrated local AI coding CLIs (OpenCode and Google Antigravity CLI / agy) for deep codebase security assessments and interactive terminal orchestration.
+- Implemented asynchronous PTY session manager (pty_service.py) with termios, fcntl, TIOCSWINSZ resizing, and bidirectional stdio streaming.
+- Built real-time WebSocket route (/api/terminal/ws) supporting interactive shells, OpenCode TUI, Antigravity CLI, and authentication flows.
+- Added headless AI assessment engine (ai_service.py) that invokes local AI agents, normalizes findings into CodeSentinel's canonical schema, and persists them into SQLite.
+- Built reusable <EmbeddedTerminal /> component powered by @xterm/xterm and @xterm/addon-fit styled to the CodeSentinel cyber-dark design palette.
+- Built global <TerminalDrawer /> dockable at the bottom of the application with multi-tab switching, quick auth actions, maximize/minimize, and global keyboard toggle (Ctrl + `).
+- Connected /ai-analysis hub to local AI detection status, active project selection, provider switcher (OpenCode vs Antigravity), and automated audit runner.
+- Added contextual 1-click "Fix in OpenCode" and "Fix in Antigravity" interactive triggers to /finding explorer and detail views.
+- Test suite expanded to 88 passed unit/security tests; Next.js production build verified clean (17/17 routes).
 
 Next:
 Capstone final verification and presentation demo
