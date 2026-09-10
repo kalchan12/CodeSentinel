@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/table";
 import { api } from "@/lib/api";
 import { formatDate, SEVERITY_LABELS, SEVERITY_TEXT_CLASSES } from "@/lib/format";
+import { openTerminal } from "@/lib/terminal-state";
 import { cn } from "@/lib/utils";
 
 export default function FindingPage() {
@@ -415,14 +416,30 @@ function FindingsExplorerView({ initialScanId }: { initialScanId: number | null 
                       )}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Link
-                        href={`/finding?scan=${item.scan_id}&id=${item.id}`}
-                        onClick={(e) => e.stopPropagation()}
-                        className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
-                      >
-                        <span>Inspect</span>
-                        <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
-                      </Link>
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openTerminal({
+                              cmd: "opencode",
+                              initialPrompt: `Fix security finding "${item.title}" in ${item.file}:${item.line_start || 1}`,
+                            });
+                          }}
+                          className="p-1 hover:bg-surface-container rounded text-on-surface-variant hover:text-primary transition-colors cursor-pointer"
+                          title="Launch interactive AI fix in embedded terminal"
+                        >
+                          <span className="material-symbols-outlined text-[16px]">terminal</span>
+                        </button>
+                        <Link
+                          href={`/finding?scan=${item.scan_id}&id=${item.id}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+                        >
+                          <span>Inspect</span>
+                          <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                        </Link>
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
@@ -556,13 +573,39 @@ function SingleFindingDetailView({
             </h2>
           </div>
 
-          <div className="flex gap-sm shrink-0 w-full sm:w-auto">
+          <div className="flex gap-sm shrink-0 w-full sm:w-auto flex-wrap">
+            <button
+              onClick={() =>
+                openTerminal({
+                  cmd: "opencode",
+                  initialPrompt: `Fix security vulnerability "${finding.title}" in ${finding.file}:${finding.line_start || 1}`,
+                })
+              }
+              className="px-md py-sm bg-surface-container hover:bg-surface-container-high text-on-surface hover:text-primary text-[12px] leading-[20px] rounded border border-outline-variant hover:border-primary transition-colors flex items-center justify-center gap-xs font-[JetBrains_Mono] cursor-pointer"
+              title="Launch interactive OpenCode session for this finding"
+            >
+              <span className="material-symbols-outlined text-[16px] text-primary">auto_fix_high</span>
+              Fix in OpenCode
+            </button>
+            <button
+              onClick={() =>
+                openTerminal({
+                  cmd: "agy",
+                  initialPrompt: `Review and fix security finding "${finding.title}" in ${finding.file}:${finding.line_start || 1}`,
+                })
+              }
+              className="px-md py-sm bg-surface-container hover:bg-surface-container-high text-on-surface hover:text-secondary text-[12px] leading-[20px] rounded border border-outline-variant hover:border-secondary transition-colors flex items-center justify-center gap-xs font-[JetBrains_Mono] cursor-pointer"
+              title="Launch interactive Antigravity CLI session for this finding"
+            >
+              <span className="material-symbols-outlined text-[16px] text-secondary">psychology</span>
+              Fix in Antigravity
+            </button>
             <Link
               href={`/ai-analysis?finding=${finding.id}`}
-              className="flex-1 sm:flex-none px-md py-sm bg-primary hover:bg-primary/90 text-on-primary text-[13px] leading-[20px] rounded border border-primary luminous-glow transition-colors flex items-center justify-center gap-xs font-[JetBrains_Mono]"
+              className="px-md py-sm bg-primary hover:bg-primary/90 text-on-primary text-[12px] leading-[20px] rounded border border-primary luminous-glow transition-colors flex items-center justify-center gap-xs font-[JetBrains_Mono]"
             >
               <span className="material-symbols-outlined text-[16px]">psychology</span>
-              AI Remediation
+              AI Synthesis
             </Link>
           </div>
         </div>
@@ -691,6 +734,19 @@ function SingleFindingDetailView({
                     <code className="block">{getRemediationExample(finding)}</code>
                   </pre>
                 </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    openTerminal({
+                      cmd: "opencode",
+                      initialPrompt: `Fix ${finding.title} in ${finding.file}:${finding.line_start || 1}`,
+                    })
+                  }
+                  className="w-full mt-sm py-1.5 bg-primary/15 hover:bg-primary/25 border border-primary/40 text-primary rounded text-[11px] font-[JetBrains_Mono] font-semibold transition-colors flex items-center justify-center gap-xs cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-sm">terminal</span>
+                  Open in AI Terminal
+                </button>
               </div>
             </div>
           </div>
