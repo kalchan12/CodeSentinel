@@ -88,4 +88,32 @@ export const api = {
   getAssessment: (scanId: number) => request<RiskAssessment>(`/scans/${scanId}/assessment`),
   getAnalyzers: () =>
     request<{ name: string; description: string; enabled: boolean; status: string }[]>("/analyzers"),
+  getAIStatus: () =>
+    request<{
+      opencode: {
+        available: boolean;
+        path: string | null;
+        version: string | null;
+        description: string;
+      };
+      agy: {
+        available: boolean;
+        path: string | null;
+        version: string | null;
+        description: string;
+      };
+    }>("/ai/status"),
+  runAIScan: (projectId: number, payload: { provider: string; prompt?: string }) =>
+    request<{
+      scan_id: number;
+      project_id: number;
+      provider: string;
+      total_findings: number;
+      findings: any[];
+      raw_summary: string;
+      command: string;
+    }>(`/projects/${projectId}/ai-scan`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
 };

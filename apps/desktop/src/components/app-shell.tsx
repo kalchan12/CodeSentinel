@@ -4,7 +4,9 @@ import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { NewScanDialog } from "@/components/new-scan-dialog";
+import { TerminalDrawer } from "@/components/terminal/terminal-drawer";
 import { api } from "@/lib/api";
+import { openTerminal } from "@/lib/terminal-state";
 import { cn } from "@/lib/utils";
 
 function ActiveProjectBreadcrumb() {
@@ -152,6 +154,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             const active =
               item.href !== "#" && pathname.startsWith(item.href);
 
+            if (item.href === "#") {
+              return (
+                <button
+                  key={item.label}
+                  onClick={() => openTerminal({ cmd: "bash" })}
+                  className="w-full flex items-center gap-sm px-md py-sm rounded-lg transition-colors sidebar-inactive hover:bg-surface-container-highest cursor-pointer text-left"
+                >
+                  <span
+                    className="material-symbols-outlined text-[20px]"
+                    style={{ fontVariationSettings: "'FILL' 0" }}
+                  >
+                    {item.icon}
+                  </span>
+                  <span className="font-[Inter]">{item.label}</span>
+                </button>
+              );
+            }
+
             return (
               <Link
                 key={item.label}
@@ -222,7 +242,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </div>
           )}
           <div className={cn("flex items-center gap-md", isScanRoute ? "text-on-surface-variant" : "text-secondary")}>
-            <div className="flex items-center gap-2 mr-2 px-3 py-1 bg-surface-container-low border border-outline-variant rounded-full text-xs cursor-pointer hover:bg-surface-container-highest transition-colors group relative" title="AI Assistant: Ready (Local Model)">
+            <div
+              onClick={() => openTerminal({ cmd: "opencode" })}
+              className="flex items-center gap-2 mr-2 px-3 py-1 bg-surface-container-low border border-outline-variant hover:border-primary/50 rounded-full text-xs cursor-pointer hover:bg-surface-container-highest transition-colors group relative"
+              title="AI Assistant: Ready. Click to open terminal."
+            >
               <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
               <span className="font-[JetBrains_Mono] text-primary">AI Ready</span>
             </div>
@@ -246,6 +270,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           {children}
         </main>
       </div>
+
+      {/* Global Embedded Terminal Drawer */}
+      <TerminalDrawer />
     </div>
   );
 }
