@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import os
@@ -66,12 +67,6 @@ async def terminal_websocket(
         else:
             command = ["/bin/bash"]
 
-    # If prompt was provided for AI CLIs, append interactive prompt argument
-    if prompt and command[0] == "opencode":
-        command.extend(["--prompt", prompt])
-    elif prompt and command[0] == "agy":
-        command.extend(["-i", prompt])
-
     # Find full path of binary if not absolute
     binary_name = command[0]
     if not os.path.isabs(binary_name):
@@ -87,6 +82,16 @@ async def terminal_websocket(
             if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
                 command[0] = candidate
                 break
+
+    # If prompt was provided for AI CLIs, append interactive prompt argument
+    # Must check after path resolution since command[0] may now be an absolute path
+    resolved_name = os.path.basename(command[0])
+    if prompt and resolved_name == "opencode":
+        # OpenCode: use -i flag for interactive prompt mode, or wrap as 'run' subcommand
+        command = [command[0], "-i", prompt]
+    elif prompt and resolved_name == "agy":
+        # Antigravity: -i / --prompt-interactive starts with a prompt then stays interactive
+        command = [command[0], "-i", prompt]
 
     loop = asyncio.get_event_loop()
     queue: asyncio.Queue[bytes] = asyncio.Queue()
@@ -116,7 +121,6 @@ async def terminal_websocket(
         except Exception:
             pass
 
-    import asyncio
     output_task = asyncio.create_task(forward_output())
 
     try:
