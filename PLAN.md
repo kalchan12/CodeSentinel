@@ -35,6 +35,7 @@ Notes:
 - Added live hardware duration estimation, tool execution matrix, and broken code viewer during active scans.
 - Redesigned the completed scan view into an executive Bento dashboard with interactive split master-detail vulnerability inspector, inline broken code viewer, and filtering pills.
 - Merged Projects and Scans into a unified Projects & Scans Hub with 1-click Run Scan on cards, auto-start scan on project creation, and combined scan history tab while keeping deep routes fully backward-compatible.
+- Fixed /finding empty state by introducing a full Findings Explorer Hub with severity KPI overview, project scope dropdown, search, category filters, and seamless navigation to single finding inspector. Added backend GET /api/findings route.
 - All backend tests passing (84 unit/security) and Next.js production build passing via npm (17/17 static routes).
 
 Next:

@@ -65,6 +65,26 @@ export const api = {
     const query = params.toString();
     return request<FindingsPage>(`/scans/${scanId}/findings${query ? `?${query}` : ""}`);
   },
+  listAllFindings: (
+    opts: {
+      scanId?: number;
+      projectId?: number;
+      severity?: string;
+      category?: string;
+      search?: string;
+      limit?: number;
+    } = {}
+  ) => {
+    const params = new URLSearchParams();
+    if (opts.scanId) params.set("scan_id", String(opts.scanId));
+    if (opts.projectId) params.set("project_id", String(opts.projectId));
+    if (opts.severity) params.set("severity", opts.severity);
+    if (opts.category) params.set("category", opts.category);
+    if (opts.search) params.set("search", opts.search);
+    if (opts.limit) params.set("limit", String(opts.limit));
+    const query = params.toString();
+    return request<FindingsPage>(`/findings${query ? `?${query}` : ""}`);
+  },
   getAssessment: (scanId: number) => request<RiskAssessment>(`/scans/${scanId}/assessment`),
   getAnalyzers: () =>
     request<{ name: string; description: string; enabled: boolean; status: string }[]>("/analyzers"),
