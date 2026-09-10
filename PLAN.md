@@ -32,8 +32,9 @@ Notes:
 - Fixed backend scan assessment schema serialization bug preventing project/scan listings.
 - Fixed Semgrep & Gitleaks binary resolution across system and virtualenv paths.
 - Built interactive NewScanDialog to select added projects and launch live scans.
-- Added ScanProjectSelector for scan management.
-- All backend tests passing (79 unit, 5 security) and Next.js production build passing via npm.
+- Added live hardware duration estimation, tool execution matrix, and broken code viewer during active scans.
+- Redesigned the completed scan view into an executive Bento dashboard with interactive split master-detail vulnerability inspector, inline broken code viewer, and filtering pills.
+- All backend tests passing (79 unit, 5 security) and Next.js production build passing via npm (17/17 static routes).
 
 Next:
 Capstone final verification and presentation demo
