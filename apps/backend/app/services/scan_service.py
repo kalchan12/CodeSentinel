@@ -167,6 +167,39 @@ def list_findings(
     return [FindingRead.from_model(row) for row in rows], total
 
 
+def list_all_findings(
+    db: Session,
+    scan_id: int | None = None,
+    project_id: int | None = None,
+    severity: str | None = None,
+    category: str | None = None,
+    search: str | None = None,
+    limit: int = 500,
+) -> tuple[list[FindingRead], int]:
+    stmt = select(FindingModel)
+    if scan_id is not None:
+        stmt = stmt.where(FindingModel.scan_id == scan_id)
+    elif project_id is not None:
+        stmt = stmt.join(FindingModel.scan).where(Scan.project_id == project_id)
+    if severity:
+        stmt = stmt.where(FindingModel.severity == severity)
+    if category:
+        stmt = stmt.where(FindingModel.category == category)
+    if search:
+        pattern = f"%{search}%"
+        stmt = stmt.where(
+            FindingModel.title.ilike(pattern)
+            | FindingModel.description.ilike(pattern)
+            | FindingModel.file.ilike(pattern)
+            | FindingModel.rule_id.ilike(pattern)
+        )
+    total = len(db.scalars(stmt).all())
+    rows = db.scalars(
+        stmt.order_by(FindingModel.severity_rank.desc(), FindingModel.id.desc()).limit(limit)
+    ).all()
+    return [FindingRead.from_model(row) for row in rows], total
+
+
 def get_assessment(db: Session, scan_id: int) -> RiskAssessmentRead | None:
     assessment = db.scalars(select(RiskAssessment).where(RiskAssessment.scan_id == scan_id)).first()
     if assessment is None:

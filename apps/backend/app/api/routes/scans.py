@@ -71,6 +71,28 @@ def get_findings(
     return FindingsPage(total=total, items=items)
 
 
+@router.get("/findings", response_model=FindingsPage)
+def list_all_findings(
+    scan_id: int | None = Query(default=None),
+    project_id: int | None = Query(default=None),
+    severity: str | None = Query(default=None),
+    category: str | None = Query(default=None),
+    search: str | None = Query(default=None),
+    limit: int = Query(default=500, le=1000),
+    db: Session = Depends(get_db),
+) -> FindingsPage:
+    items, total = scan_service.list_all_findings(
+        db,
+        scan_id=scan_id,
+        project_id=project_id,
+        severity=severity,
+        category=category,
+        search=search,
+        limit=limit,
+    )
+    return FindingsPage(total=total, items=items)
+
+
 @router.get("/scans/{scan_id}/assessment", response_model=RiskAssessmentRead)
 def get_assessment(scan_id: int, db: Session = Depends(get_db)) -> RiskAssessmentRead:
     assessment = scan_service.get_assessment(db, scan_id)
