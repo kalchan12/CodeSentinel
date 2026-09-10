@@ -17,6 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api, ApiError } from "@/lib/api";
+import { isTauri } from "@/lib/tauri";
 import { cn } from "@/lib/utils";
 
 const SOURCE_OPTIONS: { value: SourceType; label: string; hint: string; icon: string }[] = [
@@ -165,6 +166,14 @@ export function NewProjectDialog({
                   <button
                     type="button"
                     onClick={async () => {
+                      if (!isTauri()) {
+                        toast.info(
+                          "Native directory picker is active in the Tauri desktop app. In browser mode, please enter or paste the local folder path directly.",
+                          { duration: 5000 }
+                        );
+                        document.getElementById("path-or-url")?.focus();
+                        return;
+                      }
                       try {
                         const selected = await openDialog({
                           directory: true,
@@ -184,6 +193,11 @@ export function NewProjectDialog({
                   </button>
                 )}
               </div>
+              {sourceType === "local" && (
+                <span className="text-[11px] text-on-surface-variant font-[JetBrains_Mono]">
+                  Tip: specify an absolute directory path on your machine (e.g. <span className="text-outline">/home/user/project</span>)
+                </span>
+              )}
             </div>
 
             {/* Description */}

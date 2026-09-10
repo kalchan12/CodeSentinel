@@ -89,6 +89,13 @@
   --spacing-lg: 24px;
   --spacing-xl: 40px;
   --container-container-max: 1440px;
+  --container-xs: 20rem;
+  --container-sm: 24rem;
+  --container-md: 28rem;
+  --container-lg: 32rem;
+  --container-xl: 36rem;
+  --container-2xl: 42rem;
+  --container-3xl: 48rem;
 
   /* Font families */
   --font-sans: var(--font-inter);
@@ -257,6 +264,14 @@ body {
 }
 
 /* ── Utility Classes ── */
+
+/* Explicit max-width container sizes (prevents collision with --spacing-sm/md/lg/xl) */
+.max-w-xs { max-width: 20rem !important; }
+.max-w-sm { max-width: 24rem !important; }
+.max-w-md { max-width: 28rem !important; }
+.max-w-lg { max-width: 32rem !important; }
+.max-w-xl { max-width: 36rem !important; }
+.max-w-2xl { max-width: 42rem !important; }
 
 .tech-shadow {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
