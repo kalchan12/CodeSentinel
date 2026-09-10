@@ -86,29 +86,29 @@ function FindingContent() {
   );
 
   return (
-    <div className="max-w-[1200px] mx-auto space-y-lg">
+    <div className="max-w-[1200px] mx-auto space-y-lg overflow-hidden">
           {/* Breadcrumb & Header */}
           <div className="flex flex-col gap-sm border-b border-outline-variant pb-md">
-            <Link href={`/scan?scan=${scanId ?? ""}`} className="inline-flex items-center gap-xs text-[13px] leading-[18px] text-on-surface-variant hover:text-primary transition-colors font-[Inter]">
+            <Link href={`/scan?scan=${scanId ?? ""}`} className="inline-flex items-center gap-xs text-[13px] leading-[18px] text-on-surface-variant hover:text-primary transition-colors font-[Inter] w-fit">
               <span className="material-symbols-outlined text-[16px]">arrow_back</span> Findings
             </Link>
-            <div className="flex items-start justify-between">
-              <div>
+            <div className="flex flex-col md:flex-row items-start justify-between gap-md">
+              <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-sm mb-1">
-                  <span className={severityBadgeClass}>
+                  <span className={cn(severityBadgeClass, "shadow-[0_0_8px_currentColor]")}>
                     {SEVERITY_LABELS[finding.severity]}
                   </span>
                   <span className="text-[13px] leading-[18px] text-on-surface-variant font-[JetBrains_Mono]">
                     {finding.rule_id ?? "CWE-89"}
                   </span>
                 </div>
-                <h2 className="text-[24px] leading-[32px] tracking-[-0.01em] font-semibold text-on-surface font-[Inter]">{finding.title}</h2>
+                <h2 className="text-[24px] leading-[32px] tracking-[-0.01em] font-semibold text-on-surface font-[Inter] break-words">{finding.title}</h2>
               </div>
-              <div className="flex gap-sm">
-                <button className="px-md py-sm bg-surface-container-high hover:bg-surface-bright text-on-surface text-[13px] leading-[20px] rounded border border-outline-variant transition-colors flex items-center gap-xs font-[JetBrains_Mono]">
+              <div className="flex gap-sm shrink-0 w-full sm:w-auto">
+                <button className="flex-1 sm:flex-none px-md py-sm bg-surface-container-high hover:bg-surface-bright text-on-surface text-[13px] leading-[20px] rounded border border-outline-variant transition-colors flex items-center justify-center gap-xs font-[JetBrains_Mono]">
                   <span className="material-symbols-outlined text-[16px]">visibility_off</span> Ignore
                 </button>
-                <button className="px-md py-sm bg-primary text-on-primary text-[13px] leading-[20px] rounded border border-primary luminous-glow transition-colors flex items-center gap-xs font-[JetBrains_Mono]">
+                <button className="flex-1 sm:flex-none px-md py-sm bg-primary hover:bg-primary/90 text-on-primary text-[13px] leading-[20px] rounded border border-primary luminous-glow transition-colors flex items-center justify-center gap-xs font-[JetBrains_Mono]">
                   <span className="material-symbols-outlined text-[16px]">check_circle</span> Mark Resolved
                 </button>
               </div>
@@ -121,51 +121,51 @@ function FindingContent() {
             <div className="lg:col-span-8 space-y-md">
               {/* Meta Info Card */}
               <div className={cn(
-                "bg-surface-container-low border border-outline-variant rounded-lg p-md flex gap-xl",
+                "bg-surface-container-low border border-outline-variant rounded-lg p-md flex gap-xl flex-wrap tech-shadow",
                 finding.severity === "critical" && "finding-critical",
                 finding.severity === "high" && "border-l-2 border-l-tertiary"
               )}>
-                <div>
+                <div className="min-w-0">
                   <p className="text-[10px] leading-[12px] tracking-[0.08em] font-bold text-on-surface-variant font-[JetBrains_Mono] mb-1">Risk Score</p>
                   <p className={cn("text-[18px] leading-[24px] font-semibold font-[Inter]", SEVERITY_TEXT_CLASSES[finding.severity])}>
                     {finding.risk_score != null ? finding.risk_score.toFixed(0) : "\u2014"}
                     <span className="text-[13px] leading-[18px] text-on-surface-variant">/100</span>
                   </p>
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="text-[10px] leading-[12px] tracking-[0.08em] font-bold text-on-surface-variant font-[JetBrains_Mono] mb-1">Confidence</p>
                   <p className="text-[18px] leading-[24px] font-semibold text-secondary font-[Inter]">
                     {formatConfidence(finding)}
                   </p>
                 </div>
-                <div>
+                <div className="min-w-0 flex-1">
                   <p className="text-[10px] leading-[12px] tracking-[0.08em] font-bold text-on-surface-variant font-[JetBrains_Mono] mb-1">Location</p>
-                  <p className="text-[13px] leading-[20px] text-on-surface font-[JetBrains_Mono]">
-                    <span className="text-outline">{finding.file}:</span>{finding.line_start ?? "\u2014"}
+                  <p className="text-[13px] leading-[20px] text-on-surface font-[JetBrains_Mono] truncate" title={`${finding.file}:${finding.line_start ?? "\u2014"}`}>
+                    <span className="text-outline truncate">{finding.file}:</span>{finding.line_start ?? "\u2014"}
                   </p>
                 </div>
               </div>
 
               {/* Code Snippet */}
-              <div className="bg-surface-container-low border border-outline-variant rounded-lg overflow-hidden">
+              <div className="bg-surface-container-low border border-outline-variant rounded-lg overflow-hidden max-w-full tech-shadow">
                 <div className="bg-surface-container px-md py-sm border-b border-outline-variant flex justify-between items-center">
                   <span className="text-[11px] leading-[16px] text-on-surface-variant font-[JetBrains_Mono]">Vulnerable Code Snippet</span>
                   <button onClick={() => finding.code_snippet && navigator.clipboard.writeText(finding.code_snippet)} className="text-on-surface-variant hover:text-on-surface">
                     <span className="material-symbols-outlined text-[16px]">content_copy</span>
                   </button>
                 </div>
-                <div className="p-4 text-[13px] leading-[20px] text-on-surface bg-background overflow-x-auto font-[JetBrains_Mono]">
+                <div className="p-0 text-[13px] leading-[20px] text-on-surface bg-background overflow-x-auto font-[JetBrains_Mono] max-w-full">
                   {snippetLines.length === 0 ? (
-                    <p className="text-on-surface-variant">No code snippet available.</p>
+                    <p className="text-on-surface-variant p-4">No code snippet available.</p>
                   ) : (
-                    <pre className="m-0"><code className="block">
+                    <pre className="m-0 min-w-max"><code className="block">
                       {snippetLines.map((line, i) => {
                         const lineNumber = startLine + i;
                         const isVuln = i === vulnLineIndex;
                         return (
-                          <span key={lineNumber} className={cn("block", isVuln && "bg-error/10 border-l-2 border-l-error")}>
-                            <span className="text-on-surface-variant select-none pr-4">{String(lineNumber).padStart(2, " ")}</span>
-                            <span className="text-on-surface">{renderCode(line)}</span>
+                          <span key={lineNumber} className={cn("flex", isVuln ? "bg-error/10 border-l-2 border-l-error" : "border-l-2 border-l-transparent")}>
+                            <span className="text-on-surface-variant select-none px-4 py-0.5 bg-surface-container/50 border-r border-outline-variant/30 text-right w-12 shrink-0">{String(lineNumber)}</span>
+                            <span className="text-on-surface px-4 py-0.5 whitespace-pre">{renderCode(line)}</span>
                           </span>
                         );
                       })}
@@ -175,11 +175,11 @@ function FindingContent() {
               </div>
 
               {/* Explanation */}
-              <div className="bg-surface-container-low border border-outline-variant rounded-lg p-md">
+              <div className="bg-surface-container-low border border-outline-variant rounded-lg p-md tech-shadow">
                 <h3 className="text-[18px] leading-[24px] font-semibold text-on-surface flex items-center gap-sm mb-sm font-[Inter]">
                   <span className="material-symbols-outlined text-tertiary">info</span> Why it matters
                 </h3>
-                <p className="text-[13px] leading-[18px] text-on-surface-variant leading-relaxed font-[Inter]">
+                <p className="text-[13px] leading-[18px] text-on-surface-variant leading-relaxed font-[Inter] break-words">
                   {finding.description}
                 </p>
               </div>
@@ -188,37 +188,37 @@ function FindingContent() {
             {/* Right Column: AI Analysis + Metadata (4 cols) */}
             <div className="lg:col-span-4 space-y-md">
               {/* AI Analysis Panel */}
-              <div className="bg-surface-container-low border border-primary/30 rounded-lg overflow-hidden tech-shadow relative group hover:border-primary/60 transition-colors">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent pointer-events-none" />
-                <div className="bg-primary/10 px-md py-sm border-b border-primary/20 flex items-center gap-sm relative z-10">
+              <div className="bg-surface-container-low border border-primary/20 rounded-lg overflow-hidden tech-shadow relative group hover:border-primary/40 transition-colors">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent pointer-events-none" />
+                <div className="bg-primary/5 px-md py-sm border-b border-primary/10 flex items-center gap-sm relative z-10">
                   <span className="material-symbols-outlined text-primary">psychology</span>
                   <span className="text-[18px] leading-[24px] font-semibold text-primary font-[Inter]">AI Analysis</span>
                 </div>
-                <div className="p-md relative z-10 space-y-sm">
-                  <p className="text-[13px] leading-[18px] text-on-surface-variant font-[Inter]">
+                <div className="p-md relative z-10 space-y-sm overflow-hidden">
+                  <p className="text-[13px] leading-[18px] text-on-surface-variant font-[Inter] break-words">
                     {getAiSummary(finding)}
                   </p>
                   <div className="mt-md pt-md border-t border-outline-variant">
                     <h4 className="text-[10px] leading-[12px] tracking-[0.08em] font-bold text-on-surface-variant mb-sm uppercase font-[JetBrains_Mono]">Recommended Fix</h4>
-                    <p className="text-[13px] leading-[18px] text-on-surface-variant mb-sm font-[Inter]">{finding.remediation ?? "Use parameterized queries to safely bind variables."}</p>
-                    <div className="bg-background border border-outline-variant rounded p-sm overflow-x-auto">
-                      <pre className="m-0 text-[11px] leading-[16px] text-secondary font-[JetBrains_Mono]"><code className="block">{getRemediationExample(finding)}</code></pre>
+                    <p className="text-[13px] leading-[18px] text-on-surface-variant mb-sm font-[Inter] break-words">{finding.remediation ?? "Use parameterized queries to safely bind variables."}</p>
+                    <div className="bg-background border border-outline-variant rounded p-sm overflow-x-auto max-w-full">
+                      <pre className="m-0 text-[11px] leading-[16px] text-secondary font-[JetBrains_Mono] min-w-max"><code className="block">{getRemediationExample(finding)}</code></pre>
                     </div>
-                    <button className="mt-sm w-full py-1.5 border border-primary text-primary text-[11px] leading-[16px] font-[JetBrains_Mono] rounded hover:bg-primary/10 transition-colors">Apply Fix via CLI</button>
+                    <button className="mt-sm w-full py-1.5 border border-primary text-primary text-[11px] leading-[16px] font-[JetBrains_Mono] rounded hover:bg-primary/10 transition-colors whitespace-nowrap">Apply Fix via CLI</button>
                   </div>
                 </div>
               </div>
 
               {/* Metadata Panel */}
-              <div className="bg-surface-container-low border border-outline-variant rounded-lg p-md">
+              <div className="bg-surface-container-low border border-outline-variant rounded-lg p-md tech-shadow">
                 <h3 className="mb-3 text-[11px] leading-[16px] font-bold tracking-wider text-on-surface-variant uppercase font-[JetBrains_Mono]">Metadata</h3>
-                <div className="space-y-3 text-[13px] leading-[18px]">
+                <div className="space-y-0 text-[13px] leading-[18px] border border-outline-variant/50 rounded overflow-hidden">
                   <MetaRow label="Discovered" value={formatDate(finding.created_at)} />
-                  <MetaRow label="Scanner Engine" value={finding.analyzer} mono />
+                  <MetaRow label="Scanner Engine" value={finding.analyzer} mono className="bg-surface-container/30" />
                   <MetaRow label="Rule" value={finding.rule_id ?? "\u2014"} mono />
-                  <MetaRow label="Category" value={finding.category} mono />
+                  <MetaRow label="Category" value={finding.category} mono className="bg-surface-container/30" />
                   <MetaRow label="Confidence" value={finding.confidence} mono />
-                  <MetaRow label="Severity" value={SEVERITY_LABELS[finding.severity]} />
+                  <MetaRow label="Severity" value={SEVERITY_LABELS[finding.severity]} className="bg-surface-container/30" />
                   <MetaRow label="Line" value={finding.line_start != null ? String(finding.line_start) : "\u2014"} mono />
                 </div>
               </div>
@@ -250,16 +250,18 @@ function MetaRow({
   value,
   mono,
   accent,
+  className,
 }: {
   label: string;
   value: string;
   mono?: boolean;
   accent?: string;
+  className?: string;
 }) {
   return (
-    <div className="flex items-center justify-between border-b border-outline-variant/50 pb-1.5">
-      <span className="text-on-surface-variant">{label}</span>
-      <span className={cn("text-on-surface", mono && "font-code text-xs", accent)}>{value}</span>
+    <div className={cn("flex items-center justify-between px-2 py-1.5", className)}>
+      <span className="text-on-surface-variant shrink-0 mr-2">{label}</span>
+      <span className={cn("text-on-surface truncate min-w-0 max-w-[200px] text-right", mono && "font-[JetBrains_Mono] text-xs", accent)} title={value}>{value}</span>
     </div>
   );
 }
