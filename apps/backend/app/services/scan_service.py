@@ -61,11 +61,21 @@ def start_scan(db: Session, scan_id: int, task_id: str) -> None:
     db.commit()
 
 
-def update_progress(db: Session, scan_id: int, progress: float) -> None:
+def update_progress(
+    db: Session,
+    scan_id: int,
+    progress: float,
+    correlation: dict | None = None,
+    findings_count: int | None = None,
+) -> None:
     scan = db.get(Scan, scan_id)
     if scan is None:
         return
     scan.progress = round(progress, 2)
+    if correlation is not None:
+        scan.correlation = correlation
+    if findings_count is not None:
+        scan.findings_count = findings_count
     db.commit()
 
 

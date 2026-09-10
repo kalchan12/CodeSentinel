@@ -49,10 +49,17 @@ def run_scan(scan_id: int) -> dict:
             workspace_root=settings.workspace_root,
         )
 
-        def progress(done: int, total: int) -> None:
+        def progress(done: int, total: int, telemetry: dict | None = None) -> None:
             fraction = (done / total) if total else 0.0
+            findings_count = telemetry.get("findings_count") if telemetry else None
             with SessionLocal() as progress_db:
-                scan_service.update_progress(progress_db, scan_id, fraction * 90.0)
+                scan_service.update_progress(
+                    progress_db,
+                    scan_id,
+                    fraction * 90.0,
+                    correlation=telemetry,
+                    findings_count=findings_count,
+                )
 
     try:
         result = orchestrator.run(
