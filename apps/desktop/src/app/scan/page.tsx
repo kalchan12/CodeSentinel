@@ -47,6 +47,7 @@ export default function ScanPage() {
 const POLL_INTERVAL_MS = 1000;
 
 function ScanContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const scanId = Number(searchParams.get("scan")) || null;
 
@@ -57,6 +58,12 @@ function ScanContent() {
   const [assessment, setAssessment] = useState<RiskAssessment | null>(null);
   const [severityFilter, setSeverityFilter] = useState<string>("all");
   const [projectId, setProjectId] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (scanId === null) {
+      router.replace("/projects");
+    }
+  }, [scanId, router]);
 
   const loadScan = useCallback(async () => {
     if (scanId === null) return;
@@ -110,8 +117,34 @@ function ScanContent() {
     }
   }, [scan?.status, loadResults]);
 
-  if (scanId === null || notFound) {
-    return <ScanProjectSelector notFoundId={notFound ? scanId : null} />;
+  if (scanId === null) {
+    return (
+      <div className="space-y-6 max-w-[1440px] mx-auto py-8">
+        <Skeleton className="h-16 w-full" />
+        <Skeleton className="h-96 w-full" />
+      </div>
+    );
+  }
+
+  if (notFound) {
+    return (
+      <div className="max-w-[600px] mx-auto py-24 text-center space-y-4">
+        <div className="w-16 h-16 rounded-full bg-error/10 border border-error/30 text-error flex items-center justify-center mx-auto">
+          <span className="material-symbols-outlined text-[32px]">warning</span>
+        </div>
+        <h2 className="text-xl font-bold text-on-surface font-[Inter]">Scan #{scanId} Not Found</h2>
+        <p className="text-sm text-on-surface-variant font-[Inter]">
+          The requested security scan does not exist or may have been deleted.
+        </p>
+        <Link
+          href="/projects"
+          className="inline-flex items-center gap-2 bg-primary text-on-primary font-semibold text-xs px-5 py-2.5 rounded-lg hover:bg-primary/90 transition-all cyber-glow mt-2"
+        >
+          <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+          Return to Projects & Scans
+        </Link>
+      </div>
+    );
   }
 
   if (loading && scan === null) {
@@ -132,205 +165,6 @@ function ScanContent() {
       setSeverityFilter={setSeverityFilter}
       projectId={projectId}
     />
-  );
-}
-
-function ScanProjectSelector({ notFoundId }: { notFoundId: number | null }) {
-  const router = useRouter();
-  const [projects, setProjects] = useState<Project[] | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [startingProjectId, setStartingProjectId] = useState<number | null>(null);
-
-  useEffect(() => {
-    api
-      .listProjects()
-      .then((data) => setProjects(data))
-      .catch((err) => {
-        toast.error(err instanceof Error ? err.message : "Failed to load projects");
-        setProjects([]);
-      })
-      .finally(() => setLoading(false));
-  }, []);
-
-  async function handleStartScan(project: Project) {
-    setStartingProjectId(project.id);
-    try {
-      const scan = await api.createScan(project.id);
-      toast.success(`Scan #${scan.id} started for ${project.name}`);
-      router.push(`/scan?scan=${scan.id}`);
-    } catch (error) {
-      toast.error(error instanceof ApiError ? error.message : "Could not start scan");
-    } finally {
-      setStartingProjectId(null);
-    }
-  }
-
-  return (
-    <div className="max-w-[1440px] mx-auto space-y-6">
-      {notFoundId && (
-        <div className="p-4 bg-error/10 border border-error/30 rounded-xl flex items-center justify-between text-error">
-          <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined">warning</span>
-            <span className="text-sm font-semibold">Scan #{notFoundId} was not found.</span>
-          </div>
-          <span className="text-xs text-on-surface-variant font-[JetBrains_Mono]">Select a project below to start a new scan</span>
-        </div>
-      )}
-
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b border-outline-variant pb-6">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="material-symbols-outlined text-primary text-[28px]" style={{ fontVariationSettings: "'FILL' 1" }}>
-              radar
-            </span>
-            <h2 className="text-[24px] leading-[32px] tracking-[-0.01em] font-semibold text-on-surface font-[Inter]">
-              Security Scans
-            </h2>
-          </div>
-          <p className="text-[14px] leading-[20px] text-on-surface-variant font-[Inter]">
-            Choose a target project from your workspace to run code analysis, secret discovery, and dependency checks.
-          </p>
-        </div>
-        <NewProjectDialog
-          onCreated={() => {
-            api.listProjects().then(setProjects);
-          }}
-          trigger={
-            <button className="bg-primary hover:bg-primary/90 text-on-primary font-semibold text-xs px-4 py-2 rounded-lg flex items-center gap-1.5 transition-all cyber-glow cursor-pointer">
-              <span className="material-symbols-outlined text-[16px]">add</span>
-              Add Project
-            </button>
-          }
-        />
-      </div>
-
-      {loading ? (
-        <div className="space-y-4">
-          <Skeleton className="h-24 w-full" />
-          <Skeleton className="h-24 w-full" />
-        </div>
-      ) : projects && projects.length === 0 ? (
-        <div className="flex min-h-[50vh] flex-col items-center justify-center gap-4 text-center bg-surface-container-low border border-outline-variant rounded-xl p-12">
-          <div className="w-16 h-16 rounded-full bg-surface-container-high flex items-center justify-center text-primary">
-            <span className="material-symbols-outlined text-3xl">folder_off</span>
-          </div>
-          <h3 className="text-xl font-bold text-on-surface font-[Inter]">No projects added yet</h3>
-          <p className="max-w-md text-sm text-on-surface-variant font-[Inter]">
-            CodeSentinel requires at least one local codebase or GitHub repository registered in your local database before running security scans.
-          </p>
-          <NewProjectDialog
-            onCreated={() => {
-              api.listProjects().then(setProjects);
-            }}
-            trigger={
-              <button className="mt-2 flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-bold text-on-primary transition-all hover:bg-primary/90 cyber-glow cursor-pointer">
-                <span className="material-symbols-outlined">add</span>
-                Add Your First Project
-              </button>
-            }
-          />
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-4">
-          <h3 className="text-xs font-bold text-on-surface-variant font-[JetBrains_Mono] uppercase tracking-[0.08em]">
-            Available Projects ({projects?.length ?? 0})
-          </h3>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {projects?.map((project) => {
-              const isStarting = startingProjectId === project.id;
-              const isLocal = project.source_type === "local";
-
-              return (
-                <div
-                  key={project.id}
-                  className="bg-surface-container-low border border-outline-variant rounded-xl p-5 hover:border-primary/50 transition-all flex flex-col justify-between gap-4 tech-shadow"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-start gap-3 min-w-0">
-                      <div className="w-12 h-12 rounded-xl bg-surface-container-high border border-outline-variant flex items-center justify-center shrink-0 text-primary">
-                        <span className="material-symbols-outlined text-[24px]">
-                          {isLocal ? "folder_open" : "code"}
-                        </span>
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <h4 className="text-base font-bold text-on-surface font-[Inter] truncate">
-                            {project.name}
-                          </h4>
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold font-[JetBrains_Mono] uppercase bg-surface-container border border-outline-variant text-on-surface-variant">
-                            {isLocal ? "Local" : "GitHub"}
-                          </span>
-                        </div>
-                        <p className="text-xs text-on-surface-variant font-[JetBrains_Mono] truncate mt-1">
-                          {project.local_path ?? project.repo_url}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-2 bg-background/50 border border-outline-variant/50 rounded-lg p-2.5 text-center font-[JetBrains_Mono]">
-                    <div>
-                      <span className="text-[10px] text-outline uppercase block">Scans</span>
-                      <span className="text-xs font-bold text-on-surface">{project.scan_count}</span>
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-outline uppercase block">Last Status</span>
-                      <span className="text-xs font-bold text-secondary">
-                        {project.last_scan_status ? SCAN_STATUS_LABELS[project.last_scan_status] ?? project.last_scan_status : "None"}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-outline uppercase block">Risk Score</span>
-                      <span className="text-xs font-bold text-tertiary">
-                        {project.last_scan_score !== null ? `${Math.round(project.last_scan_score)}/100` : "—"}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-2 border-t border-outline-variant/60">
-                    <Link
-                      href={`/projects?project=${project.id}`}
-                      className="text-xs text-on-surface-variant hover:text-primary font-[Inter] flex items-center gap-1"
-                    >
-                      <span>Project Details</span>
-                      <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
-                    </Link>
-
-                    <div className="flex items-center gap-2">
-                      {project.last_scan_id && (
-                        <Link
-                          href={`/scan?scan=${project.last_scan_id}`}
-                          className="px-3 py-1.5 border border-outline-variant rounded-lg text-xs font-semibold text-on-surface hover:bg-surface-container transition-colors"
-                        >
-                          View Last Scan
-                        </Link>
-                      )}
-                      <button
-                        onClick={() => handleStartScan(project)}
-                        disabled={isStarting || startingProjectId !== null}
-                        className="bg-primary hover:bg-primary/90 text-on-primary font-semibold text-xs px-4 py-1.5 rounded-lg flex items-center gap-1.5 transition-all cyber-glow disabled:opacity-50 cursor-pointer"
-                      >
-                        {isStarting ? (
-                          <>
-                            <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>
-                            <span>Starting…</span>
-                          </>
-                        ) : (
-                          <>
-                            <span className="material-symbols-outlined text-sm">play_arrow</span>
-                            <span>Scan Now</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-    </div>
   );
 }
 

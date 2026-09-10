@@ -34,7 +34,8 @@ Notes:
 - Built interactive NewScanDialog to select added projects and launch live scans.
 - Added live hardware duration estimation, tool execution matrix, and broken code viewer during active scans.
 - Redesigned the completed scan view into an executive Bento dashboard with interactive split master-detail vulnerability inspector, inline broken code viewer, and filtering pills.
-- All backend tests passing (79 unit, 5 security) and Next.js production build passing via npm (17/17 static routes).
+- Merged Projects and Scans into a unified Projects & Scans Hub with 1-click Run Scan on cards, auto-start scan on project creation, and combined scan history tab while keeping deep routes fully backward-compatible.
+- All backend tests passing (84 unit/security) and Next.js production build passing via npm (17/17 static routes).
 
 Next:
 Capstone final verification and presentation demo
