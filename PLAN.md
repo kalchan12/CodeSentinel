@@ -13,7 +13,7 @@ Phase:
 Phase 20 — Capstone Polish
 
 Task:
-AI CLI Scanning & Embedded Interactive Terminal (Completed)
+AI Scan Progress Tracking & Differential Comparison (Completed)
 
 Status:
 Complete
@@ -22,24 +22,23 @@ Owner:
 Developer + Agent
 
 Started:
-2026-09-10
+2026-09-11
 
 Dependencies:
-Phase 1-20 completion
+Phase 1-20 completion, AI CLI & Embedded Terminal
 
 Notes:
-- Integrated local AI coding CLIs (OpenCode and Google Antigravity CLI / agy) for deep codebase security assessments and interactive terminal orchestration.
-- Implemented asynchronous PTY session manager (pty_service.py) with termios, fcntl, TIOCSWINSZ resizing, and bidirectional stdio streaming.
-- Built real-time WebSocket route (/api/terminal/ws) supporting interactive shells, OpenCode TUI, Antigravity CLI, and authentication flows.
-- Added headless AI assessment engine (ai_service.py) that invokes local AI agents, normalizes findings into CodeSentinel's canonical schema, and persists them into SQLite.
-- Built reusable <EmbeddedTerminal /> component powered by @xterm/xterm and @xterm/addon-fit styled to the CodeSentinel cyber-dark design palette.
-- Built global <TerminalDrawer /> dockable at the bottom of the application with multi-tab switching, quick auth actions, maximize/minimize, and global keyboard toggle (Ctrl + `).
-- Connected /ai-analysis hub to local AI detection status, active project selection, provider switcher (OpenCode vs Antigravity), and automated audit runner.
-- Added contextual 1-click "Fix in OpenCode" and "Fix in Antigravity" interactive triggers to /finding explorer and detail views.
-- Test suite expanded to 88 passed unit/security tests; Next.js production build verified clean (17/17 routes).
+- Transitioned AI scan from blocking synchronous HTTP request to asynchronous background job (ScanStatus.PENDING -> RUNNING -> COMPLETED).
+- Implemented streaming subprocess execution in ai_service.py with real-time telemetry streaming into scan.correlation["live_logs"] across 5 distinct phases.
+- Built Differential Analysis Service (differential_service.py) that fuzzy-matches static scan findings with AI-detected findings to categorize: Corroborated (high confidence), AI-Only discoveries, and Static-Only rule detections.
+- Created <DifferentialComparisonView /> displaying executive summaries, overlap rates, filter pills, and side-by-side card inspections.
+- Built <RunningAIScanView /> in /scan?scan={id} featuring 5-phase execution stepper, live elapsed timer, and embedded streaming AI log console.
+- Added "AI vs Static Comparison" tab to /scan?scan={id} completed dashboard and integrated differential benchmarking into /ai-analysis.
+- Added unit tests in tests/unit/test_differential_service.py (92 passed, 14 skipped in pytest suite).
+- Verified clean Next.js production build (17/17 static routes, 0 errors).
 
 Next:
-Capstone final verification and presentation demo
+Capstone final verification and video presentation demo
 ```
 
 > Keep this section current. Every meaningful work session should start by reading it and end by updating it.
