@@ -92,6 +92,98 @@ def get_ai_status() -> dict[str, Any]:
     }
 
 
+
+IGNORE_DIRS = {
+    ".git", ".venv", "venv", "env", "node_modules", "__pycache__",
+    ".next", "dist", "build", ".idea", ".vscode", "target", "vendor",
+    ".pytest_cache", ".mypy_cache", ".cargo", "site-packages",
+    "coverage", "out", ".turbo", ".gradle", "bin", "obj",
+}
+
+SOURCE_EXTS = {
+    ".py", ".js", ".ts", ".jsx", ".tsx", ".go", ".java", ".php",
+    ".rb", ".c", ".cpp", ".h", ".cs", ".rs", ".html", ".sql",
+    ".sh", ".env", ".yml", ".yaml", ".json", ".toml", ".conf",
+}
+
+IGNORE_FILES = {
+    "package-lock.json", "pnpm-lock.yaml", "yarn.lock", "poetry.lock", "composer.lock",
+}
+
+
+def discover_project_source_files(target_dir: str, max_files: int = 30) -> list[str]:
+    """Discover actual project source code files, ignoring vendor, cache, and virtual environment directories."""
+    discovered: list[str] = []
+    if not os.path.isdir(target_dir):
+        return discovered
+
+    # First pass: check root directory files
+    try:
+        root_entries = sorted(os.listdir(target_dir))
+        for entry in root_entries:
+            full_p = os.path.join(target_dir, entry)
+            if os.path.isfile(full_p):
+                ext = os.path.splitext(entry)[1].lower()
+                name = os.path.basename(entry)
+                if (ext in SOURCE_EXTS or name.startswith(".env")) and name not in IGNORE_FILES:
+                    discovered.append(entry)
+    except Exception as exc:
+        logger.warning("Error reading root entries in %s: %s", target_dir, exc)
+
+    # Second pass: walk subdirectories
+    for root, dirs, files in os.walk(target_dir):
+        # Modify dirs in-place to prune ignored directories
+        dirs[:] = [d for d in dirs if d not in IGNORE_DIRS and not d.startswith(".")]
+        
+        rel_root = os.path.relpath(root, target_dir)
+        if rel_root == ".":
+            continue
+            
+        for file in sorted(files):
+            if len(discovered) >= max_files:
+                break
+            ext = os.path.splitext(file)[1].lower()
+            name = os.path.basename(file)
+            if (ext in SOURCE_EXTS or name.startswith(".env")) and name not in IGNORE_FILES:
+                rel_file = os.path.normpath(os.path.join(rel_root, file))
+                if rel_file not in discovered:
+                    discovered.append(rel_file)
+        if len(discovered) >= max_files:
+            break
+
+    return discovered[:max_files]
+
+
+def extract_code_snippet(
+    target_dir: str,
+    file_path: str,
+    line: int | None,
+    context_lines: int = 3,
+) -> str | None:
+    """Extract code context around line_start from project file for visual inspection."""
+    if not file_path:
+        return None
+    clean_p = file_path.strip().lstrip("./").lstrip("/")
+    full_path = os.path.join(target_dir, clean_p)
+    if not os.path.isfile(full_path):
+        if os.path.isabs(file_path) and os.path.isfile(file_path):
+            full_path = file_path
+        else:
+            return None
+    try:
+        with open(full_path, "r", encoding="utf-8", errors="replace") as f:
+            lines = f.readlines()
+        if not lines:
+            return None
+        if line is None or line < 1 or line > len(lines):
+            return "".join(lines[:12])
+        start = max(0, line - 1 - context_lines)
+        end = min(len(lines), line + context_lines)
+        return "".join(lines[start:end])
+    except Exception:
+        return None
+
+
 async def run_ai_scan_background(
     scan_id: int,
     provider: str = "opencode",
@@ -124,6 +216,10 @@ async def run_ai_scan_background(
             db.commit()
             return
 
+        # Discover genuine project source files
+        discovered_files = discover_project_source_files(target_dir, max_files=25)
+        file_list_summary = ", ".join(discovered_files[:8]) if discovered_files else "all workspace files"
+
         # Initialize running scan metadata
         scan.status = ScanStatus.RUNNING.value
         scan.started_at = datetime.now(timezone.utc)
@@ -133,31 +229,37 @@ async def run_ai_scan_background(
         correlation["scan_type"] = "ai"
         correlation["provider"] = provider
         correlation["status_phase"] = "Ingesting workspace and budgeting context"
+        correlation["discovered_files"] = discovered_files
+        correlation["target_files_count"] = len(discovered_files)
         correlation["live_logs"] = [
-            f"[{datetime.now(timezone.utc).strftime('%H:%M:%S')}] [Phase 1/5] Initializing local AI scan...",
+            f"[{datetime.now(timezone.utc).strftime('%H:%M:%S')}] [Phase 1/5] Initializing local AI security scan...",
             f"[{datetime.now(timezone.utc).strftime('%H:%M:%S')}] Target workspace: {target_dir}",
+            f"[{datetime.now(timezone.utc).strftime('%H:%M:%S')}] Discovered {len(discovered_files)} source files for audit: {file_list_summary}{'...' if len(discovered_files) > 8 else ''}",
             f"[{datetime.now(timezone.utc).strftime('%H:%M:%S')}] Selected local AI agent: {provider} ({binary})",
         ]
         scan.correlation = correlation
         db.commit()
 
-    # Construct CLI command
+    # Construct file-specific CLI command and prompt
+    file_list_str = ", ".join(discovered_files[:15]) if discovered_files else "the project files"
     if provider == "opencode":
         prompt = (
             custom_prompt
-            or "Perform a security assessment of this project. Identify any vulnerabilities, "
-            "exposed secrets, or insecure dependencies. Return a JSON array of findings with: "
+            or f"Perform a comprehensive code security assessment of the source files in this workspace: {file_list_str}. "
+            "Inspect the source code directly for vulnerabilities, injection points, exposed secrets, and insecure configurations. "
+            "Return your findings strictly as a JSON array of objects with: "
             "title, severity (critical, high, medium, low), category, file, line_start, description, remediation."
         )
         cmd = [binary, "run", "--auto", prompt]
     else:  # agy
         prompt = (
             custom_prompt
-            or "Perform a code security analysis of this workspace. Identify critical security vulnerabilities, "
-            "injection points, and secrets. Return JSON findings with: "
-            "title, severity, file, line, description, and remediation."
+            or f"Audit the security of the source files in this workspace: {file_list_str}. "
+            "Inspect the code directly for vulnerabilities, injection points, hardcoded secrets, and insecure configurations. "
+            "Return your findings strictly as a JSON array of objects with: "
+            "title, severity (critical, high, medium, low), category, file, line_start, description, remediation."
         )
-        cmd = [binary, "-p", prompt, "--output-format", "json"]
+        cmd = [binary, "-p", prompt, "--dangerously-skip-permissions", "--output-format", "json"]
 
     # Phase 2: Launch subprocess
     with SessionLocal() as db:
@@ -261,6 +363,15 @@ async def run_ai_scan_background(
                 sev_rank_map = {"critical": 4, "high": 3, "medium": 2, "low": 1, "info": 0}
                 rank = sev_rank_map.get(severity_str, 2)
 
+                file_path = str(item.get("file", "project")).strip().replace("`", "")
+                line_val = item.get("line_start") or item.get("line")
+                try:
+                    line_start = int(line_val) if line_val is not None else None
+                except (ValueError, TypeError):
+                    line_start = None
+
+                code_snippet = extract_code_snippet(target_dir, file_path, line_start)
+
                 f_model = FindingModel(
                     id=finding_id,
                     scan_id=scan.id,
@@ -271,8 +382,9 @@ async def run_ai_scan_background(
                     confidence="high",
                     title=item.get("title", f"AI Security Finding ({provider})"),
                     description=item.get("description", ""),
-                    file=item.get("file", "project"),
-                    line_start=item.get("line_start") or item.get("line"),
+                    file=file_path,
+                    line_start=line_start,
+                    code_snippet=code_snippet,
                     remediation=item.get("remediation"),
                     risk_score=float(rank * 25.0),
                     finding_metadata={
@@ -286,6 +398,7 @@ async def run_ai_scan_background(
                 saved_findings.append(f_model)
             except Exception as err:
                 logger.warning("Error creating finding model from AI output: %s", err)
+
 
         db.commit()
 
@@ -365,29 +478,48 @@ def parse_ai_findings(text: str, provider: str) -> list[dict[str, Any]]:
     if not clean_text:
         return []
 
-    # 1. If output is an agy JSON object with a "response" field, unwrap the inner response
+    # 1. If output is a JSON envelope (e.g. agy response or object wrapper), unwrap it
     try:
         data = json.loads(clean_text)
         if isinstance(data, dict):
+            if "findings" in data and isinstance(data["findings"], list):
+                return _normalize_findings_list(data["findings"], provider)
             if "response" in data and isinstance(data["response"], str):
                 clean_text = data["response"].strip()
-            elif "findings" in data and isinstance(data["findings"], list):
-                return data["findings"]
+            elif "result" in data and isinstance(data["result"], str):
+                clean_text = data["result"].strip()
+            elif "output" in data and isinstance(data["output"], str):
+                clean_text = data["output"].strip()
+        elif isinstance(data, list):
+            return _normalize_findings_list(data, provider)
     except Exception:
         pass
 
-    # 2. Try matching a JSON array block inside the text
-    json_match = re.search(r"\[\s*\{.*?\}\s*\]", clean_text, re.DOTALL)
-    if json_match:
-        try:
-            parsed = json.loads(json_match.group(0))
-            if isinstance(parsed, list):
-                return parsed
-        except Exception:
-            pass
+    # 2. Strip markdown code fences if present (```json ... ```)
+    clean_text = re.sub(r"^```(?:json)?\s*", "", clean_text, flags=re.MULTILINE)
+    clean_text = re.sub(r"\s*```$", "", clean_text, flags=re.MULTILINE)
 
-    # 3. Try parsing structured markdown sections
-    results = []
+    # 3. Try finding outer bracket range [...] for JSON array
+    start_idx = clean_text.find("[")
+    end_idx = clean_text.rfind("]")
+    if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
+        bracket_content = clean_text[start_idx : end_idx + 1]
+        try:
+            parsed = json.loads(bracket_content)
+            if isinstance(parsed, list) and len(parsed) > 0:
+                return _normalize_findings_list(parsed, provider)
+        except Exception:
+            # Trailing commas or formatting cleanup
+            try:
+                sanitized = re.sub(r",\s*([\]}])", r"\1", bracket_content)
+                parsed = json.loads(sanitized)
+                if isinstance(parsed, list) and len(parsed) > 0:
+                    return _normalize_findings_list(parsed, provider)
+            except Exception:
+                pass
+
+    # 4. Try parsing structured markdown sections
+    results: list[dict[str, Any]] = []
     lines = clean_text.split("\n")
     current_item: dict[str, Any] = {}
 
@@ -406,6 +538,12 @@ def parse_ai_findings(text: str, provider: str) -> list[dict[str, Any]]:
             lower_title = title_clean.lower()
             current_item["severity"] = "critical" if "critical" in lower_title else "high" if "high" in lower_title else "medium"
             current_item["category"] = "vulnerability"
+        elif "severity:" in line_clean.lower():
+            sev_candidate = line_clean.split(":", 1)[1].strip().lower().replace("*", "")
+            for s in ["critical", "high", "medium", "low", "info"]:
+                if s in sev_candidate:
+                    current_item["severity"] = s
+                    break
         elif "file:" in line_clean.lower():
             current_item["file"] = line_clean.split(":", 1)[1].strip().replace("`", "")
         elif "line:" in line_clean.lower():
@@ -421,18 +559,52 @@ def parse_ai_findings(text: str, provider: str) -> list[dict[str, Any]]:
     if current_item.get("title"):
         results.append(current_item)
 
-    if not results and clean_text:
+    if results:
+        return _normalize_findings_list(results, provider)
+
+    if clean_text:
         # Fallback overview finding
-        results.append({
+        return [{
             "title": f"{provider.capitalize()} Security Assessment Overview",
             "severity": "info",
             "category": "vulnerability",
             "file": "README.md",
-            "description": clean_text[:1000],
+            "line_start": 1,
+            "description": clean_text[:1200],
             "remediation": "Review the full AI output in the embedded terminal for detailed remediation steps.",
-        })
+        }]
 
-    return results
+    return []
+
+
+def _normalize_findings_list(items: list[Any], provider: str) -> list[dict[str, Any]]:
+    """Normalize a list of raw finding dictionaries."""
+    normalized: list[dict[str, Any]] = []
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        title = item.get("title") or item.get("name") or f"AI Security Finding ({provider})"
+        sev = str(item.get("severity", "medium")).lower()
+        if sev not in ["critical", "high", "medium", "low", "info"]:
+            sev = "medium"
+        file_path = str(item.get("file") or item.get("filename") or item.get("path") or "project").strip().replace("`", "")
+        line_val = item.get("line_start") or item.get("line") or item.get("line_number")
+        try:
+            line_start = int(line_val) if line_val is not None else None
+        except (ValueError, TypeError):
+            line_start = None
+
+        normalized.append({
+            "title": str(title)[:256],
+            "severity": sev,
+            "category": str(item.get("category", "vulnerability")),
+            "file": file_path,
+            "line_start": line_start,
+            "description": str(item.get("description") or item.get("summary") or ""),
+            "remediation": str(item.get("remediation") or item.get("fix") or item.get("recommendation") or ""),
+        })
+    return normalized
+
 
 
 async def run_ai_codebase_assessment(

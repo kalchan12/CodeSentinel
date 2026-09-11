@@ -93,11 +93,8 @@ def list_all_findings(
     return FindingsPage(total=total, items=items)
 
 
-@router.get("/scans/{scan_id}/assessment", response_model=RiskAssessmentRead)
-def get_assessment(scan_id: int, db: Session = Depends(get_db)) -> RiskAssessmentRead:
-    assessment = scan_service.get_assessment(db, scan_id)
-    if assessment is None:
-        raise HTTPException(
-            status_code=404, detail="assessment not available yet (scan may still be running)"
-        )
-    return assessment
+@router.get("/scans/{scan_id}/assessment", response_model=RiskAssessmentRead | None)
+def get_assessment(scan_id: int, db: Session = Depends(get_db)) -> RiskAssessmentRead | None:
+    if scan_service.get_scan(db, scan_id) is None:
+        raise HTTPException(status_code=404, detail="scan not found")
+    return scan_service.get_assessment(db, scan_id)
