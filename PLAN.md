@@ -13,7 +13,7 @@ Phase:
 Phase 20 — Capstone Polish
 
 Task:
-True AI Codebase Scanning, Live File Inspection, 404 Fix & UI Contrast Repair (Completed)
+AI Engine Reliability, Model Selection, Distinct Differential Benchmarking & Project Cascade Deletion (Completed)
 
 Status:
 Complete
@@ -28,15 +28,14 @@ Dependencies:
 Phase 1-20 completion, AI CLI & Embedded Terminal
 
 Notes:
-- Replaced generic prompts with dynamic source file discovery in `ai_service.py` (`discover_project_source_files`), indexing actual project code while safely skipping vendor/cache directories (`.venv`, `node_modules`, `.git`, `.next`, etc.).
-- Integrated `--dangerously-skip-permissions` into headless `agy` CLI invocations, unblocking automated execution without permission prompt deadlocks.
-- Implemented real-time snippet extraction (`extract_code_snippet`) so AI findings contain live source code context and accurate line ranges.
-- Enhanced `parse_ai_findings` with JSON envelope unwrapping (`response`, `findings`), markdown fence stripping, and outer bracket array extraction.
-- Eliminated 404 polling spam on `/api/scans/{id}/assessment` by returning 200 OK with `None` during pending/running phases, and guarded frontend polling requests until `scan.status === "completed"`.
-- Repaired low-contrast "white buttons" and unreadable badges across `buttonVariants` (`button.tsx`), `projects/page.tsx`, `finding/page.tsx`, and `globals.css` with WCAG-compliant MD3 tokens (`text-on-primary`, `text-on-secondary`, `bg-black/25`).
-- Enhanced `RunningAIScanView` in `/scan` with live targeted files chips, dual execution controls (One-click "Open in Interactive AI Terminal"), and real-time findings preview stream.
-- Verified end-to-end execution against `/home/kal/vulnerable-test-app`, accurately detecting 18 critical vulnerabilities (SQLi, command injection, hardcoded AWS/Stripe keys, pickle RCE, unsafe YAML, etc.) with snippets and differential comparison.
-- Added comprehensive unit tests in `tests/unit/test_pty_and_ai_service.py` (99 passed in full test suite) and verified clean Next.js production build (17/17 routes).
+- Enforced SQLite foreign key cascading (`PRAGMA foreign_keys=ON`) and implemented explicit multi-table deletion (`delete_project` purges RiskAssessments, Findings, Scans, and Project records) to prevent orphaned ghost data from polluting findings, overview, and report views.
+- Added permanent Project Deletion UI modal on `/projects` page with safety confirmations and immediate cache invalidation.
+- Fixed OpenCode 45% freeze by adding `check_opencode_credentials()`. Headless scans fail fast with a clear notification when unauthenticated, guiding users to run `opencode auth` via the embedded terminal drawer.
+- Set default AI provider to Google Antigravity CLI (`agy`) which is pre-authenticated on the system.
+- Added AI Model selection dropdown (`model` parameter) across the backend API (`AIScanRequest`), CLI invocation flags (`-m` for OpenCode, `--model` for `agy`), and frontend `/ai-analysis` UI.
+- Separated the Cross-Engine Differential Comparison into 3 distinct sections: (1) Corroborated Findings (Agreement between static and AI), (2) Threats Missed by Static Scan (AI-Exclusive Discoveries), and (3) Deterministic Static-Only Rules (AST/regex detections).
+- Added enriched Target Project status display showing repo/local path and static baseline scan presence.
+- Verified test suite: 91 unit tests passed, 3 skipped, 0 errors. Verified Next.js production build: 17/17 static pages compiled successfully.
 
 Next:
 Capstone final presentation and demo

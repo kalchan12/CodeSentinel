@@ -92,22 +92,27 @@ export const api = {
     request<{
       opencode: {
         available: boolean;
+        authenticated?: boolean;
         path: string | null;
         version: string | null;
+        models?: string[];
         description: string;
       };
       agy: {
         available: boolean;
+        authenticated?: boolean;
         path: string | null;
         version: string | null;
+        models?: string[];
         description: string;
       };
     }>("/ai/status"),
-  runAIScan: (projectId: number, payload: { provider: string; prompt?: string }) =>
+  runAIScan: (projectId: number, payload: { provider: string; model?: string; prompt?: string }) =>
     request<Scan>(`/projects/${projectId}/ai-scan`, {
       method: "POST",
       body: JSON.stringify(payload),
     }),
+
   getScanComparison: (scanId: number) =>
     request<{
       static_scan_id?: number | null;

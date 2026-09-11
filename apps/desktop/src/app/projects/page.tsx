@@ -260,9 +260,11 @@ function ProjectsAndScansHub() {
               project={project}
               isScanning={startingProjectId === project.id}
               onRunScan={() => handleQuickScan(project)}
+              onDelete={() => setRefreshKey((k) => k + 1)}
             />
           ))}
           <AddProjectGhostCard onCreated={() => setRefreshKey((k) => k + 1)} />
+
         </div>
       )}
 
@@ -370,10 +372,12 @@ function ProjectCard({
   project,
   isScanning,
   onRunScan,
+  onDelete,
 }: {
   project: Project;
   isScanning: boolean;
   onRunScan: () => void;
+  onDelete?: () => void;
 }) {
   const router = useRouter();
   const score = project.last_scan_score !== null ? Math.round(project.last_scan_score) : "—";
@@ -507,11 +511,29 @@ function ProjectCard({
           >
             <span className="material-symbols-outlined text-[18px]">settings</span>
           </button>
+          <button
+            type="button"
+            onClick={async () => {
+              if (!window.confirm(`Permanently delete project "${project.name}" and all its scans and findings?`)) return;
+              try {
+                await api.deleteProject(project.id);
+                toast.success(`Project "${project.name}" deleted permanently`);
+                onDelete?.();
+              } catch (err) {
+                toast.error(err instanceof Error ? err.message : "Failed to delete project");
+              }
+            }}
+            className="text-xs text-on-surface-variant hover:text-error p-1 rounded hover:bg-surface-container transition-colors cursor-pointer"
+            title="Permanently Delete Project"
+          >
+            <span className="material-symbols-outlined text-[18px]">delete</span>
+          </button>
         </div>
       </div>
     </div>
   );
 }
+
 
 function AddProjectGhostCard({ onCreated }: { onCreated: () => void }) {
   return (

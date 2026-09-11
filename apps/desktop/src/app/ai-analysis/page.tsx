@@ -47,7 +47,8 @@ export default function AIAnalysisPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [aiStatus, setAiStatus] = useState<any>(null);
-  const [provider, setProvider] = useState<"opencode" | "agy">("opencode");
+  const [provider, setProvider] = useState<"opencode" | "agy">("agy");
+  const [model, setModel] = useState<string>("default");
   const [insights, setInsights] = useState<AIInsightItem[] | null>(null);
   const [selectedInsight, setSelectedInsight] = useState<AIInsightItem | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
@@ -59,13 +60,16 @@ export default function AIAnalysisPage() {
     try {
       const status = await api.getAIStatus();
       setAiStatus(status);
-      if (!status.opencode?.available && status.agy?.available) {
+      if (status.agy?.available) {
         setProvider("agy");
+      } else if (status.opencode?.available) {
+        setProvider("opencode");
       }
     } catch {
       // ignore
     }
   }, []);
+
 
   const load = useCallback(async () => {
     try {
@@ -142,6 +146,24 @@ export default function AIAnalysisPage() {
     );
   }
 
+  const handleSelectProvider = (p: "opencode" | "agy") => {
+    setProvider(p);
+    const models = aiStatus?.[p]?.models;
+    if (models && models.length > 0) {
+      setModel(models[0]);
+    } else {
+      setModel("default");
+    }
+  };
+
+  const availableModels: string[] =
+    aiStatus?.[provider]?.models ||
+    (provider === "agy"
+      ? ["default", "gemini-2.5-pro", "gemini-2.5-flash"]
+      : ["anthropic/claude-3-7-sonnet", "openai/gpt-4o", "ollama/qwen2.5-coder"]);
+
+  const selectedProject = projects.find((p) => p.id === selectedProjectId);
+
   const handleRunAIReview = async () => {
     if (!selectedProjectId) {
       toast.error("Please select a project to analyze");
@@ -152,6 +174,7 @@ export default function AIAnalysisPage() {
     try {
       const scan = await api.runAIScan(selectedProjectId, {
         provider,
+        model: model !== "default" ? model : undefined,
         prompt: customPrompt.trim() || undefined,
       });
       toast.success(
@@ -200,7 +223,7 @@ export default function AIAnalysisPage() {
           {/* Provider Toggle */}
           <div className="flex bg-surface-container rounded-lg p-1 border border-outline-variant text-xs font-[JetBrains_Mono]">
             <button
-              onClick={() => setProvider("opencode")}
+              onClick={() => handleSelectProvider("opencode")}
               className={cn(
                 "px-3 py-1 rounded transition-colors flex items-center gap-1.5",
                 provider === "opencode"
@@ -215,7 +238,7 @@ export default function AIAnalysisPage() {
               )}
             </button>
             <button
-              onClick={() => setProvider("agy")}
+              onClick={() => handleSelectProvider("agy")}
               className={cn(
                 "px-3 py-1 rounded transition-colors flex items-center gap-1.5",
                 provider === "agy"
@@ -231,10 +254,27 @@ export default function AIAnalysisPage() {
             </button>
           </div>
 
+          {/* Model Selector */}
+          <div className="flex items-center gap-1.5 bg-surface-container rounded-lg px-2.5 py-1.5 border border-outline-variant text-xs font-[JetBrains_Mono]">
+            <span className="material-symbols-outlined text-[14px] text-on-surface-variant">tune</span>
+            <span className="text-[11px] text-on-surface-variant uppercase font-semibold">Model:</span>
+            <select
+              value={model}
+              onChange={(e) => setModel(e.target.value)}
+              className="bg-transparent text-xs font-[JetBrains_Mono] text-on-surface focus:outline-none cursor-pointer"
+            >
+              {availableModels.map((m) => (
+                <option key={m} value={m} className="bg-surface-container-high text-on-surface">
+                  {m}
+                </option>
+              ))}
+            </select>
+          </div>
+
           {/* Interactive Terminal Trigger */}
           <button
             onClick={() => handleLaunchTerminal()}
-            className="bg-surface-container hover:bg-surface-container-high border border-outline-variant hover:border-primary text-on-surface px-3 py-1.5 rounded text-[12px] font-[JetBrains_Mono] flex items-center gap-1.5 transition-colors"
+            className="bg-surface-container hover:bg-surface-container-high border border-outline-variant hover:border-primary text-on-surface px-3 py-1.5 rounded text-[12px] font-[JetBrains_Mono] flex items-center gap-1.5 transition-colors cursor-pointer"
             title="Launch live interactive terminal session inside CodeSentinel"
           >
             <span className="material-symbols-outlined text-[16px] text-primary">terminal</span>
@@ -254,6 +294,38 @@ export default function AIAnalysisPage() {
           </button>
         </div>
       </header>
+
+      {/* Warning banner if OpenCode selected but no credentials configured */}
+      {provider === "opencode" && activeProviderStatus?.available && !activeProviderStatus?.authenticated && (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-md text-on-surface tech-shadow">
+          <div className="flex items-start gap-3">
+            <span className="material-symbols-outlined text-amber-400 text-2xl shrink-0 mt-0.5">warning</span>
+            <div>
+              <p className="text-xs font-bold font-[Inter] text-amber-300">
+                OpenCode CLI is not authenticated
+              </p>
+              <p className="text-[11px] text-on-surface-variant font-[Inter] mt-0.5 max-w-2xl">
+                OpenCode has 0 API keys configured in ~/.local/share/opencode/auth.json. Automated headless runs will fail. Run interactive login or switch to Google Antigravity CLI.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => openTerminal({ cmd: "opencode-auth", projectId: selectedProjectId ?? undefined })}
+              className="px-3 py-1.5 rounded bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-200 text-xs font-[JetBrains_Mono] font-semibold transition-colors flex items-center gap-1.5 cursor-pointer"
+            >
+              <span className="material-symbols-outlined text-[14px]">terminal</span>
+              Run `opencode auth`
+            </button>
+            <button
+              onClick={() => handleSelectProvider("agy")}
+              className="px-3 py-1.5 rounded bg-primary/20 hover:bg-primary/30 border border-primary/40 text-primary text-xs font-[JetBrains_Mono] font-semibold transition-colors cursor-pointer"
+            >
+              Switch to Antigravity
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Target Project & Local CLI Status Banner */}
       <div className="bg-surface-container-low border border-outline-variant rounded-lg p-md flex flex-col md:flex-row items-start md:items-center justify-between gap-md tech-shadow">
@@ -276,29 +348,64 @@ export default function AIAnalysisPage() {
               >
                 {activeProviderStatus?.available ? "Binary Detected" : "Not Found"}
               </span>
+              {activeProviderStatus?.authenticated !== undefined && (
+                <span
+                  className={cn(
+                    "px-2 py-0.5 rounded text-[10px] font-[JetBrains_Mono] font-bold uppercase",
+                    activeProviderStatus?.authenticated
+                      ? "bg-secondary/15 text-secondary border border-secondary/30"
+                      : "bg-amber-500/15 text-amber-400 border border-amber-500/30"
+                  )}
+                >
+                  {activeProviderStatus?.authenticated ? "Auth OK" : "Unauthenticated"}
+                </span>
+              )}
             </div>
             <p className="text-[12px] text-on-surface-variant font-[JetBrains_Mono] mt-0.5 truncate max-w-xl">
-              {activeProviderStatus?.path || "Install CLI or check PATH"}
+              {activeProviderStatus?.path || "Install CLI or check PATH"} &bull; Model: {model}
             </p>
           </div>
         </div>
 
-        {/* Project Selector */}
-        <div className="flex items-center gap-2 w-full md:w-auto">
-          <span className="text-[11px] font-[JetBrains_Mono] text-on-surface-variant uppercase font-semibold">
-            Target Project:
-          </span>
-          <select
-            value={selectedProjectId || ""}
-            onChange={(e) => setSelectedProjectId(Number(e.target.value))}
-            className="bg-background border border-outline-variant rounded px-3 py-1 text-xs font-[JetBrains_Mono] text-on-surface focus:outline-none focus:border-primary"
-          >
-            {projects.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name} (#{p.id})
-              </option>
-            ))}
-          </select>
+        {/* Project Selector & Target Info */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full md:w-auto">
+          {selectedProject && (
+            <div className="text-right hidden sm:block">
+              <div className="text-[11px] font-[JetBrains_Mono] text-on-surface-variant">
+                {selectedProject.last_scan_id ? (
+                  <Link
+                    href={`/scan?scan=${selectedProject.last_scan_id}`}
+                    className="text-secondary hover:underline inline-flex items-center gap-1"
+                  >
+                    <span className="material-symbols-outlined text-[13px]">check_circle</span>
+                    Static Scan #{selectedProject.last_scan_id}
+                  </Link>
+                ) : (
+                  <span className="text-outline">No baseline static scan</span>
+                )}
+              </div>
+              <p className="text-[10px] font-[JetBrains_Mono] text-outline truncate max-w-[200px]">
+                {selectedProject.repo_url || selectedProject.local_path || "Local repository"}
+              </p>
+            </div>
+          )}
+
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-[JetBrains_Mono] text-on-surface-variant uppercase font-semibold shrink-0">
+              Target:
+            </span>
+            <select
+              value={selectedProjectId || ""}
+              onChange={(e) => setSelectedProjectId(Number(e.target.value))}
+              className="bg-background border border-outline-variant rounded px-3 py-1.5 text-xs font-[JetBrains_Mono] text-on-surface focus:outline-none focus:border-primary cursor-pointer"
+            >
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name} (#{p.id})
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 

@@ -209,182 +209,247 @@ export function DifferentialComparisonView({
         </span>
       </div>
 
-      {/* Cards List */}
-      <div className="space-y-4">
-        {/* Corroborated Section */}
+      {/* Cards List with Distinct Separated Categories */}
+      <div className="space-y-8">
+        {/* Section 1: Similar Threats Found (Corroborated by Both Engines) */}
         {(filter === "all" || filter === "corroborated") && (
-          <>
-            {(corroborated || []).map((pair, idx) => (
-              <div
-                key={`corr-${idx}`}
-                className="bg-surface-container-low border border-primary/40 rounded-xl p-5 tech-shadow relative overflow-hidden group hover:border-primary transition-all"
-              >
-                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2 mb-3 pb-3 border-b border-outline-variant/50">
-                  <div className="flex items-center gap-2.5">
-                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold font-[JetBrains_Mono] uppercase bg-primary/20 text-primary border border-primary/40 flex items-center gap-1">
-                      <span className="material-symbols-outlined text-[13px]">verified</span>
-                      Corroborated by Both
-                    </span>
-                    <span className="text-xs font-[JetBrains_Mono] text-on-surface-variant">
-                      {pair.file}:{pair.line ?? "—"}
-                    </span>
-                  </div>
-
-                  <button
-                    onClick={() =>
-                      openTerminal({
-                        cmd: "opencode",
-                        initialPrompt: `Fix cross-validated security vulnerability "${pair.ai.title}" in ${pair.file}:${pair.line || 1}`,
-                      })
-                    }
-                    className="px-3 py-1 bg-surface-container hover:bg-surface-container-high text-primary rounded-lg border border-outline-variant hover:border-primary text-xs font-[JetBrains_Mono] flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <span className="material-symbols-outlined text-[14px]">terminal</span>
-                    Fix in AI Terminal
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Static Analyzer View */}
-                  <div className="bg-background/80 border border-outline-variant/60 rounded-lg p-3.5 space-y-1.5">
-                    <div className="flex items-center justify-between text-[11px] font-[JetBrains_Mono] text-on-surface-variant uppercase">
-                      <span className="flex items-center gap-1">
-                        <span className="material-symbols-outlined text-sm text-secondary">rule</span>
-                        Static Rule ({pair.static.analyzer})
-                      </span>
-                      <span className="font-bold text-secondary">{pair.static.severity}</span>
-                    </div>
-                    <h4 className="text-sm font-bold text-on-surface font-[Inter]">
-                      {pair.static.title}
-                    </h4>
-                    <p className="text-xs text-on-surface-variant font-[Inter] line-clamp-3">
-                      {pair.static.description}
-                    </p>
-                  </div>
-
-                  {/* AI Agent View */}
-                  <div className="bg-background/80 border border-primary/30 rounded-lg p-3.5 space-y-1.5">
-                    <div className="flex items-center justify-between text-[11px] font-[JetBrains_Mono] text-on-surface-variant uppercase">
-                      <span className="flex items-center gap-1">
-                        <span className="material-symbols-outlined text-sm text-primary">psychology</span>
-                        AI Confirmation ({pair.ai.analyzer})
-                      </span>
-                      <span className="font-bold text-primary">{pair.ai.severity}</span>
-                    </div>
-                    <h4 className="text-sm font-bold text-on-surface font-[Inter]">
-                      {pair.ai.title}
-                    </h4>
-                    <p className="text-xs text-on-surface-variant font-[Inter] line-clamp-3">
-                      {pair.ai.description}
-                    </p>
-                  </div>
-                </div>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-primary/30">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary text-xl">verified</span>
+                <h4 className="text-sm font-bold text-on-surface font-[Inter] uppercase tracking-wide">
+                  Similar Threats Found ({corroborated?.length || 0})
+                </h4>
+                <span className="text-[11px] font-[JetBrains_Mono] text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20">
+                  Cross-Validated / High Confidence
+                </span>
               </div>
-            ))}
-          </>
+              <span className="text-xs text-on-surface-variant font-[JetBrains_Mono]">
+                Both Static SAST and AI Reasoner agreed on these vulnerabilities
+              </span>
+            </div>
+
+            {corroborated && corroborated.length > 0 ? (
+              corroborated.map((pair, idx) => (
+                <div
+                  key={`corr-${idx}`}
+                  className="bg-surface-container-low border border-primary/40 rounded-xl p-5 tech-shadow relative overflow-hidden group hover:border-primary transition-all"
+                >
+                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2 mb-3 pb-3 border-b border-outline-variant/50">
+                    <div className="flex items-center gap-2.5">
+                      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold font-[JetBrains_Mono] uppercase bg-primary/20 text-primary border border-primary/40 flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[13px]">verified</span>
+                        Corroborated Match
+                      </span>
+                      <span className="text-xs font-[JetBrains_Mono] text-on-surface">
+                        <strong>{pair.file}</strong>:{pair.line ?? "—"}
+                      </span>
+                    </div>
+
+                    <button
+                      onClick={() =>
+                        openTerminal({
+                          cmd: "agy",
+                          initialPrompt: `Fix cross-validated security vulnerability "${pair.ai.title}" in ${pair.file}:${pair.line || 1}`,
+                        })
+                      }
+                      className="px-3 py-1 bg-surface-container hover:bg-surface-container-high text-primary rounded-lg border border-outline-variant hover:border-primary text-xs font-[JetBrains_Mono] flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-[14px]">terminal</span>
+                      Fix in AI Terminal
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Static Analyzer View */}
+                    <div className="bg-background/80 border border-outline-variant/60 rounded-lg p-3.5 space-y-1.5">
+                      <div className="flex items-center justify-between text-[11px] font-[JetBrains_Mono] text-on-surface-variant uppercase">
+                        <span className="flex items-center gap-1">
+                          <span className="material-symbols-outlined text-sm text-secondary">rule</span>
+                          Static Detection ({pair.static.analyzer})
+                        </span>
+                        <span className="font-bold text-secondary">{pair.static.severity}</span>
+                      </div>
+                      <h4 className="text-sm font-bold text-on-surface font-[Inter]">
+                        {pair.static.title}
+                      </h4>
+                      <p className="text-xs text-on-surface-variant font-[Inter] line-clamp-3">
+                        {pair.static.description}
+                      </p>
+                    </div>
+
+                    {/* AI Agent View */}
+                    <div className="bg-background/80 border border-primary/30 rounded-lg p-3.5 space-y-1.5">
+                      <div className="flex items-center justify-between text-[11px] font-[JetBrains_Mono] text-on-surface-variant uppercase">
+                        <span className="flex items-center gap-1">
+                          <span className="material-symbols-outlined text-sm text-primary">psychology</span>
+                          AI Confirmation ({pair.ai.analyzer})
+                        </span>
+                        <span className="font-bold text-primary">{pair.ai.severity}</span>
+                      </div>
+                      <h4 className="text-sm font-bold text-on-surface font-[Inter]">
+                        {pair.ai.title}
+                      </h4>
+                      <p className="text-xs text-on-surface-variant font-[Inter] line-clamp-3">
+                        {pair.ai.description}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : filter === "corroborated" ? (
+              <div className="p-6 text-center bg-surface-container-low border border-outline-variant rounded-xl text-on-surface-variant text-xs font-[JetBrains_Mono]">
+                No corroborated matches recorded between static and AI scans.
+              </div>
+            ) : null}
+          </div>
         )}
 
-        {/* AI-Only Section */}
+
+        {/* Section 2: AI-Only Discoveries (What Static SAST Missed!) */}
         {(filter === "all" || filter === "ai_only") && (
-          <>
-            {(ai_only || []).map((item, idx) => (
-              <div
-                key={`ai-only-${idx}`}
-                className="bg-surface-container-low border border-tertiary/40 rounded-xl p-5 tech-shadow hover:border-tertiary transition-all"
-              >
-                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2 mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold font-[JetBrains_Mono] uppercase bg-tertiary/20 text-tertiary border border-tertiary/40 flex items-center gap-1">
-                      <span className="material-symbols-outlined text-[13px]">psychology</span>
-                      AI-Only Discovery (Missed by Static)
-                    </span>
-                    <span className="text-xs font-[JetBrains_Mono] text-on-surface-variant">
-                      {item.file}:{item.line_start ?? "—"}
-                    </span>
-                  </div>
-
-                  <button
-                    onClick={() =>
-                      openTerminal({
-                        cmd: "opencode",
-                        initialPrompt: `Fix security finding "${item.title}" in ${item.file}:${item.line_start || 1}`,
-                      })
-                    }
-                    className="px-3 py-1 bg-surface-container hover:bg-surface-container-high text-tertiary rounded-lg border border-outline-variant hover:border-tertiary text-xs font-[JetBrains_Mono] flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <span className="material-symbols-outlined text-[14px]">terminal</span>
-                    Fix in AI Terminal
-                  </button>
-                </div>
-
-                <h4 className="text-base font-bold text-on-surface font-[Inter] mb-1">
-                  {item.title}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-tertiary/30">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-tertiary text-xl">psychology</span>
+                <h4 className="text-sm font-bold text-on-surface font-[Inter] uppercase tracking-wide">
+                  Threats Missed by Static Scan ({ai_only?.length || 0})
                 </h4>
-                <p className="text-xs text-on-surface-variant font-[Inter] leading-relaxed mb-3">
-                  {item.description}
-                </p>
-
-                {item.remediation && (
-                  <div className="bg-background border border-outline-variant/60 rounded-lg p-2.5 text-xs font-[JetBrains_Mono] text-on-surface">
-                    <span className="text-tertiary font-bold block mb-1">Recommended Fix:</span>
-                    <p className="text-on-surface-variant font-[Inter]">{item.remediation}</p>
-                  </div>
-                )}
+                <span className="text-[11px] font-[JetBrains_Mono] text-tertiary bg-tertiary/10 px-2 py-0.5 rounded border border-tertiary/20">
+                  AI-Exclusive Discoveries
+                </span>
               </div>
-            ))}
-          </>
+              <span className="text-xs text-on-surface-variant font-[JetBrains_Mono]">
+                Vulnerabilities found exclusively through contextual AI reasoning
+              </span>
+            </div>
+
+            {ai_only && ai_only.length > 0 ? (
+              ai_only.map((item, idx) => (
+                <div
+                  key={`ai-only-${idx}`}
+                  className="bg-surface-container-low border border-tertiary/40 rounded-xl p-5 tech-shadow hover:border-tertiary transition-all"
+                >
+                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2 mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold font-[JetBrains_Mono] uppercase bg-tertiary/20 text-tertiary border border-tertiary/40 flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[13px]">psychology</span>
+                        Missed by Static Rules
+                      </span>
+                      <span className="text-xs font-[JetBrains_Mono] text-on-surface">
+                        <strong>{item.file}</strong>:{item.line_start ?? "—"}
+                      </span>
+                    </div>
+
+                    <button
+                      onClick={() =>
+                        openTerminal({
+                          cmd: "agy",
+                          initialPrompt: `Fix security finding "${item.title}" in ${item.file}:${item.line_start || 1}`,
+                        })
+                      }
+                      className="px-3 py-1 bg-surface-container hover:bg-surface-container-high text-tertiary rounded-lg border border-outline-variant hover:border-tertiary text-xs font-[JetBrains_Mono] flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-[14px]">terminal</span>
+                      Fix in AI Terminal
+                    </button>
+                  </div>
+
+                  <h4 className="text-base font-bold text-on-surface font-[Inter] mb-1">
+                    {item.title}
+                  </h4>
+                  <p className="text-xs text-on-surface-variant font-[Inter] leading-relaxed mb-3">
+                    {item.description}
+                  </p>
+
+                  {item.remediation && (
+                    <div className="bg-background border border-outline-variant/60 rounded-lg p-2.5 text-xs font-[JetBrains_Mono] text-on-surface">
+                      <span className="text-tertiary font-bold block mb-1">Recommended Fix:</span>
+                      <p className="text-on-surface-variant font-[Inter]">{item.remediation}</p>
+                    </div>
+                  )}
+                </div>
+              ))
+            ) : filter === "ai_only" ? (
+              <div className="p-6 text-center bg-surface-container-low border border-outline-variant rounded-xl text-on-surface-variant text-xs font-[JetBrains_Mono]">
+                No AI-exclusive findings recorded.
+              </div>
+            ) : null}
+          </div>
         )}
 
-        {/* Static-Only Section */}
+        {/* Section 3: Static-Only Rules (Missed by AI) */}
         {(filter === "all" || filter === "static_only") && (
-          <>
-            {(static_only || []).map((item, idx) => (
-              <div
-                key={`static-only-${idx}`}
-                className="bg-surface-container-low border border-secondary/30 rounded-xl p-5 tech-shadow hover:border-secondary transition-all"
-              >
-                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2 mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold font-[JetBrains_Mono] uppercase bg-secondary/15 text-secondary border border-secondary/30 flex items-center gap-1">
-                      <span className="material-symbols-outlined text-[13px]">rule</span>
-                      Static-Only Rule (Missed by AI)
-                    </span>
-                    <span className="text-xs font-[JetBrains_Mono] text-on-surface-variant">
-                      {item.file}:{item.line_start ?? "—"}
-                    </span>
-                  </div>
-
-                  <button
-                    onClick={() =>
-                      openTerminal({
-                        cmd: "opencode",
-                        initialPrompt: `Fix security violation "${item.title}" in ${item.file}:${item.line_start || 1}`,
-                      })
-                    }
-                    className="px-3 py-1 bg-surface-container hover:bg-surface-container-high text-secondary rounded-lg border border-outline-variant hover:border-secondary text-xs font-[JetBrains_Mono] flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <span className="material-symbols-outlined text-[14px]">terminal</span>
-                    Fix in AI Terminal
-                  </button>
-                </div>
-
-                <h4 className="text-base font-bold text-on-surface font-[Inter] mb-1">
-                  {item.title}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-secondary/30">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-secondary text-xl">rule</span>
+                <h4 className="text-sm font-bold text-on-surface font-[Inter] uppercase tracking-wide">
+                  Static-Only Rule Detections ({static_only?.length || 0})
                 </h4>
-                <p className="text-xs text-on-surface-variant font-[Inter] leading-relaxed mb-3">
-                  {item.description}
-                </p>
-
-                {item.remediation && (
-                  <div className="bg-background border border-outline-variant/60 rounded-lg p-2.5 text-xs font-[JetBrains_Mono] text-on-surface">
-                    <span className="text-secondary font-bold block mb-1">Remediation Rule:</span>
-                    <p className="text-on-surface-variant font-[Inter]">{item.remediation}</p>
-                  </div>
-                )}
+                <span className="text-[11px] font-[JetBrains_Mono] text-secondary bg-secondary/10 px-2 py-0.5 rounded border border-secondary/20">
+                  Deterministic AST / Regex Rules
+                </span>
               </div>
-            ))}
-          </>
+              <span className="text-xs text-on-surface-variant font-[JetBrains_Mono]">
+                Detections from Semgrep / Gitleaks pattern matching
+              </span>
+            </div>
+
+            {static_only && static_only.length > 0 ? (
+              static_only.map((item, idx) => (
+                <div
+                  key={`static-only-${idx}`}
+                  className="bg-surface-container-low border border-secondary/30 rounded-xl p-5 tech-shadow hover:border-secondary transition-all"
+                >
+                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2 mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold font-[JetBrains_Mono] uppercase bg-secondary/15 text-secondary border border-secondary/30 flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[13px]">rule</span>
+                        Static Rule Only
+                      </span>
+                      <span className="text-xs font-[JetBrains_Mono] text-on-surface">
+                        <strong>{item.file}</strong>:{item.line_start ?? "—"}
+                      </span>
+                    </div>
+
+                    <button
+                      onClick={() =>
+                        openTerminal({
+                          cmd: "agy",
+                          initialPrompt: `Fix security violation "${item.title}" in ${item.file}:${item.line_start || 1}`,
+                        })
+                      }
+                      className="px-3 py-1 bg-surface-container hover:bg-surface-container-high text-secondary rounded-lg border border-outline-variant hover:border-secondary text-xs font-[JetBrains_Mono] flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-[14px]">terminal</span>
+                      Fix in AI Terminal
+                    </button>
+                  </div>
+
+                  <h4 className="text-base font-bold text-on-surface font-[Inter] mb-1">
+                    {item.title}
+                  </h4>
+                  <p className="text-xs text-on-surface-variant font-[Inter] leading-relaxed mb-3">
+                    {item.description}
+                  </p>
+
+                  {item.remediation && (
+                    <div className="bg-background border border-outline-variant/60 rounded-lg p-2.5 text-xs font-[JetBrains_Mono] text-on-surface">
+                      <span className="text-secondary font-bold block mb-1">Remediation Rule:</span>
+                      <p className="text-on-surface-variant font-[Inter]">{item.remediation}</p>
+                    </div>
+                  )}
+                </div>
+              ))
+            ) : filter === "static_only" ? (
+              <div className="p-6 text-center bg-surface-container-low border border-outline-variant rounded-xl text-on-surface-variant text-xs font-[JetBrains_Mono]">
+                No static-only rules recorded.
+              </div>
+            ) : null}
+          </div>
         )}
+
 
         {totalItems === 0 && (
           <div className="p-12 text-center bg-surface-container-low border border-outline-variant rounded-xl text-on-surface-variant">
