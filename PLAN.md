@@ -13,7 +13,7 @@ Phase:
 Phase 20 — Capstone Polish
 
 Task:
-AI Scan Progress Tracking & Differential Comparison (Completed)
+True AI Codebase Scanning, Live File Inspection, 404 Fix & UI Contrast Repair (Completed)
 
 Status:
 Complete
@@ -28,17 +28,19 @@ Dependencies:
 Phase 1-20 completion, AI CLI & Embedded Terminal
 
 Notes:
-- Transitioned AI scan from blocking synchronous HTTP request to asynchronous background job (ScanStatus.PENDING -> RUNNING -> COMPLETED).
-- Implemented streaming subprocess execution in ai_service.py with real-time telemetry streaming into scan.correlation["live_logs"] across 5 distinct phases.
-- Built Differential Analysis Service (differential_service.py) that fuzzy-matches static scan findings with AI-detected findings to categorize: Corroborated (high confidence), AI-Only discoveries, and Static-Only rule detections.
-- Created <DifferentialComparisonView /> displaying executive summaries, overlap rates, filter pills, and side-by-side card inspections.
-- Built <RunningAIScanView /> in /scan?scan={id} featuring 5-phase execution stepper, live elapsed timer, and embedded streaming AI log console.
-- Added "AI vs Static Comparison" tab to /scan?scan={id} completed dashboard and integrated differential benchmarking into /ai-analysis.
-- Added unit tests in tests/unit/test_differential_service.py (92 passed, 14 skipped in pytest suite).
-- Verified clean Next.js production build (17/17 static routes, 0 errors).
+- Replaced generic prompts with dynamic source file discovery in `ai_service.py` (`discover_project_source_files`), indexing actual project code while safely skipping vendor/cache directories (`.venv`, `node_modules`, `.git`, `.next`, etc.).
+- Integrated `--dangerously-skip-permissions` into headless `agy` CLI invocations, unblocking automated execution without permission prompt deadlocks.
+- Implemented real-time snippet extraction (`extract_code_snippet`) so AI findings contain live source code context and accurate line ranges.
+- Enhanced `parse_ai_findings` with JSON envelope unwrapping (`response`, `findings`), markdown fence stripping, and outer bracket array extraction.
+- Eliminated 404 polling spam on `/api/scans/{id}/assessment` by returning 200 OK with `None` during pending/running phases, and guarded frontend polling requests until `scan.status === "completed"`.
+- Repaired low-contrast "white buttons" and unreadable badges across `buttonVariants` (`button.tsx`), `projects/page.tsx`, `finding/page.tsx`, and `globals.css` with WCAG-compliant MD3 tokens (`text-on-primary`, `text-on-secondary`, `bg-black/25`).
+- Enhanced `RunningAIScanView` in `/scan` with live targeted files chips, dual execution controls (One-click "Open in Interactive AI Terminal"), and real-time findings preview stream.
+- Verified end-to-end execution against `/home/kal/vulnerable-test-app`, accurately detecting 18 critical vulnerabilities (SQLi, command injection, hardcoded AWS/Stripe keys, pickle RCE, unsafe YAML, etc.) with snippets and differential comparison.
+- Added comprehensive unit tests in `tests/unit/test_pty_and_ai_service.py` (99 passed in full test suite) and verified clean Next.js production build (17/17 routes).
 
 Next:
-Capstone final verification and video presentation demo
+Capstone final presentation and demo
+
 ```
 
 > Keep this section current. Every meaningful work session should start by reading it and end by updating it.

@@ -206,7 +206,7 @@ function ProjectsAndScansHub() {
             <span
               className={cn(
                 "px-1.5 py-0.5 rounded text-[10px] font-[JetBrains_Mono] font-bold",
-                activeTab === "projects" ? "bg-white/20 text-white" : "bg-surface-container text-on-surface-variant"
+                activeTab === "projects" ? "bg-on-primary/20 text-on-primary" : "bg-surface-container text-on-surface-variant"
               )}
             >
               {projects.length}
@@ -227,7 +227,7 @@ function ProjectsAndScansHub() {
               <span
                 className={cn(
                   "px-1.5 py-0.5 rounded text-[10px] font-[JetBrains_Mono] font-bold",
-                  activeTab === "scans" ? "bg-white/20 text-white" : "bg-surface-container text-on-surface-variant"
+                  activeTab === "scans" ? "bg-on-primary/20 text-on-primary" : "bg-surface-container text-on-surface-variant"
                 )}
               >
                 {allScans.length}

@@ -35,6 +35,7 @@ import { NewProjectDialog } from "@/components/new-project-dialog";
 import { api, ApiError } from "@/lib/api";
 import { formatDate, formatLine, formatRiskScore, SCAN_STATUS_LABELS, SEVERITY_LABELS, severityClass } from "@/lib/format";
 import { usePolling } from "@/lib/hooks";
+import { openTerminal } from "@/lib/terminal-state";
 import { cn } from "@/lib/utils";
 
 export default function ScanPage() {
@@ -89,14 +90,16 @@ function ScanContent() {
     try {
       const [findingData, assessmentData] = await Promise.all([
         api.getFindings(scanId, severityFilter === "all" ? {} : { severity: severityFilter }),
-        api.getAssessment(scanId).catch(() => null),
+        scan?.status === "completed" ? api.getAssessment(scanId).catch(() => null) : Promise.resolve(null),
       ]);
       setFindings(findingData);
-      setAssessment(assessmentData);
+      if (assessmentData) {
+        setAssessment(assessmentData);
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to load results");
     }
-  }, [scanId, severityFilter]);
+  }, [scanId, severityFilter, scan?.status]);
 
   useEffect(() => {
     if (scanId !== null) {
@@ -192,7 +195,7 @@ function ScanDashboard({
 
   if (running) {
     if (scan.correlation?.scan_type === "ai") {
-      return <RunningAIScanView scan={scan} />;
+      return <RunningAIScanView scan={scan} findings={findings} />;
     }
     return <RunningScanView scan={scan} findings={findings} />;
   }
@@ -207,7 +210,13 @@ function ScanDashboard({
   );
 }
 
-function RunningAIScanView({ scan }: { scan: Scan }) {
+function RunningAIScanView({
+  scan,
+  findings,
+}: {
+  scan: Scan;
+  findings?: FindingsPage | null;
+}) {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
   useEffect(() => {
@@ -225,12 +234,14 @@ function RunningAIScanView({ scan }: { scan: Scan }) {
   const providerName = provider === "agy" ? "Google Antigravity CLI" : "OpenCode AI Agent";
   const liveLogs = (correlation.live_logs as string[]) || [];
   const statusPhase = (correlation.status_phase as string) || "AI Security Reasoning in progress...";
+  const discoveredFiles = (correlation.discovered_files as string[]) || [];
+  const items = findings?.items || [];
 
   const phases = [
-    { label: "Workspace Ingestion & Context", detail: "Indexing security-critical files and dependency manifests" },
-    { label: `Invoking Local ${provider === "agy" ? "Antigravity" : "OpenCode"} Agent`, detail: `Executing ${provider} with headless structured prompt` },
-    { label: "Deep Vulnerability & Taint Reasoning", detail: "Analyzing dataflow, sanitization sinks, and logic flaws" },
-    { label: "Canonical Schema Normalization", detail: "Mapping AI output to 15-field Finding models & calculating risk" },
+    { label: "Workspace Ingestion & File Indexing", detail: "Discovering real project source files and dependency manifests" },
+    { label: `Invoking Local ${provider === "agy" ? "Antigravity" : "OpenCode"} Agent`, detail: `Executing ${provider} with file-targeted security audit prompt` },
+    { label: "Deep Vulnerability & Taint Reasoning", detail: "Analyzing dataflow, injection sinks, deserialization, and secret leaks" },
+    { label: "Canonical Schema Normalization", detail: "Mapping AI output to 15-field Finding models & extracting code snippets" },
     { label: "Cross-Engine Differential Benchmarking", detail: "Comparing AI detections vs static baseline scan (Semgrep/Gitleaks)" },
   ];
 
@@ -259,18 +270,34 @@ function RunningAIScanView({ scan }: { scan: Scan }) {
           </p>
         </div>
 
-        <Link
-          href="/projects"
-          className="flex items-center gap-1.5 px-4 py-2 border border-outline-variant rounded-lg bg-surface-container text-on-surface hover:bg-surface-container-high transition-colors text-xs font-semibold font-[JetBrains_Mono]"
-        >
-          <span className="material-symbols-outlined text-sm">arrow_back</span>
-          Return to Projects
-        </Link>
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={() =>
+              openTerminal({
+                cmd: provider === "agy" ? "agy" : "opencode",
+                projectId: scan.project_id,
+              })
+            }
+            className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-secondary/15 hover:bg-secondary/25 text-secondary border border-secondary/40 text-xs font-semibold font-[JetBrains_Mono] transition-colors cursor-pointer"
+            title="Open the interactive AI terminal session in the embedded drawer"
+          >
+            <span className="material-symbols-outlined text-base">terminal</span>
+            <span>Open in Interactive AI Terminal</span>
+          </button>
+
+          <Link
+            href="/projects"
+            className="flex items-center gap-1.5 px-4 py-2 border border-outline-variant rounded-lg bg-surface-container text-on-surface hover:bg-surface-container-high transition-colors text-xs font-semibold font-[JetBrains_Mono]"
+          >
+            <span className="material-symbols-outlined text-sm">arrow_back</span>
+            Return to Projects
+          </Link>
+        </div>
       </div>
 
       {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Column: AI Progress & 5 Phases */}
+        {/* Left Column: AI Progress, 5 Phases & Discovered Files */}
         <div className="lg:col-span-7 space-y-6">
           <div className="bg-surface-container-low border border-outline-variant/80 rounded-xl p-6 tech-shadow space-y-5">
             <div className="flex justify-between items-center">
@@ -314,9 +341,38 @@ function RunningAIScanView({ scan }: { scan: Scan }) {
               })}
             </div>
           </div>
+
+          {/* Targeted Source Files Under Audit */}
+          {discoveredFiles.length > 0 && (
+            <div className="bg-surface-container-low border border-outline-variant/80 rounded-xl p-5 tech-shadow space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-primary text-base">folder_open</span>
+                  <h4 className="text-xs font-bold text-on-surface font-[JetBrains_Mono] uppercase tracking-wider">
+                    Source Files Targeted for Security Audit ({discoveredFiles.length})
+                  </h4>
+                </div>
+                <span className="text-[10px] font-[JetBrains_Mono] text-on-surface-variant flex items-center gap-1.5">
+                  <span className="size-2 rounded-full bg-emerald-400 animate-ping" />
+                  Live Auditing
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto p-1">
+                {discoveredFiles.map((file, i) => (
+                  <span
+                    key={i}
+                    className="px-2.5 py-1 rounded bg-surface border border-outline-variant/60 text-[11px] font-[JetBrains_Mono] text-on-surface flex items-center gap-1.5"
+                  >
+                    <span className="material-symbols-outlined text-xs text-primary">code</span>
+                    <span>{file}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Right Column: Live Telemetry & Streaming Logs */}
+        {/* Right Column: Live Telemetry, Streaming Logs & Discovered Findings */}
         <div className="lg:col-span-5 space-y-6">
           {/* Telemetry Card */}
           <div className="bg-surface-container-low border border-outline-variant/80 rounded-xl p-5 tech-shadow space-y-4">
@@ -325,7 +381,7 @@ function RunningAIScanView({ scan }: { scan: Scan }) {
               Execution Telemetry
             </h3>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <div className="bg-surface p-3 rounded-lg border border-outline-variant/60">
                 <span className="text-[10px] font-bold font-[JetBrains_Mono] text-on-surface-variant uppercase">
                   Elapsed Time
@@ -336,10 +392,18 @@ function RunningAIScanView({ scan }: { scan: Scan }) {
               </div>
               <div className="bg-surface p-3 rounded-lg border border-outline-variant/60">
                 <span className="text-[10px] font-bold font-[JetBrains_Mono] text-on-surface-variant uppercase">
-                  Local AI Agent
+                  AI Engine
                 </span>
                 <p className="text-sm font-bold font-[JetBrains_Mono] text-tertiary mt-1 truncate">
                   {provider}
+                </p>
+              </div>
+              <div className="bg-surface p-3 rounded-lg border border-outline-variant/60">
+                <span className="text-[10px] font-bold font-[JetBrains_Mono] text-on-surface-variant uppercase">
+                  Target Files
+                </span>
+                <p className="text-xl font-bold font-[JetBrains_Mono] text-primary mt-1">
+                  {discoveredFiles.length || correlation.target_files_count || "—"}
                 </p>
               </div>
             </div>
@@ -374,6 +438,34 @@ function RunningAIScanView({ scan }: { scan: Scan }) {
               )}
             </div>
           </div>
+
+          {/* Discovered Findings Preview */}
+          {items.length > 0 && (
+            <div className="bg-surface-container-low border border-outline-variant/80 rounded-xl p-5 tech-shadow space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-bold text-on-surface font-[JetBrains_Mono] uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-sm text-error">warning</span>
+                  Discovered Findings ({items.length})
+                </h4>
+              </div>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {items.slice(0, 5).map((f) => (
+                  <div
+                    key={f.id}
+                    className="p-2.5 rounded-lg bg-surface border border-outline-variant/60 flex items-center justify-between text-xs"
+                  >
+                    <div className="min-w-0 pr-2">
+                      <div className="font-semibold text-on-surface truncate">{f.title}</div>
+                      <div className="text-[10px] text-on-surface-variant font-[JetBrains_Mono]">
+                        {f.file}:{f.line_start ?? 1}
+                      </div>
+                    </div>
+                    <Badge className={severityClass(f.severity)}>{f.severity.toUpperCase()}</Badge>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

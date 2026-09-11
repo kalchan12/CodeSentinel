@@ -268,8 +268,8 @@ function FindingsExplorerView({ initialScanId }: { initialScanId: number | null 
                 <span>{sev}</span>
                 <span
                   className={cn(
-                    "px-1 py-0.2 rounded text-[10px] font-[JetBrains_Mono] font-bold",
-                    isSelected ? "bg-white/20 text-white" : "bg-background text-on-surface-variant"
+                    "px-1.5 py-0.5 rounded text-[10px] font-[JetBrains_Mono] font-bold",
+                    isSelected ? "bg-black/25 text-inherit" : "bg-surface-container-highest text-on-surface-variant"
                   )}
                 >
                   {count}

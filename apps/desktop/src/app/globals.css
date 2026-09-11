@@ -66,6 +66,10 @@
   --color-outline-variant: #1E293B;
 
   /* Scopes (aliases for existing component references) */
+  --color-primary-foreground: #3c0091;
+  --color-secondary-foreground: #00363e;
+  --color-destructive: #ffb4ab;
+  --color-destructive-foreground: #690005;
   --color-card: #0B1018;
   --color-card-foreground: #e2e8f0;
   --color-popover: #0B1018;
