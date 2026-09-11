@@ -45,8 +45,28 @@ def find_cli_binary(name: str) -> Optional[str]:
     return None
 
 
+def check_opencode_credentials() -> bool:
+    """Check if OpenCode has credentials configured in auth.json or environment."""
+    auth_file = os.path.expanduser("~/.local/share/opencode/auth.json")
+    if os.path.isfile(auth_file):
+        try:
+            with open(auth_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                if data and (
+                    (isinstance(data, dict) and len(data) > 0)
+                    or (isinstance(data, list) and len(data) > 0)
+                ):
+                    return True
+        except Exception:
+            pass
+    for k in ["ANTHROPIC_API_KEY", "OPENAI_API_KEY", "GEMINI_API_KEY", "GROQ_API_KEY"]:
+        if os.environ.get(k):
+            return True
+    return False
+
+
 def get_ai_status() -> dict[str, Any]:
-    """Check availability of OpenCode and Antigravity CLIs."""
+    """Check availability and authentication status of OpenCode and Antigravity CLIs."""
     opencode_path = find_cli_binary("opencode")
     agy_path = find_cli_binary("agy")
 
@@ -77,19 +97,24 @@ def get_ai_status() -> dict[str, Any]:
             agy_version = "available"
 
     return {
-        "opencode": {
-            "available": bool(opencode_path),
-            "path": opencode_path,
-            "version": opencode_version,
-            "description": "OpenCode AI Coding Agent (supports Claude, GPT, Gemini, Ollama)",
-        },
         "agy": {
             "available": bool(agy_path),
+            "authenticated": True,  # Antigravity CLI uses system auth
             "path": agy_path,
             "version": agy_version,
-            "description": "Google Antigravity CLI (deep codebase reasoning & multi-file agents)",
+            "models": ["default", "gemini-2.5-pro", "gemini-2.5-flash"],
+            "description": "Google Antigravity CLI (Deep codebase reasoning & multi-file agents)",
+        },
+        "opencode": {
+            "available": bool(opencode_path),
+            "authenticated": check_opencode_credentials(),
+            "path": opencode_path,
+            "version": opencode_version,
+            "models": ["anthropic/claude-3-7-sonnet", "openai/gpt-4o", "ollama/qwen2.5-coder"],
+            "description": "OpenCode AI Coding Agent (supports Claude, GPT, Gemini, Ollama)",
         },
     }
+
 
 
 
@@ -186,11 +211,12 @@ def extract_code_snippet(
 
 async def run_ai_scan_background(
     scan_id: int,
-    provider: str = "opencode",
+    provider: str = "agy",
+    model: Optional[str] = None,
     custom_prompt: Optional[str] = None,
 ) -> None:
     """Execute an automated AI security evaluation in the background with real-time telemetry."""
-    logger.info("Starting background AI scan %d via %s", scan_id, provider)
+    logger.info("Starting background AI scan %d via %s (model: %s)", scan_id, provider, model)
 
     with SessionLocal() as db:
         scan = db.get(ScanModel, scan_id)
@@ -216,6 +242,24 @@ async def run_ai_scan_background(
             db.commit()
             return
 
+        # Pre-execution check: if OpenCode is selected without credentials, fail fast with actionable guidance
+        if provider == "opencode" and not check_opencode_credentials():
+            scan.status = ScanStatus.FAILED.value
+            scan.error_message = (
+                "OpenCode has no AI provider credentials configured (run 'opencode auth' or 'opencode providers login' "
+                "in the terminal). Please switch to Google Antigravity CLI (agy) which is already authenticated and active."
+            )
+            corr = dict(scan.correlation or {})
+            corr["status_phase"] = "OpenCode credentials not configured"
+            corr["live_logs"] = [
+                f"[{datetime.now(timezone.utc).strftime('%H:%M:%S')}] [Error] OpenCode is installed but unauthenticated.",
+                f"[{datetime.now(timezone.utc).strftime('%H:%M:%S')}] [Fix] Run 'opencode auth' in the interactive terminal drawer or switch to Google Antigravity CLI (agy).",
+            ]
+            scan.correlation = corr
+            db.commit()
+            logger.warning("Aborting OpenCode scan %d: no credentials configured", scan_id)
+            return
+
         # Discover genuine project source files
         discovered_files = discover_project_source_files(target_dir, max_files=25)
         file_list_summary = ", ".join(discovered_files[:8]) if discovered_files else "all workspace files"
@@ -228,6 +272,7 @@ async def run_ai_scan_background(
         correlation = dict(scan.correlation or {})
         correlation["scan_type"] = "ai"
         correlation["provider"] = provider
+        correlation["model"] = model or "default"
         correlation["status_phase"] = "Ingesting workspace and budgeting context"
         correlation["discovered_files"] = discovered_files
         correlation["target_files_count"] = len(discovered_files)
@@ -235,7 +280,8 @@ async def run_ai_scan_background(
             f"[{datetime.now(timezone.utc).strftime('%H:%M:%S')}] [Phase 1/5] Initializing local AI security scan...",
             f"[{datetime.now(timezone.utc).strftime('%H:%M:%S')}] Target workspace: {target_dir}",
             f"[{datetime.now(timezone.utc).strftime('%H:%M:%S')}] Discovered {len(discovered_files)} source files for audit: {file_list_summary}{'...' if len(discovered_files) > 8 else ''}",
-            f"[{datetime.now(timezone.utc).strftime('%H:%M:%S')}] Selected local AI agent: {provider} ({binary})",
+            f"[{datetime.now(timezone.utc).strftime('%H:%M:%S')}] Selected local AI agent: {provider} ({binary})"
+            + (f" [Model: {model}]" if model and model != "default" else ""),
         ]
         scan.correlation = correlation
         db.commit()
@@ -250,7 +296,10 @@ async def run_ai_scan_background(
             "Return your findings strictly as a JSON array of objects with: "
             "title, severity (critical, high, medium, low), category, file, line_start, description, remediation."
         )
-        cmd = [binary, "run", "--auto", prompt]
+        cmd = [binary, "run", "--auto"]
+        if model:
+            cmd.extend(["-m", model])
+        cmd.append(prompt)
     else:  # agy
         prompt = (
             custom_prompt
@@ -260,6 +309,9 @@ async def run_ai_scan_background(
             "title, severity (critical, high, medium, low), category, file, line_start, description, remediation."
         )
         cmd = [binary, "-p", prompt, "--dangerously-skip-permissions", "--output-format", "json"]
+        if model and model != "default":
+            cmd.extend(["--model", model])
+
 
     # Phase 2: Launch subprocess
     with SessionLocal() as db:

@@ -19,7 +19,8 @@ router = APIRouter(tags=["ai"])
 
 
 class AIScanRequest(BaseModel):
-    provider: str = "opencode"  # "opencode" or "agy"
+    provider: str = "agy"  # "agy" (default, authenticated) or "opencode"
+    model: Optional[str] = None
     prompt: Optional[str] = None
 
 
@@ -53,6 +54,7 @@ def trigger_ai_scan(
     scan.correlation = {
         "scan_type": "ai",
         "provider": payload.provider,
+        "model": payload.model or "default",
         "status_phase": "Queued for execution",
         "live_logs": ["[Queued] AI scan job created. Waiting for worker..."],
     }
@@ -64,10 +66,12 @@ def trigger_ai_scan(
         ai_service.run_ai_scan_background,
         scan_id=scan.id,
         provider=payload.provider,
+        model=payload.model,
         custom_prompt=payload.prompt,
     )
 
     return ScanRead.from_model(scan)
+
 
 
 @router.get("/scans/{scan_id}/comparison")

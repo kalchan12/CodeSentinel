@@ -20,6 +20,14 @@ if settings.database_url.startswith("sqlite"):
         pool_pre_ping=True, 
         connect_args={"check_same_thread": False}
     )
+
+    from sqlalchemy import event
+
+    @event.listens_for(engine, "connect")
+    def _set_sqlite_pragma(dbapi_connection, connection_record):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
 else:
     engine = create_engine(settings.database_url, pool_pre_ping=True)
 

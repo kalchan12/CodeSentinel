@@ -87,7 +87,20 @@ def delete_project(db: Session, project_id: int) -> bool:
     project = db.get(Project, project_id)
     if project is None:
         return False
-    # The workspace clone (github sources) is removed with the project.
+
+    from app.models.finding import Finding
+    from app.models.risk_assessment import RiskAssessment
+    from app.models.scan import Scan
+
+    # Cascade delete all risk assessments, findings, and scans belonging to this project
+    scans = db.query(Scan).filter(Scan.project_id == project_id).all()
+    scan_ids = [s.id for s in scans]
+    if scan_ids:
+        db.query(RiskAssessment).filter(RiskAssessment.scan_id.in_(scan_ids)).delete(synchronize_session=False)
+        db.query(Finding).filter(Finding.scan_id.in_(scan_ids)).delete(synchronize_session=False)
+        db.query(Scan).filter(Scan.id.in_(scan_ids)).delete(synchronize_session=False)
+
     db.delete(project)
     db.commit()
     return True
+
