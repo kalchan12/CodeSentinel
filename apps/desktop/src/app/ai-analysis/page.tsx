@@ -4,12 +4,14 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { Finding, Project } from "@codesentinel/shared";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api";
 import { openTerminal } from "@/lib/terminal-state";
+import { DifferentialComparisonView } from "@/components/scan/differential-comparison-view";
 import { cn } from "@/lib/utils";
 
 export interface AIInsightItem {
@@ -41,6 +43,7 @@ const CATEGORY_ICONS: Record<string, string> = {
 };
 
 export default function AIAnalysisPage() {
+  const router = useRouter();
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [aiStatus, setAiStatus] = useState<any>(null);
@@ -50,6 +53,7 @@ export default function AIAnalysisPage() {
   const [analyzing, setAnalyzing] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [customPrompt, setCustomPrompt] = useState("");
+  const [comparison, setComparison] = useState<any>(null);
 
   const loadStatus = useCallback(async () => {
     try {
@@ -74,6 +78,22 @@ export default function AIAnalysisPage() {
         setSelectedProjectId(targetProject.id);
       }
 
+      if (targetProject) {
+        // Attempt loading comparative benchmark data
+        try {
+          const scans = await api.listProjectScans(targetProject.id);
+          const aiScan = scans.find((s) => s.correlation?.scan_type === "ai");
+          if (aiScan) {
+            const comp = await api.getScanComparison(aiScan.id);
+            setComparison(comp);
+          } else {
+            setComparison(null);
+          }
+        } catch {
+          setComparison(null);
+        }
+      }
+
       if (targetProject && targetProject.last_scan_id != null) {
         const page = await api.getFindings(targetProject.last_scan_id, {});
         const aiFindings = page.items.filter(
@@ -83,10 +103,10 @@ export default function AIAnalysisPage() {
           const mapped: AIInsightItem[] = aiFindings.map((f: Finding, i: number) => ({
             id: f.id || `ai-${i}`,
             category: (f.category as any) || "vulnerability",
-            title: f.title,
-            severity: (f.severity as "critical" | "high" | "medium" | "low") || "medium",
-            confidence: (f.confidence as "high" | "medium" | "low") || "high",
-            summary: (f.metadata?.ai_summary as string) || f.description,
+            title: f.title || "Untitled AI Finding",
+            severity: (f.severity as any) || "medium",
+            confidence: (f.confidence as any) || "high",
+            summary: f.description || "No description provided.",
             affectedFiles: [f.file].filter(Boolean),
             rootCause: (f.metadata?.root_cause as string) || `Identified by ${f.analyzer} analysis engine.`,
             remediationSnippet:
@@ -130,14 +150,14 @@ export default function AIAnalysisPage() {
     setAnalyzing(true);
     toast.info(`Invoking local ${provider === "opencode" ? "OpenCode" : "Antigravity CLI"} assessment...`);
     try {
-      const res = await api.runAIScan(selectedProjectId, {
+      const scan = await api.runAIScan(selectedProjectId, {
         provider,
         prompt: customPrompt.trim() || undefined,
       });
       toast.success(
-        `Security Assessment Completed: ${res.total_findings} vulnerabilities recorded in database!`
+        `AI Scan #${scan.id} queued! Redirecting to live scan dashboard...`
       );
-      await load();
+      router.push(`/scan?scan=${scan.id}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "AI Scan failed to execute");
     } finally {
@@ -513,6 +533,28 @@ export default function AIAnalysisPage() {
           )}
         </div>
       </div>
+
+      {/* Differential Benchmark: AI vs Static Scan */}
+      {comparison && (
+        <div className="space-y-4 pt-6 border-t border-outline-variant/60">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
+            <div>
+              <h2 className="text-xl font-bold text-on-surface font-[Inter] flex items-center gap-2">
+                <span className="material-symbols-outlined text-secondary text-2xl">compare_arrows</span>
+                Cross-Engine Differential Benchmark
+              </h2>
+              <p className="text-xs text-on-surface-variant font-[Inter] mt-0.5">
+                Automated comparison between deterministic static rules (Semgrep, Gitleaks, Tree-sitter) and local AI reasoning.
+              </p>
+            </div>
+            <span className="px-3 py-1 rounded-full text-xs font-bold font-[JetBrains_Mono] bg-primary/15 text-primary border border-primary/30">
+              Cross-Validated Findings
+            </span>
+          </div>
+
+          <DifferentialComparisonView comparison={comparison} />
+        </div>
+      )}
     </div>
   );
 }

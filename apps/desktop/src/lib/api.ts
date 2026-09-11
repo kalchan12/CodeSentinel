@@ -104,16 +104,56 @@ export const api = {
       };
     }>("/ai/status"),
   runAIScan: (projectId: number, payload: { provider: string; prompt?: string }) =>
-    request<{
-      scan_id: number;
-      project_id: number;
-      provider: string;
-      total_findings: number;
-      findings: any[];
-      raw_summary: string;
-      command: string;
-    }>(`/projects/${projectId}/ai-scan`, {
+    request<Scan>(`/projects/${projectId}/ai-scan`, {
       method: "POST",
       body: JSON.stringify(payload),
     }),
+  getScanComparison: (scanId: number) =>
+    request<{
+      static_scan_id?: number | null;
+      ai_scan_id?: number | null;
+      metrics: {
+        total_static: number;
+        total_ai: number;
+        corroborated_count: number;
+        ai_only_count: number;
+        static_only_count: number;
+        overlap_percentage: number;
+        ai_discovery_percentage: number;
+      };
+      executive_summary: string;
+      corroborated: Array<{
+        static: any;
+        ai: any;
+        agreement: string;
+        file: string;
+        line?: number | null;
+      }>;
+      ai_only: any[];
+      static_only: any[];
+    }>(`/scans/${scanId}/comparison`),
+  compareScans: (projectId: number, staticScanId: number, aiScanId: number) =>
+    request<{
+      static_scan_id?: number | null;
+      ai_scan_id?: number | null;
+      metrics: {
+        total_static: number;
+        total_ai: number;
+        corroborated_count: number;
+        ai_only_count: number;
+        static_only_count: number;
+        overlap_percentage: number;
+        ai_discovery_percentage: number;
+      };
+      executive_summary: string;
+      corroborated: Array<{
+        static: any;
+        ai: any;
+        agreement: string;
+        file: string;
+        line?: number | null;
+      }>;
+      ai_only: any[];
+      static_only: any[];
+    }>(`/projects/${projectId}/scan-comparison?static_scan_id=${staticScanId}&ai_scan_id=${aiScanId}`),
 };

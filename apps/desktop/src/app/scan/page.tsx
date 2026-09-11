@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DifferentialComparisonView } from "@/components/scan/differential-comparison-view";
 import {
   Table,
   TableBody,
@@ -190,6 +191,9 @@ function ScanDashboard({
   const running = scan.status === "pending" || scan.status === "running";
 
   if (running) {
+    if (scan.correlation?.scan_type === "ai") {
+      return <RunningAIScanView scan={scan} />;
+    }
     return <RunningScanView scan={scan} findings={findings} />;
   }
 
@@ -200,6 +204,179 @@ function ScanDashboard({
       assessment={assessment}
       projectId={projectId}
     />
+  );
+}
+
+function RunningAIScanView({ scan }: { scan: Scan }) {
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  useEffect(() => {
+    const started = new Date(scan.started_at ?? scan.created_at).getTime();
+    const interval = setInterval(() => {
+      const now = Date.now();
+      setElapsedSeconds(Math.max(0, Math.floor((now - started) / 1000)));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [scan.started_at, scan.created_at]);
+
+  const progress = Math.round(scan.progress);
+  const correlation = (scan.correlation as Record<string, any>) || {};
+  const provider = (correlation.provider as string) || "opencode";
+  const providerName = provider === "agy" ? "Google Antigravity CLI" : "OpenCode AI Agent";
+  const liveLogs = (correlation.live_logs as string[]) || [];
+  const statusPhase = (correlation.status_phase as string) || "AI Security Reasoning in progress...";
+
+  const phases = [
+    { label: "Workspace Ingestion & Context", detail: "Indexing security-critical files and dependency manifests" },
+    { label: `Invoking Local ${provider === "agy" ? "Antigravity" : "OpenCode"} Agent`, detail: `Executing ${provider} with headless structured prompt` },
+    { label: "Deep Vulnerability & Taint Reasoning", detail: "Analyzing dataflow, sanitization sinks, and logic flaws" },
+    { label: "Canonical Schema Normalization", detail: "Mapping AI output to 15-field Finding models & calculating risk" },
+    { label: "Cross-Engine Differential Benchmarking", detail: "Comparing AI detections vs static baseline scan (Semgrep/Gitleaks)" },
+  ];
+
+  const currentPhaseIndex =
+    progress < 20 ? 0 : progress < 35 ? 1 : progress < 80 ? 2 : progress < 95 ? 3 : 4;
+
+  return (
+    <div className="space-y-6 max-w-[1440px] mx-auto pb-12">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-outline-variant/60 pb-5">
+        <div>
+          <div className="flex items-center gap-3 mb-1">
+            <span className="material-symbols-outlined text-tertiary animate-pulse text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>
+              psychology
+            </span>
+            <h2 className="text-2xl font-bold tracking-tight text-on-surface font-[Inter]">
+              Active AI Security Scan: #CS-{scan.id}
+            </h2>
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold font-[JetBrains_Mono] uppercase bg-tertiary/20 text-tertiary border border-tertiary/40 flex items-center gap-1.5">
+              <span className="size-2 rounded-full bg-tertiary animate-ping" />
+              {providerName.toUpperCase()}
+            </span>
+          </div>
+          <p className="text-sm text-on-surface-variant font-[Inter]">
+            Local-first AI reasoning · Started {formatDate(scan.started_at ?? scan.created_at)}
+          </p>
+        </div>
+
+        <Link
+          href="/projects"
+          className="flex items-center gap-1.5 px-4 py-2 border border-outline-variant rounded-lg bg-surface-container text-on-surface hover:bg-surface-container-high transition-colors text-xs font-semibold font-[JetBrains_Mono]"
+        >
+          <span className="material-symbols-outlined text-sm">arrow_back</span>
+          Return to Projects
+        </Link>
+      </div>
+
+      {/* Main Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Left Column: AI Progress & 5 Phases */}
+        <div className="lg:col-span-7 space-y-6">
+          <div className="bg-surface-container-low border border-outline-variant/80 rounded-xl p-6 tech-shadow space-y-5">
+            <div className="flex justify-between items-center">
+              <div>
+                <span className="text-xs font-bold font-[JetBrains_Mono] text-tertiary uppercase tracking-wider block">
+                  AI Execution Progress
+                </span>
+                <h3 className="text-lg font-bold text-on-surface font-[Inter] mt-0.5">
+                  {statusPhase}
+                </h3>
+              </div>
+              <span className="text-2xl font-black font-[JetBrains_Mono] text-tertiary">
+                {progress}%
+              </span>
+            </div>
+
+            {/* Glowing progress bar */}
+            <div className="relative h-3 w-full bg-surface-container rounded-full overflow-hidden border border-outline-variant/60">
+              <div
+                className="h-full bg-gradient-to-r from-primary via-tertiary to-secondary transition-all duration-500 rounded-full"
+                style={{ width: `${Math.max(5, progress)}%` }}
+              />
+            </div>
+
+            {/* 5-Phase Pipeline Stepper */}
+            <div className="space-y-4 pt-3 border-t border-outline-variant/40">
+              {phases.map((ph, idx) => {
+                const isDone = currentPhaseIndex > idx;
+                const isCurrent = currentPhaseIndex === idx;
+                const isPending = currentPhaseIndex < idx;
+                return (
+                  <PipelineStep
+                    key={idx}
+                    label={ph.label}
+                    detail={ph.detail}
+                    done={isDone}
+                    current={isCurrent}
+                    pending={isPending}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column: Live Telemetry & Streaming Logs */}
+        <div className="lg:col-span-5 space-y-6">
+          {/* Telemetry Card */}
+          <div className="bg-surface-container-low border border-outline-variant/80 rounded-xl p-5 tech-shadow space-y-4">
+            <h3 className="text-base font-bold text-on-surface font-[Inter] flex items-center gap-2">
+              <span className="material-symbols-outlined text-secondary text-lg">timer</span>
+              Execution Telemetry
+            </h3>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-surface p-3 rounded-lg border border-outline-variant/60">
+                <span className="text-[10px] font-bold font-[JetBrains_Mono] text-on-surface-variant uppercase">
+                  Elapsed Time
+                </span>
+                <p className="text-xl font-bold font-[JetBrains_Mono] text-on-surface mt-1">
+                  {elapsedSeconds}s
+                </p>
+              </div>
+              <div className="bg-surface p-3 rounded-lg border border-outline-variant/60">
+                <span className="text-[10px] font-bold font-[JetBrains_Mono] text-on-surface-variant uppercase">
+                  Local AI Agent
+                </span>
+                <p className="text-sm font-bold font-[JetBrains_Mono] text-tertiary mt-1 truncate">
+                  {provider}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Live Reasoning Logs Terminal */}
+          <div className="bg-surface-container-low border border-outline-variant/80 rounded-xl p-5 tech-shadow flex flex-col">
+            <div className="flex items-center justify-between mb-3 pb-2 border-b border-outline-variant/60">
+              <div className="flex items-center gap-2">
+                <span className="size-2 rounded-full bg-emerald-400 animate-ping" />
+                <h3 className="text-xs font-bold text-on-surface font-[JetBrains_Mono] uppercase tracking-wider">
+                  Live AI Agent Telemetry
+                </h3>
+              </div>
+              <span className="text-[10px] font-[JetBrains_Mono] text-on-surface-variant">
+                Streaming stdio
+              </span>
+            </div>
+
+            <div className="bg-black/80 rounded-lg p-3 border border-outline-variant/60 font-[JetBrains_Mono] text-[11px] text-emerald-400/90 h-64 overflow-y-auto space-y-1.5 leading-relaxed">
+              {liveLogs.length === 0 ? (
+                <div className="text-outline italic">Waiting for initial output from {provider}...</div>
+              ) : (
+                liveLogs.map((log, idx) => (
+                  <div key={idx} className="flex gap-2">
+                    <span className="text-outline select-none">&gt;</span>
+                    <span className={log.includes("[Error]") || log.includes("[Timeout]") ? "text-error font-bold" : log.includes("[Phase") ? "text-tertiary font-bold" : "text-emerald-300"}>
+                      {log}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -646,11 +823,28 @@ function CompletedScanDashboard({
   assessment: RiskAssessment | null;
   projectId: number | null;
 }) {
+  const [activeTab, setActiveTab] = useState<"findings" | "comparison">("findings");
+  const [comparisonData, setComparisonData] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [severityFilter, setSeverityFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [selectedFindingId, setSelectedFindingId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"split" | "table">("split");
+
+  useEffect(() => {
+    const corr = scan.correlation as Record<string, any> | null;
+    if (corr?.comparison) {
+      setComparisonData(corr.comparison);
+      if (corr.scan_type === "ai") {
+        setActiveTab("comparison");
+      }
+    } else if (corr?.scan_type === "ai") {
+      api.getScanComparison(scan.id).then((data) => {
+        setComparisonData(data);
+        setActiveTab("comparison");
+      }).catch(() => {});
+    }
+  }, [scan]);
 
   const allItems = useMemo(() => findings?.items ?? [], [findings]);
 
@@ -942,8 +1136,50 @@ function CompletedScanDashboard({
         </div>
       </div>
 
-      {/* Modern Vulnerability Tracker & Code Inspector */}
-      <div className="bg-surface-container-low border border-outline-variant/80 rounded-xl p-5 tech-shadow space-y-5">
+      {/* Tab Switcher: Findings vs AI Differential Comparison */}
+      {(comparisonData || scan.correlation?.scan_type === "ai") && (
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-outline-variant/60 pb-3">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setActiveTab("findings")}
+              className={cn(
+                "px-4 py-2 rounded-lg text-xs font-[JetBrains_Mono] transition-all cursor-pointer flex items-center gap-2",
+                activeTab === "findings"
+                  ? "bg-primary text-on-primary font-bold shadow"
+                  : "bg-surface-container text-on-surface-variant hover:text-on-surface"
+              )}
+            >
+              <span className="material-symbols-outlined text-[16px]">bug_report</span>
+              Vulnerability Findings ({counts.total})
+            </button>
+
+            <button
+              onClick={() => setActiveTab("comparison")}
+              className={cn(
+                "px-4 py-2 rounded-lg text-xs font-[JetBrains_Mono] transition-all cursor-pointer flex items-center gap-2 border",
+                activeTab === "comparison"
+                  ? "bg-gradient-to-r from-primary/30 to-secondary/30 border-primary text-on-surface font-bold shadow"
+                  : "bg-surface-container border-outline-variant text-on-surface-variant hover:text-on-surface"
+              )}
+            >
+              <span className="material-symbols-outlined text-[16px] text-secondary">compare_arrows</span>
+              AI vs Static Comparison
+              {comparisonData?.metrics?.overlap_percentage !== undefined && (
+                <span className="px-1.5 py-0.5 rounded bg-secondary/20 text-secondary text-[10px] font-bold">
+                  {comparisonData.metrics.overlap_percentage}% Overlap
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {activeTab === "comparison" && comparisonData ? (
+        <DifferentialComparisonView comparison={comparisonData} />
+      ) : (
+        <>
+          {/* Modern Vulnerability Tracker & Code Inspector */}
+          <div className="bg-surface-container-low border border-outline-variant/80 rounded-xl p-5 tech-shadow space-y-5">
         {/* Controls Bar */}
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 pb-4 border-b border-outline-variant/50">
           {/* Search Box */}
@@ -1327,6 +1563,8 @@ function CompletedScanDashboard({
             </ol>
           </CardContent>
         </Card>
+      )}
+        </>
       )}
     </div>
   );
