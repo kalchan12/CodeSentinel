@@ -5,14 +5,14 @@ from __future__ import annotations
 import logging
 import os
 import re
-from typing import Any, Sequence
-from sqlalchemy.orm import Session
-
-from app.models.finding import Finding
+from collections.abc import Sequence
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
-STATIC_ANALYZERS = {"semgrep", "gitleaks", "tree_sitter", "dependencies", "configuration", "git", "mock"}
+STATIC_ANALYZERS = {
+    "semgrep", "gitleaks", "tree_sitter", "dependencies", "configuration", "git", "mock",
+}
 AI_ANALYZERS = {"opencode", "agy", "ai"}
 
 
@@ -26,7 +26,12 @@ def normalize_file_path(path: str | None) -> str:
     return clean.lower()
 
 
-def are_categories_related(cat1: str | None, cat2: str | None, title1: str = "", title2: str = "") -> bool:
+def are_categories_related(
+    cat1: str | None,
+    cat2: str | None,
+    title1: str = "",
+    title2: str = "",
+) -> bool:
     """Check if two findings describe a similar category or vulnerability type."""
     c1 = (cat1 or "").lower()
     c2 = (cat2 or "").lower()
@@ -41,13 +46,9 @@ def are_categories_related(cat1: str | None, cat2: str | None, title1: str = "",
         "sql", "injection", "xss", "cross-site", "secret", "password", "token",
         "credential", "command", "exec", "eval", "deserialization", "cve",
         "traversal", "hardcoded", "overflow", "auth", "permission", "cors",
-        "debug", "unpinned", "crypto", "hash"
+        "debug", "unpinned", "crypto", "hash",
     ]
-    for kw in keywords:
-        if (kw in t1 or kw in c1) and (kw in t2 or kw in c2):
-            return True
-
-    return False
+    return any((kw in t1 or kw in c1) and (kw in t2 or kw in c2) for kw in keywords)
 
 
 def match_findings(static_f: Any, ai_f: Any) -> bool:
@@ -115,12 +116,16 @@ def compute_scan_differential(
         if best_s_idx is not None:
             matched_ai_indices.add(a_idx)
             matched_static_indices.add(best_s_idx)
+            s_match = static_findings[best_s_idx]
             corroborated_pairs.append({
-                "static": _serialize_finding_summary(static_findings[best_s_idx]),
+                "static": _serialize_finding_summary(s_match),
                 "ai": _serialize_finding_summary(ai_f),
                 "agreement": "confirmed",
-                "file": getattr(ai_f, "file", None) or getattr(static_findings[best_s_idx], "file", ""),
-                "line": getattr(ai_f, "line_start", None) or getattr(static_findings[best_s_idx], "line_start", None),
+                "file": getattr(ai_f, "file", None) or getattr(s_match, "file", ""),
+                "line": (
+                    getattr(ai_f, "line_start", None)
+                    or getattr(s_match, "line_start", None)
+                ),
             })
 
     ai_only = [
@@ -214,25 +219,34 @@ def _generate_executive_insights(
         return "No security issues were identified by either static analyzers or AI models."
 
     if total_static == 0:
-        return f"AI analysis identified {total_ai} potential vulnerabilities across the codebase, while static analysis found 0."
+        return (
+            f"AI analysis identified {total_ai} potential vulnerabilities across the codebase, "
+            "while static analysis found 0."
+        )
 
     if total_ai == 0:
-        return f"Static analysis identified {total_static} vulnerabilities, while the AI model reported no additional findings."
+        return (
+            f"Static analysis identified {total_static} vulnerabilities, "
+            "while the AI model reported no additional findings."
+        )
 
     parts = []
     if corroborated_count > 0:
         parts.append(
-            f"{corroborated_count} finding(s) were cross-validated by both deterministic static rules and the AI model (highest confidence)."
+            f"{corroborated_count} finding(s) were cross-validated by both deterministic static "
+            "rules and the AI model (highest confidence)."
         )
 
     if ai_only_count > 0:
         parts.append(
-            f"The AI model identified {ai_only_count} unique vulnerability pattern(s) that traditional AST and regex scanners missed (such as logic flows or contextual risks)."
+            f"The AI model identified {ai_only_count} unique vulnerability pattern(s) that "
+            "traditional AST and regex scanners missed (such as logic flows or contextual risks)."
         )
 
     if static_only_count > 0:
         parts.append(
-            f"Static analyzers flagged {static_only_count} specific rule violation(s) (e.g. hardcoded secrets or package CVEs) not highlighted by the AI model."
+            f"Static analyzers flagged {static_only_count} specific rule violation(s) "
+            "(e.g. hardcoded secrets or package CVEs) not highlighted by the AI model."
         )
 
     return " ".join(parts)
