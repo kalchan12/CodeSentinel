@@ -37,6 +37,8 @@ Notes:
 - Enhanced `RunningAIScanView` in `/scan` with live targeted files chips, dual execution controls (One-click "Open in Interactive AI Terminal"), and real-time findings preview stream.
 - Verified end-to-end execution against `/home/kal/vulnerable-test-app`, accurately detecting 18 critical vulnerabilities (SQLi, command injection, hardcoded AWS/Stripe keys, pickle RCE, unsafe YAML, etc.) with snippets and differential comparison.
 - Added comprehensive unit tests in `tests/unit/test_pty_and_ai_service.py` (99 passed in full test suite) and verified clean Next.js production build (17/17 routes).
+- Resolved Next.js xterm CSS resolution issue by importing `@xterm/xterm/css/xterm.css` in `layout.tsx`.
+- Fixed low-contrast white buttons and invisible text on Dependencies, Secrets, and AI Analysis pages by aligning `--color-primary` with `#8B5CF6` and `--color-on-primary` with `#ffffff` (PROJECT.md §19), and adding solid dark surface backgrounds to transparent buttons and controls.
 
 Next:
 Capstone final presentation and demo

@@ -234,7 +234,7 @@ export default function AIAnalysisPage() {
           {/* Interactive Terminal Trigger */}
           <button
             onClick={() => handleLaunchTerminal()}
-            className="bg-surface-container hover:bg-surface-container-high border border-outline-variant hover:border-primary text-on-surface px-3 py-1.5 rounded text-[12px] font-[JetBrains_Mono] flex items-center gap-1.5 transition-colors"
+            className="bg-surface-container hover:bg-surface-container-high border border-outline-variant hover:border-primary text-on-surface px-3 py-1.5 rounded text-[12px] font-[JetBrains_Mono] flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
             title="Launch live interactive terminal session inside CodeSentinel"
           >
             <span className="material-symbols-outlined text-[16px] text-primary">terminal</span>
@@ -245,7 +245,7 @@ export default function AIAnalysisPage() {
           <button
             onClick={handleRunAIReview}
             disabled={analyzing}
-            className="bg-primary text-on-primary px-4 py-1.5 rounded text-[12px] font-[JetBrains_Mono] font-semibold hover:bg-primary-container transition-colors flex items-center gap-xs shadow-[0_0_12px_rgba(208,188,255,0.2)] disabled:opacity-60 cursor-pointer"
+            className="bg-primary text-on-primary px-4 py-1.5 rounded text-[12px] font-[JetBrains_Mono] font-semibold hover:bg-primary/90 transition-all flex items-center gap-xs shadow-[0_0_12px_rgba(139,92,246,0.3)] disabled:opacity-60 cursor-pointer"
           >
             <span className="material-symbols-outlined text-sm">
               {analyzing ? "sync" : "security"}
@@ -291,10 +291,10 @@ export default function AIAnalysisPage() {
           <select
             value={selectedProjectId || ""}
             onChange={(e) => setSelectedProjectId(Number(e.target.value))}
-            className="bg-background border border-outline-variant rounded px-3 py-1 text-xs font-[JetBrains_Mono] text-on-surface focus:outline-none focus:border-primary"
+            className="bg-surface-container border border-outline-variant rounded px-3 py-1 text-xs font-[JetBrains_Mono] text-on-surface focus:outline-none focus:border-primary cursor-pointer"
           >
             {projects.map((p) => (
-              <option key={p.id} value={p.id}>
+              <option key={p.id} value={p.id} className="bg-surface-container text-on-surface">
                 {p.name} (#{p.id})
               </option>
             ))}
@@ -342,10 +342,10 @@ export default function AIAnalysisPage() {
               key={cat}
               onClick={() => setCategoryFilter(cat)}
               className={cn(
-                "px-3 py-1 rounded text-[12px] font-[JetBrains_Mono] uppercase transition-colors border",
+                "px-3 py-1 rounded text-[12px] font-[JetBrains_Mono] uppercase transition-colors border cursor-pointer",
                 categoryFilter === cat
-                  ? "bg-primary/15 text-primary border-primary/40 font-bold"
-                  : "bg-background text-on-surface-variant border-outline-variant hover:text-on-surface"
+                  ? "bg-primary/20 text-primary border-primary/50 font-bold"
+                  : "bg-surface-container text-on-surface-variant border-outline-variant hover:text-on-surface hover:bg-surface-container-high"
               )}
             >
               {cat}
@@ -372,7 +372,7 @@ export default function AIAnalysisPage() {
               <button
                 onClick={handleRunAIReview}
                 disabled={analyzing}
-                className="mt-2 px-4 py-1.5 bg-primary text-on-primary rounded text-xs font-[JetBrains_Mono] font-semibold hover:bg-primary-container transition-colors inline-flex items-center gap-1.5"
+                className="mt-2 px-4 py-1.5 bg-primary text-on-primary rounded text-xs font-[JetBrains_Mono] font-semibold hover:bg-primary/90 transition-all inline-flex items-center gap-1.5 shadow-[0_0_12px_rgba(139,92,246,0.3)] cursor-pointer"
               >
                 <span className="material-symbols-outlined text-sm">security</span>
                 Run Automated Audit Now
@@ -519,7 +519,7 @@ export default function AIAnalysisPage() {
                       )}`
                     )
                   }
-                  className="w-full py-2 bg-primary text-on-primary rounded text-[12px] font-[JetBrains_Mono] font-semibold hover:bg-primary-container transition-colors flex items-center justify-center gap-xs shadow-[0_0_10px_rgba(208,188,255,0.15)] cursor-pointer"
+                  className="w-full py-2 bg-primary text-on-primary rounded text-[12px] font-[JetBrains_Mono] font-semibold hover:bg-primary/90 transition-all flex items-center justify-center gap-xs shadow-[0_0_12px_rgba(139,92,246,0.25)] cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-sm">terminal</span>
                   Fix in {provider === "opencode" ? "OpenCode" : "Antigravity CLI"}

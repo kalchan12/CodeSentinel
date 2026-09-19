@@ -158,10 +158,10 @@ export function DifferentialComparisonView({
           <button
             onClick={() => setFilter("all")}
             className={cn(
-              "px-3.5 py-1.5 rounded-lg text-xs font-[JetBrains_Mono] transition-all cursor-pointer",
+              "px-3.5 py-1.5 rounded-lg text-xs font-[JetBrains_Mono] transition-all cursor-pointer border",
               filter === "all"
-                ? "bg-primary text-on-primary font-bold shadow"
-                : "bg-surface-container text-on-surface-variant hover:text-on-surface"
+                ? "bg-primary text-on-primary border-primary font-bold shadow-sm"
+                : "bg-surface-container border-outline-variant text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high"
             )}
           >
             All Results ({totalItems})
@@ -169,10 +169,10 @@ export function DifferentialComparisonView({
           <button
             onClick={() => setFilter("corroborated")}
             className={cn(
-              "px-3.5 py-1.5 rounded-lg text-xs font-[JetBrains_Mono] transition-all flex items-center gap-1.5 cursor-pointer",
+              "px-3.5 py-1.5 rounded-lg text-xs font-[JetBrains_Mono] transition-all flex items-center gap-1.5 cursor-pointer border",
               filter === "corroborated"
-                ? "bg-primary text-on-primary font-bold shadow"
-                : "bg-surface-container text-on-surface-variant hover:text-on-surface"
+                ? "bg-primary text-on-primary border-primary font-bold shadow-sm"
+                : "bg-surface-container border-outline-variant text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high"
             )}
           >
             <span className="w-2 h-2 rounded-full bg-primary" />
@@ -181,10 +181,10 @@ export function DifferentialComparisonView({
           <button
             onClick={() => setFilter("ai_only")}
             className={cn(
-              "px-3.5 py-1.5 rounded-lg text-xs font-[JetBrains_Mono] transition-all flex items-center gap-1.5 cursor-pointer",
+              "px-3.5 py-1.5 rounded-lg text-xs font-[JetBrains_Mono] transition-all flex items-center gap-1.5 cursor-pointer border",
               filter === "ai_only"
-                ? "bg-tertiary text-on-tertiary font-bold shadow"
-                : "bg-surface-container text-on-surface-variant hover:text-on-surface"
+                ? "bg-tertiary text-on-tertiary border-tertiary font-bold shadow-sm"
+                : "bg-surface-container border-outline-variant text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high"
             )}
           >
             <span className="w-2 h-2 rounded-full bg-tertiary" />
@@ -193,10 +193,10 @@ export function DifferentialComparisonView({
           <button
             onClick={() => setFilter("static_only")}
             className={cn(
-              "px-3.5 py-1.5 rounded-lg text-xs font-[JetBrains_Mono] transition-all flex items-center gap-1.5 cursor-pointer",
+              "px-3.5 py-1.5 rounded-lg text-xs font-[JetBrains_Mono] transition-all flex items-center gap-1.5 cursor-pointer border",
               filter === "static_only"
-                ? "bg-secondary text-on-secondary font-bold shadow"
-                : "bg-surface-container text-on-surface-variant hover:text-on-surface"
+                ? "bg-secondary text-on-secondary border-secondary font-bold shadow-sm"
+                : "bg-surface-container border-outline-variant text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high"
             )}
           >
             <span className="w-2 h-2 rounded-full bg-secondary" />

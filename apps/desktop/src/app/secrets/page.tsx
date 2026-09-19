@@ -149,7 +149,7 @@ export default function SecretsPage() {
         <div className="flex gap-sm">
           <button
             onClick={() => toast.success("Git history scan triggered for all commits")}
-            className="bg-transparent border border-outline-variant text-on-surface px-4 py-1.5 rounded-md text-[13px] leading-[20px] font-[JetBrains_Mono] hover:bg-surface-container-highest transition-colors flex items-center gap-xs"
+            className="bg-surface-container hover:bg-surface-container-high border border-outline-variant text-on-surface px-4 py-1.5 rounded-md text-[13px] leading-[20px] font-[JetBrains_Mono] transition-colors flex items-center gap-xs cursor-pointer shadow-sm"
           >
             <span className="material-symbols-outlined text-sm">history</span>
             Full Git Scan
@@ -204,26 +204,26 @@ export default function SecretsPage() {
         </div>
         <div className="flex flex-wrap items-center gap-sm">
           <select
-            className="bg-background border border-outline-variant rounded text-on-surface text-[12px] leading-[18px] font-[JetBrains_Mono] py-1.5 px-3 focus:ring-1 focus:ring-primary outline-none"
+            className="bg-surface-container border border-outline-variant rounded text-on-surface text-[12px] leading-[18px] font-[JetBrains_Mono] py-1.5 px-3 focus:ring-1 focus:ring-primary outline-none cursor-pointer"
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
           >
-            <option value="all">All Secret Types</option>
-            <option value="Cloud Credential">Cloud Credentials</option>
-            <option value="API Token">API Tokens</option>
-            <option value="Auth Secret">Auth Secrets</option>
-            <option value="Database URI">Database URIs</option>
+            <option className="bg-surface-container text-on-surface" value="all">All Secret Types</option>
+            <option className="bg-surface-container text-on-surface" value="Cloud Credential">Cloud Credentials</option>
+            <option className="bg-surface-container text-on-surface" value="API Token">API Tokens</option>
+            <option className="bg-surface-container text-on-surface" value="Auth Secret">Auth Secrets</option>
+            <option className="bg-surface-container text-on-surface" value="Database URI">Database URIs</option>
           </select>
 
           <select
-            className="bg-background border border-outline-variant rounded text-on-surface text-[12px] leading-[18px] font-[JetBrains_Mono] py-1.5 px-3 focus:ring-1 focus:ring-primary outline-none"
+            className="bg-surface-container border border-outline-variant rounded text-on-surface text-[12px] leading-[18px] font-[JetBrains_Mono] py-1.5 px-3 focus:ring-1 focus:ring-primary outline-none cursor-pointer"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
           >
-            <option value="all">All Statuses</option>
-            <option value="active">Active Only</option>
-            <option value="rotated">Rotated</option>
-            <option value="ignored">Ignored</option>
+            <option className="bg-surface-container text-on-surface" value="all">All Statuses</option>
+            <option className="bg-surface-container text-on-surface" value="active">Active Only</option>
+            <option className="bg-surface-container text-on-surface" value="rotated">Rotated</option>
+            <option className="bg-surface-container text-on-surface" value="ignored">Ignored</option>
           </select>
         </div>
       </div>
@@ -419,14 +419,14 @@ export default function SecretsPage() {
               <div className="pt-sm border-t border-outline-variant grid grid-cols-2 gap-sm">
                 <button
                   onClick={() => handleUpdateStatus(selectedSecret.id, "rotated")}
-                  className="py-2 bg-secondary/15 text-secondary hover:bg-secondary/25 border border-secondary/40 rounded text-[11px] font-[JetBrains_Mono] font-semibold transition-colors flex items-center justify-center gap-xs"
+                  className="py-2 bg-secondary/20 text-secondary hover:bg-secondary/30 border border-secondary/50 rounded text-[11px] font-[JetBrains_Mono] font-semibold transition-colors flex items-center justify-center gap-xs cursor-pointer shadow-sm"
                 >
                   <span className="material-symbols-outlined text-sm">task_alt</span>
                   Mark Rotated
                 </button>
                 <button
                   onClick={() => handleUpdateStatus(selectedSecret.id, "ignored")}
-                  className="py-2 bg-surface-container text-on-surface hover:bg-surface-container-high border border-outline-variant rounded text-[11px] font-[JetBrains_Mono] font-semibold transition-colors flex items-center justify-center gap-xs"
+                  className="py-2 bg-surface-container text-on-surface hover:bg-surface-container-high border border-outline-variant rounded text-[11px] font-[JetBrains_Mono] font-semibold transition-colors flex items-center justify-center gap-xs cursor-pointer shadow-sm"
                 >
                   <span className="material-symbols-outlined text-sm">remove_circle_outline</span>
                   Ignore / False
