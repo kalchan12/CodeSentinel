@@ -13,10 +13,10 @@ Phase:
 Phase 20 — Capstone Polish
 
 Task:
-True AI Codebase Scanning, Live File Inspection, 404 Fix & UI Contrast Repair (Completed)
+Live Vulnerability IDE, Code Snippet Enrichment, AI Scanning Progress & UI Declutter (Completed)
 
 Status:
-Complete
+Complete / Ready for Final Demo
 
 Owner:
 Developer + Agent
@@ -27,27 +27,30 @@ Started:
 Dependencies:
 Phase 1-20 completion, AI CLI & Embedded Terminal
 
-Notes:
-- Replaced generic prompts with dynamic source file discovery in `ai_service.py` (`discover_project_source_files`), indexing actual project code while safely skipping vendor/cache directories (`.venv`, `node_modules`, `.git`, `.next`, etc.).
-- Integrated `--dangerously-skip-permissions` into headless `agy` CLI invocations, unblocking automated execution without permission prompt deadlocks.
-- Implemented real-time snippet extraction (`extract_code_snippet`) so AI findings contain live source code context and accurate line ranges.
-- Enhanced `parse_ai_findings` with JSON envelope unwrapping (`response`, `findings`), markdown fence stripping, and outer bracket array extraction.
-- Eliminated 404 polling spam on `/api/scans/{id}/assessment` by returning 200 OK with `None` during pending/running phases, and guarded frontend polling requests until `scan.status === "completed"`.
-- Repaired low-contrast "white buttons" and unreadable badges across `buttonVariants` (`button.tsx`), `projects/page.tsx`, `finding/page.tsx`, and `globals.css` with WCAG-compliant MD3 tokens (`text-on-primary`, `text-on-secondary`, `bg-black/25`).
-- Enhanced `RunningAIScanView` in `/scan` with live targeted files chips, dual execution controls (One-click "Open in Interactive AI Terminal"), and real-time findings preview stream.
-- Verified end-to-end execution against `/home/kal/vulnerable-test-app`, accurately detecting 18 critical vulnerabilities (SQLi, command injection, hardcoded AWS/Stripe keys, pickle RCE, unsafe YAML, etc.) with snippets and differential comparison.
-- Added comprehensive unit tests in `tests/unit/test_pty_and_ai_service.py` (99 passed in full test suite) and verified clean Next.js production build (17/17 routes).
-- Resolved Next.js xterm CSS resolution issue by importing `@xterm/xterm/css/xterm.css` in `layout.tsx`.
-- Fixed low-contrast white buttons and invisible text on Dependencies, Secrets, and AI Analysis pages by aligning `--color-primary` with `#8B5CF6` and `--color-on-primary` with `#ffffff` (PROJECT.md §19), and adding solid dark surface backgrounds to transparent buttons and controls.
-- Added FastAPI `lifespan` handler in `apps/backend/app/main.py` ensuring database tables are initialized automatically for local SQLite environments.
-- Decluttered and minimized the AI Analysis page (`ai-analysis/page.tsx`): removed bulky banner and KPI cards, embedded controls into the header, added tabbed navigation for the Differential Benchmark, and created a compact finding list with focused remediation diffs.
-- Fixed AI scanning progress jumping immediately to 45% by starting from 5% (workspace ingestion), 12% (spawning CLI), and 20% (reasoning), backed by an asynchronous progress ticker that smoothly increments progress to 75% while the AI subprocess runs.
-- Created `LiveVulnerabilityIDE` (`components/scan/live-vulnerability-ide.tsx`) and integrated it into both standard scans (`RunningScanView`) and AI scans (`RunningAIScanView`): provides file tab navigation, red line vulnerability highlighting, real-time AST scanning stream, and 1-click interactive AI terminal fix and patch diff preview.
-- Fixed missing and malformed code snippets: replaced flattened single-line rendering in `LiveVulnerabilityIDE` with true multi-line editor gutter with accurate line numbers; added automated source code snippet extraction from project workspace in `scan_service.py` (`persist_results`), `ai_service.py` (`extract_code_snippet`), and filtered Semgrep OSS `"requires login"` tokens.
+Runtime Environment:
+- Backend: http://127.0.0.1:8000 (FastAPI + SQLite, auto-initialized tables via lifespan in main.py)
+- Frontend: http://localhost:3000 (Next.js 16.3.1 + Tauri desktop shell)
+- Python venv: /home/kal/CodeSentinel/.venv/ (pytest tests/unit/: 91 passed, 3 skipped)
+- Desktop check: npm run typecheck -w @codesentinel/desktop (0 errors), npm run build (17/17 routes)
+- Demo test codebase: /home/kal/vulnerable-test-app (Project #1, 101 static findings, 18 AI findings)
 
-Next:
-Capstone final presentation and demo
+Session Accomplishments & State:
+1. Repaired Desktop Launch & CSS: Added missing @xterm/xterm, @xterm/addon-fit, and @tauri-apps/plugin-dialog; imported xterm.css in layout.tsx.
+2. Repaired Contrast on White Buttons: Aligned --color-primary with #8B5CF6 and --color-on-primary with #ffffff (PROJECT.md §19) across Dependencies, Secrets, Finding, and AI Analysis pages.
+3. Added SQLite Auto-Init: FastAPI lifespan in app/main.py initializes Base.metadata.create_all on launch.
+4. Decluttered AI Analysis Page: Eliminated bulky banner and KPI cards, embedded controls in header, added tabbed Differential Benchmark view, and compact findings list.
+5. Fixed AI Scanning Progress: Eliminated jarring jump to 45% by starting from 5% (workspace discovery), 12% (spawning CLI), and 20% (reasoning), smoothly updated by an async ticker to 75% while subprocess runs.
+6. Created LiveVulnerabilityIDE Component: Added minimal IDE with file tab navigation, syntax line numbering, red line sink highlighter, active AST scanning stream, and 1-click "Fix with AI in Terminal" drawer integration.
+7. Integrated LiveVulnerabilityIDE into Scans: Embedded in both normal scans (RunningScanView) and AI scans (RunningAIScanView).
+8. Fixed Code Snippet Extraction & Rendering:
+   - Filtered out Semgrep OSS "requires login" tokens.
+   - Added automated disk snippet extraction in scan_service.py (persist_results) and ai_service.py (extract_code_snippet) using basename lookup.
+   - Updated LiveVulnerabilityIDE to render real multi-line editor gutters with preserved whitespace and syntax tags.
+   - Enriched existing 92 findings in local DB with true source code snippets.
 
+Next / Handover to New Chat:
+- Final capstone demonstration run and presentation walkthrough.
+- Package Tauri desktop distribution artifacts if requested.
 ```
 
 > Keep this section current. Every meaningful work session should start by reading it and end by updating it.
