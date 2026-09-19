@@ -13,7 +13,7 @@ Phase:
 Phase 20 — Capstone Polish
 
 Task:
-Live Vulnerability IDE, Code Snippet Enrichment, AI Scanning Progress & UI Declutter (Completed)
+Audit-Grade Real PDF Generation & Extraction from Scans (Completed)
 
 Status:
 Complete / Ready for Final Demo
@@ -25,28 +25,21 @@ Started:
 2026-09-11
 
 Dependencies:
-Phase 1-20 completion, AI CLI & Embedded Terminal
+Phase 1-20 completion, ReportLab engine, SQLite scan models
 
 Runtime Environment:
 - Backend: http://127.0.0.1:8000 (FastAPI + SQLite, auto-initialized tables via lifespan in main.py)
 - Frontend: http://localhost:3000 (Next.js 16.3.1 + Tauri desktop shell)
-- Python venv: /home/kal/CodeSentinel/.venv/ (pytest tests/unit/: 91 passed, 3 skipped)
+- Python venv: /home/kal/CodeSentinel/.venv/ (pytest tests/unit/: 94 passed, 3 skipped)
 - Desktop check: npm run typecheck -w @codesentinel/desktop (0 errors), npm run build (17/17 routes)
 - Demo test codebase: /home/kal/vulnerable-test-app (Project #1, 101 static findings, 18 AI findings)
 
 Session Accomplishments & State:
-1. Repaired Desktop Launch & CSS: Added missing @xterm/xterm, @xterm/addon-fit, and @tauri-apps/plugin-dialog; imported xterm.css in layout.tsx.
-2. Repaired Contrast on White Buttons: Aligned --color-primary with #8B5CF6 and --color-on-primary with #ffffff (PROJECT.md §19) across Dependencies, Secrets, Finding, and AI Analysis pages.
-3. Added SQLite Auto-Init: FastAPI lifespan in app/main.py initializes Base.metadata.create_all on launch.
-4. Decluttered AI Analysis Page: Eliminated bulky banner and KPI cards, embedded controls in header, added tabbed Differential Benchmark view, and compact findings list.
-5. Fixed AI Scanning Progress: Eliminated jarring jump to 45% by starting from 5% (workspace discovery), 12% (spawning CLI), and 20% (reasoning), smoothly updated by an async ticker to 75% while subprocess runs.
-6. Created LiveVulnerabilityIDE Component: Added minimal IDE with file tab navigation, syntax line numbering, red line sink highlighter, active AST scanning stream, and 1-click "Fix with AI in Terminal" drawer integration.
-7. Integrated LiveVulnerabilityIDE into Scans: Embedded in both normal scans (RunningScanView) and AI scans (RunningAIScanView).
-8. Fixed Code Snippet Extraction & Rendering:
-   - Filtered out Semgrep OSS "requires login" tokens.
-   - Added automated disk snippet extraction in scan_service.py (persist_results) and ai_service.py (extract_code_snippet) using basename lookup.
-   - Updated LiveVulnerabilityIDE to render real multi-line editor gutters with preserved whitespace and syntax tags.
-   - Enriched existing 92 findings in local DB with true source code snippets.
+1. Replaced Mock PDF with Real ReportLab Engine: Implemented `ReportService` in `app/services/report_service.py` to extract actual scan findings, project metadata, compliance scorecards, and severity distributions directly from SQLite.
+2. Two-Pass Numbered Canvas: Added dynamic running headers ("CodeSentinel Executive Security Assessment Report") and running footers with "Page X of Y" and local-first audit notices.
+3. Multi-Page Comprehensive Findings Catalog: Grouped findings by category (SAST flaws, secrets, configuration, SCA dependencies), rendering syntax code snippets, location gutters, CWE/Rule IDs, and actionable remediation steps.
+4. Real PDF Download in Desktop UI: Added `api.downloadReportPdf` to `api.ts`, updated `apps/desktop/src/app/reports/page.tsx` with animated "Export Audit PDF" and "Download Audit PDF" buttons triggering real browser/desktop downloads with toast feedback.
+5. Unit Testing & Linting: Added comprehensive unit tests in `tests/unit/test_report_service.py` (94 passed), added `reportlab` to `pyproject.toml`, and confirmed 0 ruff errors and 0 Next.js build errors.
 
 Next / Handover to New Chat:
 - Final capstone demonstration run and presentation walkthrough.

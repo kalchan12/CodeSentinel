@@ -329,6 +329,37 @@ None.
 
 ---
 
+## Skill: ReportLab
+
+Category:
+Backend / Reporting
+
+Purpose:
+Engine for generating audit-grade PDF security reports directly extracted from scan findings, with running headers/footers, compliance scorecards, and formatted code snippets.
+
+Required For:
+PLAN.md Phase 17 — Reporting Engine
+
+Installation:
+`pip install reportlab` / declared in `pyproject.toml`
+
+Package Manager:
+pip / uv
+
+Status:
+Installed
+
+Verification:
+`python -c "import reportlab; print(reportlab.__version__)"`
+
+Fallback:
+WeasyPrint (requires system-level Cairo/Pango C libraries — not preferred for zero-dependency local runs)
+
+Notes:
+Used in `app/services/report_service.py` to compile dynamic multi-page PDF documents.
+
+---
+
 ### Database
 
 ## Skill: PostgreSQL

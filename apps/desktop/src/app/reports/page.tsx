@@ -35,6 +35,7 @@ export default function ReportsPage() {
   const [report, setReport] = useState<ReportSummary | null>(null);
   const [projects, setProjects] = useState<Awaited<ReturnType<typeof api.listProjects>> | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -170,6 +171,21 @@ export default function ReportsPage() {
     window.print();
   };
 
+  const handleExportPdf = async () => {
+    if (!report) return;
+    setIsExportingPdf(true);
+    const toastId = toast.loading("Extracting scan findings & compiling audit-grade PDF...");
+    try {
+      const slug = report.projectName.toLowerCase().replace(/\s+/g, "_");
+      await api.downloadReportPdf(report.scanId, `codesentinel_report_${slug}_scan_${report.scanId}.pdf`);
+      toast.success("Security Report PDF downloaded successfully", { id: toastId });
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to download PDF report", { id: toastId });
+    } finally {
+      setIsExportingPdf(false);
+    }
+  };
+
   return (
     <div className="max-w-[1440px] mx-auto space-y-lg overflow-hidden">
       {/* Header */}
@@ -216,10 +232,21 @@ export default function ReportsPage() {
           </button>
           <button
             onClick={handlePrint}
-            className="bg-primary text-on-primary px-4 py-1.5 rounded text-[12px] leading-[18px] font-[JetBrains_Mono] font-semibold hover:bg-primary-container transition-all flex items-center gap-xs shadow-[0_0_10px_rgba(139,92,246,0.3)] hover:shadow-[0_0_15px_rgba(139,92,246,0.5)] focus:ring-2 focus:ring-primary/50 outline-none"
+            title="Print current webpage view"
+            className="bg-transparent border border-outline-variant text-on-surface px-3 py-1.5 rounded text-[12px] leading-[18px] font-[JetBrains_Mono] hover:bg-surface-container-highest hover:border-primary/50 transition-colors flex items-center gap-xs focus:ring-2 focus:ring-primary/50 outline-none"
           >
             <span className="material-symbols-outlined text-sm">print</span>
-            Print / PDF
+            Print View
+          </button>
+          <button
+            onClick={handleExportPdf}
+            disabled={isExportingPdf}
+            className="bg-primary text-on-primary px-4 py-1.5 rounded text-[12px] leading-[18px] font-[JetBrains_Mono] font-semibold hover:bg-primary-container transition-all flex items-center gap-xs shadow-[0_0_10px_rgba(139,92,246,0.3)] hover:shadow-[0_0_15px_rgba(139,92,246,0.5)] focus:ring-2 focus:ring-primary/50 outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <span className={cn("material-symbols-outlined text-sm", isExportingPdf && "animate-spin")}>
+              {isExportingPdf ? "progress_activity" : "picture_as_pdf"}
+            </span>
+            {isExportingPdf ? "Generating PDF..." : "Export Audit PDF"}
           </button>
         </div>
       </header>
@@ -355,7 +382,17 @@ export default function ReportsPage() {
             </p>
           </div>
         </div>
-        <div className="flex gap-sm shrink-0">
+        <div className="flex flex-wrap gap-sm shrink-0">
+          <button
+            onClick={handleExportPdf}
+            disabled={isExportingPdf}
+            className="px-4 py-2 bg-primary hover:bg-primary/90 text-on-primary rounded text-[12px] font-[JetBrains_Mono] font-semibold transition-all flex items-center gap-xs shadow-[0_0_10px_rgba(139,92,246,0.3)] focus:ring-2 focus:ring-primary/50 outline-none whitespace-nowrap disabled:opacity-50"
+          >
+            <span className={cn("material-symbols-outlined text-sm", isExportingPdf && "animate-spin")}>
+              {isExportingPdf ? "progress_activity" : "download"}
+            </span>
+            Download Audit PDF
+          </button>
           <Link
             href="/scan"
             className="px-4 py-2 bg-surface-container-highest hover:bg-surface-container-high border border-outline-variant rounded text-[12px] font-[JetBrains_Mono] text-on-surface transition-colors hover:border-primary/50 focus:ring-2 focus:ring-primary/50 outline-none whitespace-nowrap"
