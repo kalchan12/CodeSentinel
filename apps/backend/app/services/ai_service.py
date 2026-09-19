@@ -223,12 +223,12 @@ async def run_ai_scan_background(
         # Initialize running scan metadata
         scan.status = ScanStatus.RUNNING.value
         scan.started_at = datetime.now(timezone.utc)
-        scan.progress = 10.0
+        scan.progress = 5.0
 
         correlation = dict(scan.correlation or {})
         correlation["scan_type"] = "ai"
         correlation["provider"] = provider
-        correlation["status_phase"] = "Ingesting workspace and budgeting context"
+        correlation["status_phase"] = "Discovering workspace source files & context"
         correlation["discovered_files"] = discovered_files
         correlation["target_files_count"] = len(discovered_files)
         correlation["live_logs"] = [
@@ -266,11 +266,11 @@ async def run_ai_scan_background(
         scan = db.get(ScanModel, scan_id)
         if scan:
             corr = dict(scan.correlation or {})
-            corr["status_phase"] = f"Spawning local {provider} agent process"
+            corr["status_phase"] = f"Initializing local {provider} engine"
             corr["live_logs"].append(
                 f"[{datetime.now(timezone.utc).strftime('%H:%M:%S')}] [Phase 2/5] Spawning {provider} subprocess..."
             )
-            scan.progress = 25.0
+            scan.progress = 12.0
             scan.correlation = corr
             db.commit()
 
@@ -294,14 +294,37 @@ async def run_ai_scan_background(
                 corr["live_logs"].append(
                     f"[{datetime.now(timezone.utc).strftime('%H:%M:%S')}] [Phase 3/5] AI Agent reasoning on codebase (PID {proc.pid})..."
                 )
-                scan.progress = 45.0
+                scan.progress = 20.0
                 scan.correlation = corr
                 db.commit()
 
-        # Stream / await output with 300s timeout
-        stdout_bytes, stderr_bytes = await asyncio.wait_for(proc.communicate(), timeout=300.0)
-        raw_output = stdout_bytes.decode(errors="replace")
-        error_output = stderr_bytes.decode(errors="replace")
+        # Background task to smoothly advance progress while AI reasoning executes
+        async def _smooth_progress_ticker():
+            current_p = 20.0
+            try:
+                while True:
+                    await asyncio.sleep(2.0)
+                    if current_p < 76.0:
+                        current_p += 2.5
+                        with SessionLocal() as ticker_db:
+                            s = ticker_db.get(ScanModel, scan_id)
+                            if s and s.status == ScanStatus.RUNNING.value:
+                                s.progress = round(current_p, 1)
+                                ticker_db.commit()
+            except asyncio.CancelledError:
+                pass
+            except Exception as ex:
+                logger.debug("AI progress ticker error: %s", ex)
+
+        ticker_task = asyncio.create_task(_smooth_progress_ticker())
+
+        try:
+            # Stream / await output with 300s timeout
+            stdout_bytes, stderr_bytes = await asyncio.wait_for(proc.communicate(), timeout=300.0)
+            raw_output = stdout_bytes.decode(errors="replace")
+            error_output = stderr_bytes.decode(errors="replace")
+        finally:
+            ticker_task.cancel()
 
         logger.info("AI CLI %s finished with code %d, stdout %d bytes", provider, proc.returncode, len(raw_output))
 
@@ -399,7 +422,26 @@ async def run_ai_scan_background(
             except Exception as err:
                 logger.warning("Error creating finding model from AI output: %s", err)
 
+        # Build live findings payload for real-time frontend IDE inspection
+        live_findings = []
+        for f in saved_findings:
+            live_findings.append({
+                "id": str(f.id),
+                "title": f.title,
+                "file": f.file,
+                "line_start": f.line_start,
+                "code_snippet": f.code_snippet,
+                "severity": f.severity,
+                "rule_id": f"ai-{provider}",
+                "analyzer": f"ai-{provider}",
+                "remediation": f.remediation,
+                "root_cause": (f.finding_metadata or {}).get("root_cause") if f.finding_metadata else None,
+                "description": f.description,
+            })
 
+        scan.findings_count = len(saved_findings)
+        corr["live_findings"] = live_findings
+        scan.correlation = corr
         db.commit()
 
         # Create RiskAssessment record

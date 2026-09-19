@@ -41,6 +41,8 @@ Notes:
 - Fixed low-contrast white buttons and invisible text on Dependencies, Secrets, and AI Analysis pages by aligning `--color-primary` with `#8B5CF6` and `--color-on-primary` with `#ffffff` (PROJECT.md §19), and adding solid dark surface backgrounds to transparent buttons and controls.
 - Added FastAPI `lifespan` handler in `apps/backend/app/main.py` ensuring database tables are initialized automatically for local SQLite environments.
 - Decluttered and minimized the AI Analysis page (`ai-analysis/page.tsx`): removed bulky banner and KPI cards, embedded controls into the header, added tabbed navigation for the Differential Benchmark, and created a compact finding list with focused remediation diffs.
+- Fixed AI scanning progress jumping immediately to 45% by starting from 5% (workspace ingestion), 12% (spawning CLI), and 20% (reasoning), backed by an asynchronous progress ticker that smoothly increments progress to 75% while the AI subprocess runs.
+- Created `LiveVulnerabilityIDE` (`components/scan/live-vulnerability-ide.tsx`) and integrated it into both standard scans (`RunningScanView`) and AI scans (`RunningAIScanView`): provides file tab navigation, red line vulnerability highlighting, real-time AST scanning stream, and 1-click interactive AI terminal fix and patch diff preview.
 
 Next:
 Capstone final presentation and demo

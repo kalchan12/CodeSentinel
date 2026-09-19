@@ -23,6 +23,7 @@ import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DifferentialComparisonView } from "@/components/scan/differential-comparison-view";
+import { LiveVulnerabilityIDE } from "@/components/scan/live-vulnerability-ide";
 import {
   Table,
   TableBody,
@@ -235,7 +236,20 @@ function RunningAIScanView({
   const liveLogs = (correlation.live_logs as string[]) || [];
   const statusPhase = (correlation.status_phase as string) || "AI Security Reasoning in progress...";
   const discoveredFiles = (correlation.discovered_files as string[]) || [];
-  const items = findings?.items || [];
+
+  const liveFindings = ((correlation.live_findings ?? findings?.items ?? []) as Array<{
+    id?: string;
+    title: string;
+    file: string;
+    line_start?: number | null;
+    code_snippet?: string | null;
+    severity: string;
+    rule_id?: string | null;
+    analyzer?: string;
+    remediation?: string | null;
+    root_cause?: string | null;
+    description?: string | null;
+  }>);
 
   const phases = [
     { label: "Workspace Ingestion & File Indexing", detail: "Discovering real project source files and dependency manifests" },
@@ -246,7 +260,7 @@ function RunningAIScanView({
   ];
 
   const currentPhaseIndex =
-    progress < 20 ? 0 : progress < 35 ? 1 : progress < 80 ? 2 : progress < 95 ? 3 : 4;
+    progress < 12 ? 0 : progress < 20 ? 1 : progress < 80 ? 2 : progress < 92 ? 3 : 4;
 
   return (
     <div className="space-y-6 max-w-[1440px] mx-auto pb-12">
@@ -295,10 +309,50 @@ function RunningAIScanView({
         </div>
       </div>
 
-      {/* Main Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Column: AI Progress, 5 Phases & Discovered Files */}
+      {/* Main Grid: Live IDE & Files (7 cols) + AI Progress, Telemetry & Logs (5 cols) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Left Column: Live Vulnerability IDE & Discovered Files */}
         <div className="lg:col-span-7 space-y-6">
+          <LiveVulnerabilityIDE
+            findings={liveFindings}
+            discoveredFiles={discoveredFiles}
+            isAiScan={true}
+            provider={provider as "opencode" | "agy"}
+            projectId={scan.project_id}
+          />
+
+          {/* Targeted Source Files Under Audit */}
+          {discoveredFiles.length > 0 && (
+            <div className="bg-surface-container-low border border-outline-variant/80 rounded-xl p-5 tech-shadow space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-primary text-base">folder_open</span>
+                  <h4 className="text-xs font-bold text-on-surface font-[JetBrains_Mono] uppercase tracking-wider">
+                    Source Files Targeted for Security Audit ({discoveredFiles.length})
+                  </h4>
+                </div>
+                <span className="text-[10px] font-[JetBrains_Mono] text-on-surface-variant flex items-center gap-1.5">
+                  <span className="size-2 rounded-full bg-emerald-400 animate-ping" />
+                  Live Auditing
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto p-1">
+                {discoveredFiles.map((file, i) => (
+                  <span
+                    key={i}
+                    className="px-2.5 py-1 rounded bg-surface border border-outline-variant/60 text-[11px] font-[JetBrains_Mono] text-on-surface flex items-center gap-1.5"
+                  >
+                    <span className="material-symbols-outlined text-xs text-primary">code</span>
+                    <span>{file}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Right Column: AI Execution Progress, Stepper, Telemetry & Logs */}
+        <div className="lg:col-span-5 space-y-6">
           <div className="bg-surface-container-low border border-outline-variant/80 rounded-xl p-6 tech-shadow space-y-5">
             <div className="flex justify-between items-center">
               <div>
@@ -342,38 +396,6 @@ function RunningAIScanView({
             </div>
           </div>
 
-          {/* Targeted Source Files Under Audit */}
-          {discoveredFiles.length > 0 && (
-            <div className="bg-surface-container-low border border-outline-variant/80 rounded-xl p-5 tech-shadow space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-primary text-base">folder_open</span>
-                  <h4 className="text-xs font-bold text-on-surface font-[JetBrains_Mono] uppercase tracking-wider">
-                    Source Files Targeted for Security Audit ({discoveredFiles.length})
-                  </h4>
-                </div>
-                <span className="text-[10px] font-[JetBrains_Mono] text-on-surface-variant flex items-center gap-1.5">
-                  <span className="size-2 rounded-full bg-emerald-400 animate-ping" />
-                  Live Auditing
-                </span>
-              </div>
-              <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto p-1">
-                {discoveredFiles.map((file, i) => (
-                  <span
-                    key={i}
-                    className="px-2.5 py-1 rounded bg-surface border border-outline-variant/60 text-[11px] font-[JetBrains_Mono] text-on-surface flex items-center gap-1.5"
-                  >
-                    <span className="material-symbols-outlined text-xs text-primary">code</span>
-                    <span>{file}</span>
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Right Column: Live Telemetry, Streaming Logs & Discovered Findings */}
-        <div className="lg:col-span-5 space-y-6">
           {/* Telemetry Card */}
           <div className="bg-surface-container-low border border-outline-variant/80 rounded-xl p-5 tech-shadow space-y-4">
             <h3 className="text-base font-bold text-on-surface font-[Inter] flex items-center gap-2">
@@ -440,16 +462,16 @@ function RunningAIScanView({
           </div>
 
           {/* Discovered Findings Preview */}
-          {items.length > 0 && (
+          {liveFindings.length > 0 && (
             <div className="bg-surface-container-low border border-outline-variant/80 rounded-xl p-5 tech-shadow space-y-3">
               <div className="flex items-center justify-between">
                 <h4 className="text-xs font-bold text-on-surface font-[JetBrains_Mono] uppercase tracking-wider flex items-center gap-1.5">
                   <span className="material-symbols-outlined text-sm text-error">warning</span>
-                  Discovered Findings ({items.length})
+                  Discovered Findings ({liveFindings.length})
                 </h4>
               </div>
               <div className="space-y-2 max-h-48 overflow-y-auto">
-                {items.slice(0, 5).map((f) => (
+                {liveFindings.slice(0, 5).map((f) => (
                   <div
                     key={f.id}
                     className="p-2.5 rounded-lg bg-surface border border-outline-variant/60 flex items-center justify-between text-xs"
@@ -460,7 +482,7 @@ function RunningAIScanView({
                         {f.file}:{f.line_start ?? 1}
                       </div>
                     </div>
-                    <Badge className={severityClass(f.severity)}>{f.severity.toUpperCase()}</Badge>
+                    <Badge className={severityClass(f.severity as Severity)}>{f.severity.toUpperCase()}</Badge>
                   </div>
                 ))}
               </div>
@@ -489,7 +511,6 @@ function RunningScanView({
   findings: FindingsPage | null;
 }) {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const [selectedFindingIndex, setSelectedFindingIndex] = useState(0);
 
   // Real-time elapsed time counter
   useEffect(() => {
@@ -539,8 +560,6 @@ function RunningScanView({
     rule_id?: string | null;
     analyzer?: string;
   }>;
-
-  const activeFinding = liveFindings[selectedFindingIndex] ?? liveFindings[0] ?? null;
 
   return (
     <div className="space-y-6 max-w-[1440px] mx-auto pb-12">
@@ -629,144 +648,13 @@ function RunningScanView({
 
       {/* Main Grid: Broken Code Viewer (7 cols) + Security Tools In Use (5 cols) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 min-h-[500px]">
-        {/* Left Column: Live Code Scanner & Where the Code is Broken */}
+        {/* Left Column: Live Code Scanner & Vulnerability IDE */}
         <div className="lg:col-span-7 flex flex-col gap-4">
-          <div className="flex-1 bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden flex flex-col tech-shadow">
-            {/* Terminal Window Header */}
-            <div className="bg-surface-container-high border-b border-outline-variant px-4 py-2.5 flex items-center justify-between z-10">
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-base text-primary">terminal</span>
-                <span className="text-xs font-bold text-on-surface font-[JetBrains_Mono]">
-                  {activeFinding ? "Live Vulnerability Inspector (Broken Code)" : "Codebase AST Stream & Rule Engine"}
-                </span>
-              </div>
-
-              {activeFinding ? (
-                <span className="px-2 py-0.5 rounded text-[10px] font-bold font-[JetBrains_Mono] uppercase bg-error/20 text-error border border-error/40 flex items-center gap-1 animate-pulse">
-                  <span className="size-1.5 rounded-full bg-error" />
-                  VULNERABILITY DETECTED
-                </span>
-              ) : (
-                <span className="text-[10px] font-bold text-secondary flex items-center gap-1 font-[JetBrains_Mono]">
-                  <span className="material-symbols-outlined text-xs animate-spin">sync</span>
-                  SCANNING REPOSITORY
-                </span>
-              )}
-            </div>
-
-            {/* Terminal Window Content */}
-            <div className="flex-1 p-4 bg-background relative overflow-hidden flex flex-col justify-between">
-              {activeFinding ? (
-                <div className="space-y-4">
-                  {/* Vulnerability Meta Callout */}
-                  <div className="p-3.5 rounded-lg bg-surface border border-error/40 text-xs font-[JetBrains_Mono]">
-                    <div className="flex items-center justify-between gap-2 mb-1.5">
-                      <span className="font-bold text-error flex items-center gap-1.5">
-                        <span className="material-symbols-outlined text-sm">dangerous</span>
-                        {activeFinding.title}
-                      </span>
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-error/20 text-error">
-                        {activeFinding.severity}
-                      </span>
-                    </div>
-                    <div className="text-on-surface-variant flex items-center gap-3 text-[11px]">
-                      <span>File: <strong className="text-on-surface">{activeFinding.file}:{activeFinding.line_start ?? 1}</strong></span>
-                      <span>·</span>
-                      <span>Tool: <strong className="text-secondary">{activeFinding.analyzer ?? "Semgrep SAST"}</strong></span>
-                      {activeFinding.rule_id && (
-                        <>
-                          <span>·</span>
-                          <span>Rule: <strong className="text-tertiary">{activeFinding.rule_id}</strong></span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Broken Code Snippet Line Highlighter */}
-                  <div className="rounded-lg border border-outline-variant/60 bg-surface-container-lowest overflow-hidden font-[JetBrains_Mono] text-xs">
-                    <div className="px-3 py-1.5 bg-surface-container-high/60 border-b border-outline-variant/40 text-[11px] text-on-surface-variant flex items-center justify-between">
-                      <span className="flex items-center gap-1">
-                        <span className="material-symbols-outlined text-xs">code</span>
-                        {activeFinding.file}
-                      </span>
-                      <span className="text-error font-bold">Line {activeFinding.line_start ?? 1} Broken</span>
-                    </div>
-
-                    <div className="p-3 space-y-1 overflow-x-auto text-[12px]">
-                      {/* Context lines before */}
-                      <div className="text-on-surface-variant/40 flex items-center gap-3 select-none">
-                        <span className="w-8 text-right shrink-0">{Math.max(1, (activeFinding.line_start ?? 42) - 1)}</span>
-                        <span>// Evaluating security rule context for {activeFinding.analyzer ?? "static analyzer"}...</span>
-                      </div>
-
-                      {/* THE BROKEN CODE LINE (Highlighted in Red) */}
-                      <div className="bg-error/15 border-l-4 border-l-error -mx-3 px-3 py-1.5 text-on-surface font-semibold flex items-center gap-3">
-                        <span className="w-8 text-right text-error font-bold shrink-0">{activeFinding.line_start ?? 42}</span>
-                        <span className="text-error">
-                          {activeFinding.code_snippet?.trim() || "const INSECURE_CREDENTIAL = process.env.KEY || 'hardcoded_secret_token';"}
-                        </span>
-                        <span className="ml-auto text-[10px] font-bold text-error uppercase bg-error/20 px-2 py-0.5 rounded shrink-0">
-                          BROKEN LINE
-                        </span>
-                      </div>
-
-                      {/* Context lines after */}
-                      <div className="text-on-surface-variant/40 flex items-center gap-3 select-none">
-                        <span className="w-8 text-right shrink-0">{(activeFinding.line_start ?? 42) + 1}</span>
-                        <span>// Execution branch proceeds with untrusted context</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Multiple Broken Findings Selector */}
-                  {liveFindings.length > 1 && (
-                    <div className="pt-2">
-                      <span className="text-[11px] font-bold text-on-surface-variant font-[JetBrains_Mono] block mb-2">
-                        Browse Detected Vulnerabilities ({liveFindings.length}):
-                      </span>
-                      <div className="flex flex-wrap gap-2">
-                        {liveFindings.map((f, idx) => (
-                          <button
-                            key={idx}
-                            onClick={() => setSelectedFindingIndex(idx)}
-                            className={cn(
-                              "px-2.5 py-1 rounded text-[11px] font-[JetBrains_Mono] border transition-all cursor-pointer",
-                              selectedFindingIndex === idx
-                                ? "border-error bg-error/20 text-error font-bold"
-                                : "border-outline-variant bg-surface text-on-surface-variant hover:border-outline"
-                            )}
-                          >
-                            #{idx + 1}: {f.title.slice(0, 24)}…
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                /* Scanning Beam Animation when analyzing files */
-                <div className="flex-1 flex flex-col items-center justify-center relative min-h-[260px]">
-                  <div className="w-full h-24 scanner-beam absolute top-0 left-0 pointer-events-none" />
-                  <div className="flex flex-col items-center gap-3 text-center z-10">
-                    <span className="material-symbols-outlined text-4xl animate-spin text-secondary">
-                      sync
-                    </span>
-                    <div>
-                      <p className="text-sm font-semibold text-on-surface font-[Inter]">
-                        Auditing Codebase Structure & Syntax
-                      </p>
-                      <p className="text-xs text-on-surface-variant font-[JetBrains_Mono] mt-1">
-                        Currently analyzing: <span className="text-secondary font-bold">src/</span> repository source tree
-                      </p>
-                    </div>
-                    <div className="p-2 rounded bg-surface border border-outline-variant/40 text-[11px] font-[JetBrains_Mono] text-outline max-w-sm">
-                      Streaming syntax AST tokens to Semgrep & Tree-sitter...
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
+          <LiveVulnerabilityIDE
+            findings={liveFindings}
+            currentTool={currentToolId}
+            projectId={scan.project_id}
+          />
         </div>
 
         {/* Right Column: Security Tools In Use (Live Matrix) */}
