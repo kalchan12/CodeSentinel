@@ -52,7 +52,7 @@ export default function AIAnalysisPage() {
   const [selectedInsight, setSelectedInsight] = useState<AIInsightItem | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState("all");
-  const [customPrompt, setCustomPrompt] = useState("");
+  const [activeTab, setActiveTab] = useState<"insights" | "benchmark">("insights");
   const [comparison, setComparison] = useState<any>(null);
 
   const loadStatus = useCallback(async () => {
@@ -79,7 +79,6 @@ export default function AIAnalysisPage() {
       }
 
       if (targetProject) {
-        // Attempt loading comparative benchmark data
         try {
           const scans = await api.listProjectScans(targetProject.id);
           const aiScan = scans.find((s) => s.correlation?.scan_type === "ai");
@@ -135,8 +134,8 @@ export default function AIAnalysisPage() {
 
   if (insights === null) {
     return (
-      <div className="space-y-lg max-w-[1440px] mx-auto">
-        <Skeleton className="h-28 w-full" />
+      <div className="space-y-4 max-w-[1440px] mx-auto">
+        <Skeleton className="h-16 w-full" />
         <Skeleton className="h-96 w-full" />
       </div>
     );
@@ -152,7 +151,6 @@ export default function AIAnalysisPage() {
     try {
       const scan = await api.runAIScan(selectedProjectId, {
         provider,
-        prompt: customPrompt.trim() || undefined,
       });
       toast.success(
         `AI Scan #${scan.id} queued! Redirecting to live scan dashboard...`
@@ -181,35 +179,51 @@ export default function AIAnalysisPage() {
   const activeProviderStatus = aiStatus?.[provider];
 
   return (
-    <div className="max-w-[1440px] mx-auto space-y-lg">
-      {/* Header */}
-      <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-md border-b border-outline-variant pb-md">
+    <div className="max-w-[1440px] mx-auto space-y-4">
+      {/* Streamlined Header */}
+      <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 pb-3 border-b border-outline-variant">
         <div>
-          <div className="flex items-center gap-sm mb-xs">
-            <span className="material-symbols-outlined text-primary text-[28px]">psychology</span>
-            <h2 className="text-[24px] leading-[32px] tracking-[-0.01em] font-semibold text-on-surface font-[Inter]">
-              AI Security Analysis & CLI Orchestration
-            </h2>
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-primary text-[24px]">psychology</span>
+            <h1 className="text-lg font-bold text-on-surface font-[Inter]">
+              AI Security Analysis
+            </h1>
           </div>
-          <p className="text-[14px] leading-[20px] text-on-surface-variant font-[Inter]">
-            Deep reasoning vulnerability detection and automated patch generation powered by local AI CLIs.
+          <p className="text-xs text-on-surface-variant font-[Inter] mt-0.5">
+            Local deep reasoning & automated patch generation powered by CLI agents.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-sm">
+        {/* Compact Controls Toolbar */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Project Selector */}
+          <div className="flex items-center gap-1.5 bg-surface-container border border-outline-variant rounded px-2.5 py-1 text-xs">
+            <span className="material-symbols-outlined text-on-surface-variant text-[15px]">folder</span>
+            <select
+              value={selectedProjectId || ""}
+              onChange={(e) => setSelectedProjectId(Number(e.target.value))}
+              className="bg-transparent text-xs font-[JetBrains_Mono] text-on-surface focus:outline-none cursor-pointer"
+            >
+              {projects.map((p) => (
+                <option key={p.id} value={p.id} className="bg-surface-container text-on-surface">
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
           {/* Provider Toggle */}
-          <div className="flex bg-surface-container rounded-lg p-1 border border-outline-variant text-xs font-[JetBrains_Mono]">
+          <div className="flex bg-surface-container rounded p-0.5 border border-outline-variant text-xs font-[JetBrains_Mono]">
             <button
               onClick={() => setProvider("opencode")}
               className={cn(
-                "px-3 py-1 rounded transition-colors flex items-center gap-1.5",
+                "px-2.5 py-1 rounded transition-colors flex items-center gap-1 cursor-pointer",
                 provider === "opencode"
-                  ? "bg-primary text-on-primary font-bold shadow"
+                  ? "bg-primary text-on-primary font-bold shadow-xs"
                   : "text-on-surface-variant hover:text-on-surface"
               )}
             >
-              <span className="material-symbols-outlined text-[14px]">auto_fix_high</span>
-              OpenCode
+              <span>OpenCode</span>
               {aiStatus?.opencode?.available && (
                 <span className="w-1.5 h-1.5 rounded-full bg-secondary" />
               )}
@@ -217,375 +231,326 @@ export default function AIAnalysisPage() {
             <button
               onClick={() => setProvider("agy")}
               className={cn(
-                "px-3 py-1 rounded transition-colors flex items-center gap-1.5",
+                "px-2.5 py-1 rounded transition-colors flex items-center gap-1 cursor-pointer",
                 provider === "agy"
-                  ? "bg-primary text-on-primary font-bold shadow"
+                  ? "bg-primary text-on-primary font-bold shadow-xs"
                   : "text-on-surface-variant hover:text-on-surface"
               )}
             >
-              <span className="material-symbols-outlined text-[14px]">psychology</span>
-              Antigravity (agy)
+              <span>Antigravity</span>
               {aiStatus?.agy?.available && (
                 <span className="w-1.5 h-1.5 rounded-full bg-secondary" />
               )}
             </button>
           </div>
 
-          {/* Interactive Terminal Trigger */}
+          {/* Interactive Terminal */}
           <button
             onClick={() => handleLaunchTerminal()}
-            className="bg-surface-container hover:bg-surface-container-high border border-outline-variant hover:border-primary text-on-surface px-3 py-1.5 rounded text-[12px] font-[JetBrains_Mono] flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
-            title="Launch live interactive terminal session inside CodeSentinel"
+            className="bg-surface-container hover:bg-surface-container-high border border-outline-variant hover:border-primary text-on-surface px-3 py-1.5 rounded text-xs font-[JetBrains_Mono] flex items-center gap-1.5 transition-colors cursor-pointer"
+            title="Launch interactive terminal session"
           >
-            <span className="material-symbols-outlined text-[16px] text-primary">terminal</span>
-            Interactive Session
+            <span className="material-symbols-outlined text-[15px] text-primary">terminal</span>
+            Terminal
           </button>
 
-          {/* Automated Headless Scan Trigger */}
+          {/* Run AI Scan */}
           <button
             onClick={handleRunAIReview}
             disabled={analyzing}
-            className="bg-primary text-on-primary px-4 py-1.5 rounded text-[12px] font-[JetBrains_Mono] font-semibold hover:bg-primary/90 transition-all flex items-center gap-xs shadow-[0_0_12px_rgba(139,92,246,0.3)] disabled:opacity-60 cursor-pointer"
+            className="bg-primary text-on-primary px-3.5 py-1.5 rounded text-xs font-[JetBrains_Mono] font-semibold hover:bg-primary/90 transition-all flex items-center gap-1.5 shadow-sm disabled:opacity-60 cursor-pointer"
           >
-            <span className="material-symbols-outlined text-sm">
+            <span className="material-symbols-outlined text-[15px]">
               {analyzing ? "sync" : "security"}
             </span>
-            {analyzing ? "Auditing Codebase..." : "Run AI Audit"}
+            {analyzing ? "Auditing..." : "Run AI Audit"}
           </button>
         </div>
       </header>
 
-      {/* Target Project & Local CLI Status Banner */}
-      <div className="bg-surface-container-low border border-outline-variant rounded-lg p-md flex flex-col md:flex-row items-start md:items-center justify-between gap-md tech-shadow">
-        <div className="flex items-center gap-md flex-1">
-          <div className="w-10 h-10 rounded-lg bg-primary/10 border border-primary/30 flex items-center justify-center shrink-0">
-            <span className="material-symbols-outlined text-primary text-2xl">terminal</span>
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h4 className="text-[13px] font-bold text-on-surface font-[Inter]">
-                Active Engine: {provider === "opencode" ? "OpenCode CLI" : "Google Antigravity CLI (agy)"}
-              </h4>
-              <span
-                className={cn(
-                  "px-2 py-0.5 rounded text-[10px] font-[JetBrains_Mono] font-bold uppercase",
-                  activeProviderStatus?.available
-                    ? "bg-secondary/15 text-secondary border border-secondary/30"
-                    : "bg-error/15 text-error border border-error/30"
-                )}
-              >
-                {activeProviderStatus?.available ? "Binary Detected" : "Not Found"}
-              </span>
-            </div>
-            <p className="text-[12px] text-on-surface-variant font-[JetBrains_Mono] mt-0.5 truncate max-w-xl">
-              {activeProviderStatus?.path || "Install CLI or check PATH"}
-            </p>
-          </div>
-        </div>
-
-        {/* Project Selector */}
-        <div className="flex items-center gap-2 w-full md:w-auto">
-          <span className="text-[11px] font-[JetBrains_Mono] text-on-surface-variant uppercase font-semibold">
-            Target Project:
-          </span>
-          <select
-            value={selectedProjectId || ""}
-            onChange={(e) => setSelectedProjectId(Number(e.target.value))}
-            className="bg-surface-container border border-outline-variant rounded px-3 py-1 text-xs font-[JetBrains_Mono] text-on-surface focus:outline-none focus:border-primary cursor-pointer"
+      {/* Tabs & Status Bar */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-outline-variant pb-2">
+        {/* Navigation Tabs */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setActiveTab("insights")}
+            className={cn(
+              "px-3 py-1 text-xs font-[JetBrains_Mono] font-semibold rounded transition-colors flex items-center gap-1.5 cursor-pointer",
+              activeTab === "insights"
+                ? "bg-primary/20 text-primary border border-primary/40"
+                : "text-on-surface-variant hover:text-on-surface"
+            )}
           >
-            {projects.map((p) => (
-              <option key={p.id} value={p.id} className="bg-surface-container text-on-surface">
-                {p.name} (#{p.id})
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
+            <span className="material-symbols-outlined text-[15px]">psychology</span>
+            AI Findings & Patches
+            <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-primary/20 text-primary border border-primary/30">
+              {insights.length}
+            </span>
+          </button>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-md">
-        <StatCard
-          label="AI FINDINGS"
-          value={insights.length}
-          icon="psychology"
-          desc="Identified security issues"
-          highlight="text-primary"
-        />
-        <StatCard
-          label="ACTIVE CLI"
-          value={provider.toUpperCase()}
-          icon="terminal"
-          desc={activeProviderStatus?.version || "Local execution"}
-          highlight="text-secondary"
-        />
-        <StatCard
-          label="REMEDIATIONS"
-          value={insights.filter((i) => i.remediationSnippet).length}
-          icon="healing"
-          desc="Patches ready to apply"
-          highlight="text-tertiary"
-        />
-        <StatCard
-          label="EXECUTION"
-          value="100% LOCAL"
-          icon="lock"
-          desc="Zero code sent to cloud"
-          highlight="text-outline"
-        />
-      </div>
-
-      {/* Filter Toolbar */}
-      <div className="bg-surface-container-low border border-outline-variant rounded-lg p-md flex flex-wrap justify-between items-center gap-sm">
-        <div className="flex flex-wrap gap-xs">
-          {["all", "vulnerability", "architecture", "secret", "refactor"].map((cat) => (
+          {comparison && (
             <button
-              key={cat}
-              onClick={() => setCategoryFilter(cat)}
+              onClick={() => setActiveTab("benchmark")}
               className={cn(
-                "px-3 py-1 rounded text-[12px] font-[JetBrains_Mono] uppercase transition-colors border cursor-pointer",
-                categoryFilter === cat
-                  ? "bg-primary/20 text-primary border-primary/50 font-bold"
-                  : "bg-surface-container text-on-surface-variant border-outline-variant hover:text-on-surface hover:bg-surface-container-high"
+                "px-3 py-1 text-xs font-[JetBrains_Mono] font-semibold rounded transition-colors flex items-center gap-1.5 cursor-pointer",
+                activeTab === "benchmark"
+                  ? "bg-secondary/20 text-secondary border border-secondary/40"
+                  : "text-on-surface-variant hover:text-on-surface"
               )}
             >
-              {cat}
+              <span className="material-symbols-outlined text-[15px]">compare_arrows</span>
+              Differential Benchmark
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-secondary/20 text-secondary border border-secondary/30">
+                AI vs Static
+              </span>
             </button>
-          ))}
-        </div>
-        <span className="text-[11px] text-on-surface-variant font-[JetBrains_Mono]">
-          Showing {filtered.length} insights
-        </span>
-      </div>
-
-      {/* Main Grid: Feed (7 cols) + Detail/Diff Panel (5 cols) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-md">
-        {/* Insight Feed (7 cols) */}
-        <div className="lg:col-span-7 space-y-md">
-          {filtered.length === 0 ? (
-            <div className="bg-surface-container-low border border-outline-variant rounded-lg p-xl text-center space-y-3">
-              <span className="material-symbols-outlined text-primary text-4xl">psychology</span>
-              <h3 className="text-base font-semibold text-on-surface font-[Inter]">No AI Insights Yet</h3>
-              <p className="text-xs text-on-surface-variant font-[Inter] max-w-md mx-auto">
-                Click <strong>Run AI Audit</strong> to execute a headless evaluation of this project using{" "}
-                {provider === "opencode" ? "OpenCode" : "Antigravity CLI"}, or launch an interactive session.
-              </p>
-              <button
-                onClick={handleRunAIReview}
-                disabled={analyzing}
-                className="mt-2 px-4 py-1.5 bg-primary text-on-primary rounded text-xs font-[JetBrains_Mono] font-semibold hover:bg-primary/90 transition-all inline-flex items-center gap-1.5 shadow-[0_0_12px_rgba(139,92,246,0.3)] cursor-pointer"
-              >
-                <span className="material-symbols-outlined text-sm">security</span>
-                Run Automated Audit Now
-              </button>
-            </div>
-          ) : (
-            filtered.map((ins) => {
-              const isSelected = selectedInsight?.id === ins.id;
-              return (
-                <div
-                  key={ins.id}
-                  onClick={() => setSelectedInsight(ins)}
-                  className={cn(
-                    "bg-surface-container-low border border-outline-variant rounded-lg p-md tech-shadow cursor-pointer transition-all hover:border-primary/50",
-                    isSelected && "border-primary bg-surface-container-high border-l-4 border-l-primary"
-                  )}
-                >
-                  <div className="flex justify-between items-start mb-sm">
-                    <div className="flex items-center gap-xs">
-                      <span className="material-symbols-outlined text-primary text-[18px]">
-                        {CATEGORY_ICONS[ins.category] ?? "psychology"}
-                      </span>
-                      <span className="text-[10px] font-bold tracking-wider font-[JetBrains_Mono] uppercase text-on-surface-variant">
-                        {ins.category}
-                      </span>
-                    </div>
-                    <span
-                      className={cn(
-                        "px-2 py-0.5 rounded text-[10px] font-bold border uppercase font-[JetBrains_Mono]",
-                        SEVERITY_CHIPS[ins.severity]
-                      )}
-                    >
-                      {ins.severity}
-                    </span>
-                  </div>
-
-                  <h3 className="text-[15px] font-bold text-on-surface font-[Inter] mb-xs">
-                    {ins.title}
-                  </h3>
-                  <p className="text-[13px] leading-[18px] text-on-surface-variant line-clamp-2 font-[Inter] mb-sm">
-                    {ins.summary}
-                  </p>
-
-                  <div className="flex flex-wrap items-center justify-between gap-sm pt-sm border-t border-outline-variant/50 text-[11px] font-[JetBrains_Mono]">
-                    <span className="text-outline truncate max-w-[280px]">
-                      Files: {ins.affectedFiles.join(", ") || "General Codebase"}
-                    </span>
-                    <span className="text-secondary font-semibold flex items-center gap-1">
-                      Inspect & Remediate →
-                    </span>
-                  </div>
-                </div>
-              );
-            })
           )}
         </div>
 
-        {/* Patch & Reasoning Inspector (5 cols) */}
-        <div className="lg:col-span-5 space-y-md">
-          {selectedInsight ? (
-            <div className="bg-surface-container-low border border-outline-variant rounded-lg p-md tech-shadow space-y-md sticky top-20">
-              <div className="flex justify-between items-start border-b border-outline-variant pb-sm">
-                <div>
-                  <span className="text-[10px] font-bold text-on-surface-variant font-[JetBrains_Mono] uppercase">
-                    AI Remediation Engine
-                  </span>
-                  <h3 className="text-[16px] font-bold text-on-surface font-[Inter] mt-0.5">
-                    {selectedInsight.title}
-                  </h3>
-                </div>
-              </div>
+        {/* Engine Status & Execution Pill */}
+        <div className="flex items-center gap-2 text-[11px] font-[JetBrains_Mono] text-on-surface-variant">
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-surface-container border border-outline-variant">
+            <span className={cn("w-1.5 h-1.5 rounded-full", activeProviderStatus?.available ? "bg-secondary" : "bg-error")} />
+            {activeProviderStatus?.available ? `${provider === "opencode" ? "OpenCode" : "Antigravity"} Ready` : "CLI Not Found"}
+          </span>
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-surface-container border border-outline-variant">
+            <span className="material-symbols-outlined text-[13px] text-tertiary">lock</span>
+            Local Execution
+          </span>
+        </div>
+      </div>
 
-              {/* Root Cause Card */}
-              <div className="bg-background p-sm rounded border border-outline-variant/60 space-y-1">
-                <span className="text-[10px] font-bold text-secondary font-[JetBrains_Mono] uppercase flex items-center gap-xs">
-                  <span className="material-symbols-outlined text-sm">troubleshoot</span>
-                  Root Cause Diagnosis
-                </span>
-                <p className="text-[12px] leading-[17px] text-on-surface font-[Inter]">
-                  {selectedInsight.rootCause}
-                </p>
-              </div>
-
-              {/* Remediation Diff Snippet */}
-              <div className="space-y-1">
-                <div className="flex justify-between items-center text-[10px] font-bold text-on-surface-variant font-[JetBrains_Mono] uppercase">
-                  <span>Suggested Code Patch / Remediation</span>
+      {/* TAB CONTENT: INSIGHTS & PATCHES */}
+      {activeTab === "insights" && (
+        <div className="space-y-3">
+          {/* Category Filter Pills & Count */}
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap gap-1">
+              {["all", "vulnerability", "architecture", "secret", "refactor"].map((cat) => {
+                const count = cat === "all" ? insights.length : insights.filter((i) => i.category === cat).length;
+                if (cat !== "all" && count === 0) return null;
+                return (
                   <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(selectedInsight.remediationSnippet);
-                      toast.success("Copied patch diff to clipboard");
-                    }}
-                    className="text-primary hover:underline flex items-center gap-xs"
+                    key={cat}
+                    onClick={() => setCategoryFilter(cat)}
+                    className={cn(
+                      "px-2.5 py-0.5 rounded text-[11px] font-[JetBrains_Mono] uppercase transition-colors border cursor-pointer",
+                      categoryFilter === cat
+                        ? "bg-primary/20 text-primary border-primary/50 font-bold"
+                        : "bg-surface-container text-on-surface-variant border-outline-variant hover:text-on-surface hover:bg-surface-container-high"
+                    )}
                   >
-                    <span className="material-symbols-outlined text-[14px]">content_copy</span>
-                    Copy
+                    {cat}
+                    <span className="ml-1 opacity-70">({count})</span>
                   </button>
-                </div>
-                <div className="bg-background border border-outline-variant rounded p-sm overflow-x-auto text-[11px] font-[JetBrains_Mono] text-on-surface max-h-56">
-                  <pre className="m-0 leading-[18px]">
-                    <code>
-                      {selectedInsight.remediationSnippet.split("\n").map((line, i) => (
-                        <span
-                          key={i}
-                          className={cn(
-                            "block",
-                            line.startsWith("-") && "bg-error/15 text-error px-1 rounded",
-                            line.startsWith("+") && "bg-secondary/15 text-secondary px-1 rounded"
-                          )}
-                        >
-                          {line}
-                        </span>
-                      ))}
-                    </code>
-                  </pre>
-                </div>
-              </div>
-
-              {/* Affected Files List */}
-              <div className="text-[11px] font-[JetBrains_Mono] space-y-1">
-                <span className="text-on-surface-variant uppercase font-bold block">
-                  Targeted File Paths
-                </span>
-                {selectedInsight.affectedFiles.map((file) => (
-                  <div
-                    key={file}
-                    className="px-2 py-1 bg-surface-container rounded border border-outline-variant/40 text-on-surface flex items-center justify-between"
-                  >
-                    <span className="truncate">{file}</span>
-                    <Link href={`/finding?search=${encodeURIComponent(file)}`} className="text-primary hover:underline text-[10px]">
-                      Inspect
-                    </Link>
-                  </div>
-                ))}
-              </div>
-
-              {/* 1-Click Interactive CLI Fix Actions */}
-              <div className="pt-sm border-t border-outline-variant space-y-2">
-                <button
-                  onClick={() =>
-                    handleLaunchTerminal(
-                      `Fix security vulnerability "${selectedInsight.title}" in ${selectedInsight.affectedFiles.join(
-                        ", "
-                      )}`
-                    )
-                  }
-                  className="w-full py-2 bg-primary text-on-primary rounded text-[12px] font-[JetBrains_Mono] font-semibold hover:bg-primary/90 transition-all flex items-center justify-center gap-xs shadow-[0_0_12px_rgba(139,92,246,0.25)] cursor-pointer"
-                >
-                  <span className="material-symbols-outlined text-sm">terminal</span>
-                  Fix in {provider === "opencode" ? "OpenCode" : "Antigravity CLI"}
-                </button>
-              </div>
+                );
+              })}
             </div>
-          ) : (
-            <div className="bg-surface-container-low border border-outline-variant rounded-lg p-xl text-center text-on-surface-variant">
-              Select an AI insight from the feed to inspect reasoning and suggested patches.
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Differential Benchmark: AI vs Static Scan */}
-      {comparison && (
-        <div className="space-y-4 pt-6 border-t border-outline-variant/60">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
-            <div>
-              <h2 className="text-xl font-bold text-on-surface font-[Inter] flex items-center gap-2">
-                <span className="material-symbols-outlined text-secondary text-2xl">compare_arrows</span>
-                Cross-Engine Differential Benchmark
-              </h2>
-              <p className="text-xs text-on-surface-variant font-[Inter] mt-0.5">
-                Automated comparison between deterministic static rules (Semgrep, Gitleaks, Tree-sitter) and local AI reasoning.
-              </p>
-            </div>
-            <span className="px-3 py-1 rounded-full text-xs font-bold font-[JetBrains_Mono] bg-primary/15 text-primary border border-primary/30">
-              Cross-Validated Findings
+            <span className="text-[11px] text-on-surface-variant font-[JetBrains_Mono]">
+              Showing {filtered.length} of {insights.length}
             </span>
           </div>
 
+          {/* Main Content: Streamlined List (7 cols) + Focused Inspector (5 cols) */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 items-start">
+            {/* Finding List */}
+            <div className="lg:col-span-7 space-y-2">
+              {filtered.length === 0 ? (
+                <div className="bg-surface-container-low border border-outline-variant rounded-lg p-8 text-center space-y-2">
+                  <span className="material-symbols-outlined text-primary text-3xl">psychology</span>
+                  <h3 className="text-sm font-semibold text-on-surface font-[Inter]">No AI Insights Found</h3>
+                  <p className="text-xs text-on-surface-variant font-[Inter] max-w-sm mx-auto">
+                    Execute an automated AI security scan or launch an interactive terminal session to assess this repository.
+                  </p>
+                  <button
+                    onClick={handleRunAIReview}
+                    disabled={analyzing}
+                    className="mt-2 px-3 py-1.5 bg-primary text-on-primary rounded text-xs font-[JetBrains_Mono] font-semibold hover:bg-primary/90 transition-all inline-flex items-center gap-1.5 shadow-sm cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-sm">security</span>
+                    Run AI Audit
+                  </button>
+                </div>
+              ) : (
+                filtered.map((ins) => {
+                  const isSelected = selectedInsight?.id === ins.id;
+                  return (
+                    <div
+                      key={ins.id}
+                      onClick={() => setSelectedInsight(ins)}
+                      className={cn(
+                        "p-3 rounded-lg border transition-all cursor-pointer bg-surface-container-low hover:border-primary/50",
+                        isSelected
+                          ? "border-primary bg-surface-container-high border-l-4 border-l-primary shadow-xs"
+                          : "border-outline-variant"
+                      )}
+                    >
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="material-symbols-outlined text-primary text-[16px] shrink-0">
+                            {CATEGORY_ICONS[ins.category] ?? "psychology"}
+                          </span>
+                          <span className="text-xs font-bold text-on-surface font-[Inter] truncate">
+                            {ins.title}
+                          </span>
+                        </div>
+                        <span
+                          className={cn(
+                            "px-2 py-0.5 rounded text-[10px] font-bold border uppercase font-[JetBrains_Mono] shrink-0",
+                            SEVERITY_CHIPS[ins.severity]
+                          )}
+                        >
+                          {ins.severity}
+                        </span>
+                      </div>
+
+                      <p className="text-xs text-on-surface-variant line-clamp-1 font-[Inter] mb-1.5">
+                        {ins.summary}
+                      </p>
+
+                      <div className="flex items-center justify-between text-[11px] font-[JetBrains_Mono] text-outline">
+                        <span className="truncate max-w-[320px]">
+                          {ins.affectedFiles.join(", ") || "General Codebase"}
+                        </span>
+                        <span
+                          className={cn(
+                            "text-xs flex items-center gap-0.5 shrink-0",
+                            isSelected ? "text-primary font-semibold" : "text-on-surface-variant"
+                          )}
+                        >
+                          Inspect <span className="material-symbols-outlined text-[14px]">chevron_right</span>
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Inspector Panel */}
+            <div className="lg:col-span-5">
+              {selectedInsight ? (
+                <div className="bg-surface-container-low border border-outline-variant rounded-lg p-3.5 space-y-3 sticky top-20 shadow-sm">
+                  {/* Header & Meta */}
+                  <div className="border-b border-outline-variant pb-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[10px] font-bold text-on-surface-variant font-[JetBrains_Mono] uppercase tracking-wider">
+                        {selectedInsight.category} • {selectedInsight.confidence} confidence
+                      </span>
+                      <span
+                        className={cn(
+                          "px-2 py-0.5 rounded text-[10px] font-bold border uppercase font-[JetBrains_Mono]",
+                          SEVERITY_CHIPS[selectedInsight.severity]
+                        )}
+                      >
+                        {selectedInsight.severity}
+                      </span>
+                    </div>
+                    <h3 className="text-sm font-bold text-on-surface font-[Inter] mt-1">
+                      {selectedInsight.title}
+                    </h3>
+                  </div>
+
+                  {/* Root Cause Diagnosis */}
+                  <div className="bg-background p-2.5 rounded border border-outline-variant/60 space-y-1">
+                    <span className="text-[10px] font-bold text-secondary font-[JetBrains_Mono] uppercase flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[13px]">troubleshoot</span>
+                      Root Cause Diagnosis
+                    </span>
+                    <p className="text-xs leading-[17px] text-on-surface font-[Inter]">
+                      {selectedInsight.rootCause}
+                    </p>
+                  </div>
+
+                  {/* Remediation Snippet */}
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-center text-[10px] font-bold text-on-surface-variant font-[JetBrains_Mono] uppercase">
+                      <span>Suggested Code Patch</span>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(selectedInsight.remediationSnippet);
+                          toast.success("Copied patch diff to clipboard");
+                        }}
+                        className="text-primary hover:underline flex items-center gap-1 cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-[13px]">content_copy</span>
+                        Copy
+                      </button>
+                    </div>
+                    <div className="bg-background border border-outline-variant rounded p-2 overflow-x-auto text-[11px] font-[JetBrains_Mono] text-on-surface max-h-52">
+                      <pre className="m-0 leading-[17px]">
+                        <code>
+                          {selectedInsight.remediationSnippet.split("\n").map((line, i) => (
+                            <span
+                              key={i}
+                              className={cn(
+                                "block",
+                                line.startsWith("-") && "bg-error/15 text-error px-1 rounded",
+                                line.startsWith("+") && "bg-secondary/15 text-secondary px-1 rounded"
+                              )}
+                            >
+                              {line}
+                            </span>
+                          ))}
+                        </code>
+                      </pre>
+                    </div>
+                  </div>
+
+                  {/* Affected Files */}
+                  <div className="text-[11px] font-[JetBrains_Mono] space-y-1">
+                    <span className="text-on-surface-variant uppercase font-bold text-[10px] block">
+                      Targeted Files
+                    </span>
+                    {selectedInsight.affectedFiles.map((file) => (
+                      <div
+                        key={file}
+                        className="px-2 py-1 bg-surface-container rounded border border-outline-variant/40 text-on-surface flex items-center justify-between text-xs"
+                      >
+                        <span className="truncate">{file}</span>
+                        <Link
+                          href={`/finding?search=${encodeURIComponent(file)}`}
+                          className="text-primary hover:underline text-[10px] shrink-0 ml-2"
+                        >
+                          Inspect
+                        </Link>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* 1-Click Fix Button */}
+                  <div className="pt-2 border-t border-outline-variant">
+                    <button
+                      onClick={() =>
+                        handleLaunchTerminal(
+                          `Fix security vulnerability "${selectedInsight.title}" in ${selectedInsight.affectedFiles.join(
+                            ", "
+                          )}`
+                        )
+                      }
+                      className="w-full py-2 bg-primary text-on-primary rounded text-xs font-[JetBrains_Mono] font-semibold hover:bg-primary/90 transition-all flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-[15px]">terminal</span>
+                      Fix in {provider === "opencode" ? "OpenCode" : "Antigravity"}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-surface-container-low border border-outline-variant rounded-lg p-6 text-center text-xs text-on-surface-variant">
+                  Select a finding to inspect diagnosis and patch diff.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB CONTENT: DIFFERENTIAL BENCHMARK */}
+      {activeTab === "benchmark" && comparison && (
+        <div className="space-y-4">
           <DifferentialComparisonView comparison={comparison} />
         </div>
       )}
-    </div>
-  );
-}
-
-function StatCard({
-  label,
-  value,
-  icon,
-  desc,
-  highlight,
-}: {
-  label: string;
-  value: string | number;
-  icon: string;
-  desc: string;
-  highlight: string;
-}) {
-  return (
-    <div className="bg-surface-container-low border border-outline-variant rounded-lg p-md tech-shadow flex flex-col justify-between">
-      <div className="flex justify-between items-start mb-xs">
-        <span className="text-[10px] leading-[12px] tracking-[0.08em] font-bold text-on-surface-variant font-[JetBrains_Mono]">
-          {label}
-        </span>
-        <span className={cn("material-symbols-outlined text-lg", highlight)}>{icon}</span>
-      </div>
-      <div className={cn("text-[28px] leading-[36px] font-bold font-[Inter]", highlight)}>
-        {value}
-      </div>
-      <p className="text-[11px] leading-[16px] text-on-surface-variant font-[JetBrains_Mono] mt-xs">
-        {desc}
-      </p>
     </div>
   );
 }

@@ -7,8 +7,13 @@ import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from contextlib import asynccontextmanager
+
 from app.api.routes import ai, health, projects, reports, scans, terminal
 from app.config import settings
+from app.db.base import Base
+from app.db.session import engine
+import app.models  # noqa: F401 - ensure models are registered
 
 logging.basicConfig(
     level=getattr(logging, settings.log_level.upper(), logging.INFO),
@@ -16,11 +21,19 @@ logging.basicConfig(
 )
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Ensure tables exist for local SQLite
+    Base.metadata.create_all(bind=engine)
+    yield
+
+
 def create_app() -> FastAPI:
     app = FastAPI(
         title="CodeSentinel API",
         description="Local-first secure source code analysis & risk assessment",
         version="0.1.0",
+        lifespan=lifespan,
     )
 
     app.add_middleware(
