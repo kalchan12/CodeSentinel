@@ -39,6 +39,8 @@ Notes:
 - Added comprehensive unit tests in `tests/unit/test_pty_and_ai_service.py` (99 passed in full test suite) and verified clean Next.js production build (17/17 routes).
 - Resolved Next.js xterm CSS resolution issue by importing `@xterm/xterm/css/xterm.css` in `layout.tsx`.
 - Fixed low-contrast white buttons and invisible text on Dependencies, Secrets, and AI Analysis pages by aligning `--color-primary` with `#8B5CF6` and `--color-on-primary` with `#ffffff` (PROJECT.md §19), and adding solid dark surface backgrounds to transparent buttons and controls.
+- Added FastAPI `lifespan` handler in `apps/backend/app/main.py` ensuring database tables are initialized automatically for local SQLite environments.
+- Decluttered and minimized the AI Analysis page (`ai-analysis/page.tsx`): removed bulky banner and KPI cards, embedded controls into the header, added tabbed navigation for the Differential Benchmark, and created a compact finding list with focused remediation diffs.
 
 Next:
 Capstone final presentation and demo
