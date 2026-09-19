@@ -1,20 +1,19 @@
 @import "tailwindcss";
-@import "@xterm/xterm/css/xterm.css";
 
 @theme inline {
   /* ── Material Design 3 Tokens ── */
 
-  /* Primary */
-  --color-primary: #d0bcff;
-  --color-on-primary: #3c0091;
-  --color-primary-container: #a078ff;
-  --color-on-primary-container: #340080;
-  --color-primary-fixed: #e9ddff;
-  --color-primary-fixed-dim: #d0bcff;
-  --color-on-primary-fixed: #23005c;
-  --color-on-primary-fixed-variant: #5516be;
-  --color-inverse-primary: #6d3bd7;
-  --color-surface-tint: #d0bcff;
+  /* Primary Violet — per PROJECT.md §19 */
+  --color-primary: #8b5cf6;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #7c3aed;
+  --color-on-primary-container: #ffffff;
+  --color-primary-fixed: #8b5cf6;
+  --color-primary-fixed-dim: #7c3aed;
+  --color-on-primary-fixed: #ffffff;
+  --color-on-primary-fixed-variant: #e9ddff;
+  --color-inverse-primary: #a78bfa;
+  --color-surface-tint: #8b5cf6;
 
   /* Secondary */
   --color-secondary: #5de6ff;
@@ -66,7 +65,7 @@
   --color-outline-variant: #1E293B;
 
   /* Scopes (aliases for existing component references) */
-  --color-primary-foreground: #3c0091;
+  --color-primary-foreground: #ffffff;
   --color-secondary-foreground: #00363e;
   --color-destructive: #ffb4ab;
   --color-destructive-foreground: #690005;
@@ -76,7 +75,7 @@
   --color-popover-foreground: #e2e8f0;
   --color-border: rgba(255, 255, 255, 0.06);
   --color-input: rgba(255, 255, 255, 0.06);
-  --color-ring: #d0bcff;
+  --color-ring: #8b5cf6;
 
   /* Border radius */
   --radius-sm: 0.125rem;
@@ -283,20 +282,20 @@ body {
 }
 
 .cyber-glow {
-  box-shadow: 0 0 15px rgba(208, 188, 255, 0.15);
+  box-shadow: 0 0 15px rgba(139, 92, 246, 0.25);
 }
 
 .luminous-glow {
-  box-shadow: 0 0 8px rgba(208, 188, 255, 0.5);
+  box-shadow: 0 0 8px rgba(139, 92, 246, 0.5);
 }
 
 .luminous-glow:hover {
-  box-shadow: 0 0 12px rgba(208, 188, 255, 0.7);
+  box-shadow: 0 0 12px rgba(139, 92, 246, 0.7);
 }
 
 .border-luminous {
   border-color: var(--color-primary);
-  box-shadow: 0 0 2px 0 rgba(208, 188, 255, 0.5);
+  box-shadow: 0 0 2px 0 rgba(139, 92, 246, 0.5);
 }
 
 .border-subtle {
@@ -306,10 +305,10 @@ body {
 /* ── Sidebar States ── */
 
 .sidebar-active {
-  background-color: rgba(208, 188, 255, 0.12);
+  background-color: rgba(139, 92, 246, 0.15);
   color: var(--color-primary);
   border-left: 3px solid var(--color-primary);
-  box-shadow: inset 0 0 12px rgba(208, 188, 255, 0.06);
+  box-shadow: inset 0 0 12px rgba(139, 92, 246, 0.08);
   transition: background-color 150ms, box-shadow 150ms;
 }
 

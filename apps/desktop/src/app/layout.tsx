@@ -4,6 +4,7 @@ import { Toaster } from "sonner";
 
 import { AppShell } from "@/components/app-shell";
 
+import "@xterm/xterm/css/xterm.css";
 import "./globals.css";
 
 const inter = Inter({

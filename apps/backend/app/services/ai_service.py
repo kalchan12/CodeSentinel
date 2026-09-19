@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime, timezone
 import json
 import logging
 import os
@@ -11,9 +10,11 @@ import re
 import shutil
 import subprocess
 import uuid
-from typing import Any, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 from sqlalchemy.orm import Session
+from sqlalchemy.orm.attributes import flag_modified
 
 from app.db.session import SessionLocal
 from app.models.enums import ScanStatus
@@ -21,12 +22,11 @@ from app.models.finding import Finding as FindingModel
 from app.models.risk_assessment import RiskAssessment
 from app.models.scan import Scan as ScanModel
 from app.services import differential_service, project_service, scan_service
-from engine.models.finding import FindingCategory, Severity
 
 logger = logging.getLogger(__name__)
 
 
-def find_cli_binary(name: str) -> Optional[str]:
+def find_cli_binary(name: str) -> str | None:
     """Find absolute path for opencode or agy."""
     resolved = shutil.which(name)
     if resolved:
@@ -50,7 +50,7 @@ def check_opencode_credentials() -> bool:
     auth_file = os.path.expanduser("~/.local/share/opencode/auth.json")
     if os.path.isfile(auth_file):
         try:
-            with open(auth_file, "r", encoding="utf-8") as f:
+            with open(auth_file, encoding="utf-8") as f:
                 data = json.load(f)
                 if data and (
                     (isinstance(data, dict) and len(data) > 0)
@@ -114,30 +114,69 @@ def get_ai_status() -> dict[str, Any]:
             "description": "OpenCode AI Coding Agent (supports Claude, GPT, Gemini, Ollama)",
         },
     }
-
-
-
-
 IGNORE_DIRS = {
-    ".git", ".venv", "venv", "env", "node_modules", "__pycache__",
-    ".next", "dist", "build", ".idea", ".vscode", "target", "vendor",
-    ".pytest_cache", ".mypy_cache", ".cargo", "site-packages",
-    "coverage", "out", ".turbo", ".gradle", "bin", "obj",
+    ".git",
+    ".venv",
+    "venv",
+    "env",
+    "node_modules",
+    "__pycache__",
+    ".next",
+    "dist",
+    "build",
+    ".idea",
+    ".vscode",
+    "target",
+    "vendor",
+    ".pytest_cache",
+    ".mypy_cache",
+    ".cargo",
+    "site-packages",
+    "coverage",
+    "out",
+    ".turbo",
+    ".gradle",
+    "bin",
+    "obj",
 }
 
 SOURCE_EXTS = {
-    ".py", ".js", ".ts", ".jsx", ".tsx", ".go", ".java", ".php",
-    ".rb", ".c", ".cpp", ".h", ".cs", ".rs", ".html", ".sql",
-    ".sh", ".env", ".yml", ".yaml", ".json", ".toml", ".conf",
+    ".py",
+    ".js",
+    ".ts",
+    ".jsx",
+    ".tsx",
+    ".go",
+    ".java",
+    ".php",
+    ".rb",
+    ".c",
+    ".cpp",
+    ".h",
+    ".cs",
+    ".rs",
+    ".html",
+    ".sql",
+    ".sh",
+    ".env",
+    ".yml",
+    ".yaml",
+    ".json",
+    ".toml",
+    ".conf",
 }
 
 IGNORE_FILES = {
-    "package-lock.json", "pnpm-lock.yaml", "yarn.lock", "poetry.lock", "composer.lock",
+    "package-lock.json",
+    "pnpm-lock.yaml",
+    "yarn.lock",
+    "poetry.lock",
+    "composer.lock",
 }
 
 
 def discover_project_source_files(target_dir: str, max_files: int = 30) -> list[str]:
-    """Discover actual project source code files, ignoring vendor, cache, and virtual environment directories."""
+    """Discover actual project source code files, ignoring vendor, cache, and venv dirs."""
     discovered: list[str] = []
     if not os.path.isdir(target_dir):
         return discovered
@@ -159,11 +198,11 @@ def discover_project_source_files(target_dir: str, max_files: int = 30) -> list[
     for root, dirs, files in os.walk(target_dir):
         # Modify dirs in-place to prune ignored directories
         dirs[:] = [d for d in dirs if d not in IGNORE_DIRS and not d.startswith(".")]
-        
+
         rel_root = os.path.relpath(root, target_dir)
         if rel_root == ".":
             continue
-            
+
         for file in sorted(files):
             if len(discovered) >= max_files:
                 break
@@ -188,15 +227,34 @@ def extract_code_snippet(
     """Extract code context around line_start from project file for visual inspection."""
     if not file_path:
         return None
-    clean_p = file_path.strip().lstrip("./").lstrip("/")
-    full_path = os.path.join(target_dir, clean_p)
-    if not os.path.isfile(full_path):
-        if os.path.isabs(file_path) and os.path.isfile(file_path):
-            full_path = file_path
-        else:
-            return None
+    clean_p = file_path.strip().strip("`").strip("'").strip('"').lstrip("./").lstrip("/")
+    candidates = [
+        os.path.join(target_dir, clean_p),
+        file_path,
+        os.path.join(target_dir, file_path),
+    ]
+
+    # If direct path not found, search target_dir for matching filename
+    full_path = None
+    for cand in candidates:
+        if os.path.isfile(cand):
+            full_path = cand
+            break
+
+    if not full_path and os.path.isdir(target_dir):
+        base_name = os.path.basename(clean_p)
+        if base_name:
+            for root, dirs, files in os.walk(target_dir):
+                dirs[:] = [d for d in dirs if d not in IGNORE_DIRS and not d.startswith(".")]
+                if base_name in files:
+                    full_path = os.path.join(root, base_name)
+                    break
+
+    if not full_path or not os.path.isfile(full_path):
+        return None
+
     try:
-        with open(full_path, "r", encoding="utf-8", errors="replace") as f:
+        with open(full_path, encoding="utf-8", errors="replace") as f:
             lines = f.readlines()
         if not lines:
             return None
@@ -212,8 +270,8 @@ def extract_code_snippet(
 async def run_ai_scan_background(
     scan_id: int,
     provider: str = "agy",
-    model: Optional[str] = None,
-    custom_prompt: Optional[str] = None,
+    model: str | None = None,
+    custom_prompt: str | None = None,
 ) -> None:
     """Execute an automated AI security evaluation in the background with real-time telemetry."""
     logger.info("Starting background AI scan %d via %s (model: %s)", scan_id, provider, model)
@@ -242,59 +300,73 @@ async def run_ai_scan_background(
             db.commit()
             return
 
-        # Pre-execution check: if OpenCode is selected without credentials, fail fast with actionable guidance
+        # Pre-execution check: fail fast if OpenCode has no configured credentials
         if provider == "opencode" and not check_opencode_credentials():
             scan.status = ScanStatus.FAILED.value
             scan.error_message = (
-                "OpenCode has no AI provider credentials configured (run 'opencode auth' or 'opencode providers login' "
-                "in the terminal). Please switch to Google Antigravity CLI (agy) which is already authenticated and active."
+                "OpenCode has no AI provider credentials configured (run 'opencode auth' or "
+                "'opencode providers login' in the terminal). Please switch to Google Antigravity "
+                "CLI (agy) which is already authenticated and active."
             )
             corr = dict(scan.correlation or {})
             corr["status_phase"] = "OpenCode credentials not configured"
+            ts_err = datetime.now(UTC).strftime("%H:%M:%S")
             corr["live_logs"] = [
-                f"[{datetime.now(timezone.utc).strftime('%H:%M:%S')}] [Error] OpenCode is installed but unauthenticated.",
-                f"[{datetime.now(timezone.utc).strftime('%H:%M:%S')}] [Fix] Run 'opencode auth' in the interactive terminal drawer or switch to Google Antigravity CLI (agy).",
+                f"[{ts_err}] [Error] OpenCode is installed but unauthenticated.",
+                f"[{ts_err}] [Fix] Run 'opencode auth' in the interactive terminal drawer "
+                f"or switch to Google Antigravity CLI (agy).",
             ]
             scan.correlation = corr
+            flag_modified(scan, "correlation")
             db.commit()
             logger.warning("Aborting OpenCode scan %d: no credentials configured", scan_id)
             return
 
         # Discover genuine project source files
         discovered_files = discover_project_source_files(target_dir, max_files=25)
-        file_list_summary = ", ".join(discovered_files[:8]) if discovered_files else "all workspace files"
+        file_list_summary = (
+            ", ".join(discovered_files[:8]) if discovered_files else "all workspace files"
+        )
 
         # Initialize running scan metadata
         scan.status = ScanStatus.RUNNING.value
-        scan.started_at = datetime.now(timezone.utc)
-        scan.progress = 10.0
+        scan.started_at = datetime.now(UTC)
+        scan.progress = 5.0
 
         correlation = dict(scan.correlation or {})
         correlation["scan_type"] = "ai"
         correlation["provider"] = provider
         correlation["model"] = model or "default"
-        correlation["status_phase"] = "Ingesting workspace and budgeting context"
+        correlation["status_phase"] = "Discovering workspace source files & context"
         correlation["discovered_files"] = discovered_files
         correlation["target_files_count"] = len(discovered_files)
+        ts_now = datetime.now(UTC).strftime("%H:%M:%S")
+        more_files = "..." if len(discovered_files) > 8 else ""
+        model_str = f" [Model: {model}]" if model and model != "default" else ""
         correlation["live_logs"] = [
-            f"[{datetime.now(timezone.utc).strftime('%H:%M:%S')}] [Phase 1/5] Initializing local AI security scan...",
-            f"[{datetime.now(timezone.utc).strftime('%H:%M:%S')}] Target workspace: {target_dir}",
-            f"[{datetime.now(timezone.utc).strftime('%H:%M:%S')}] Discovered {len(discovered_files)} source files for audit: {file_list_summary}{'...' if len(discovered_files) > 8 else ''}",
-            f"[{datetime.now(timezone.utc).strftime('%H:%M:%S')}] Selected local AI agent: {provider} ({binary})"
-            + (f" [Model: {model}]" if model and model != "default" else ""),
+            f"[{ts_now}] [Phase 1/5] Initializing local AI security scan...",
+            f"[{ts_now}] Target workspace: {target_dir}",
+            f"[{ts_now}] Discovered {len(discovered_files)} source files: "
+            f"{file_list_summary}{more_files}",
+            f"[{ts_now}] Selected local AI agent: {provider} ({binary}){model_str}",
         ]
         scan.correlation = correlation
+        flag_modified(scan, "correlation")
         db.commit()
 
     # Construct file-specific CLI command and prompt
     file_list_str = ", ".join(discovered_files[:15]) if discovered_files else "the project files"
+    base_audit_req = (
+        "Inspect source code directly for vulnerabilities, injection points, secrets, and "
+        "misconfigs. Return findings strictly as a JSON array of objects with keys: "
+        "title, severity (critical, high, medium, low), category, file, line_start, "
+        "description, remediation."
+    )
     if provider == "opencode":
         prompt = (
             custom_prompt
-            or f"Perform a comprehensive code security assessment of the source files in this workspace: {file_list_str}. "
-            "Inspect the source code directly for vulnerabilities, injection points, exposed secrets, and insecure configurations. "
-            "Return your findings strictly as a JSON array of objects with: "
-            "title, severity (critical, high, medium, low), category, file, line_start, description, remediation."
+            or f"Perform a comprehensive code security assessment of workspace files: "
+            f"{file_list_str}. {base_audit_req}"
         )
         cmd = [binary, "run", "--auto"]
         if model:
@@ -303,10 +375,8 @@ async def run_ai_scan_background(
     else:  # agy
         prompt = (
             custom_prompt
-            or f"Audit the security of the source files in this workspace: {file_list_str}. "
-            "Inspect the code directly for vulnerabilities, injection points, hardcoded secrets, and insecure configurations. "
-            "Return your findings strictly as a JSON array of objects with: "
-            "title, severity (critical, high, medium, low), category, file, line_start, description, remediation."
+            or f"Audit the security of the source files in this workspace: "
+            f"{file_list_str}. {base_audit_req}"
         )
         cmd = [binary, "-p", prompt, "--dangerously-skip-permissions", "--output-format", "json"]
         if model and model != "default":
@@ -318,17 +388,16 @@ async def run_ai_scan_background(
         scan = db.get(ScanModel, scan_id)
         if scan:
             corr = dict(scan.correlation or {})
-            corr["status_phase"] = f"Spawning local {provider} agent process"
+            corr["status_phase"] = f"Initializing local {provider} engine"
             corr["live_logs"].append(
-                f"[{datetime.now(timezone.utc).strftime('%H:%M:%S')}] [Phase 2/5] Spawning {provider} subprocess..."
+                f"[{datetime.now(UTC).strftime('%H:%M:%S')}] [Phase 2/5] Spawning {provider}..."
             )
-            scan.progress = 25.0
+            scan.progress = 12.0
             scan.correlation = corr
             db.commit()
 
     proc = None
     raw_output = ""
-    error_output = ""
 
     try:
         proc = await asyncio.create_subprocess_exec(
@@ -343,33 +412,66 @@ async def run_ai_scan_background(
             if scan:
                 corr = dict(scan.correlation or {})
                 corr["status_phase"] = f"{provider.capitalize()} deep reasoning in progress"
+                ts_phase = datetime.now(UTC).strftime('%H:%M:%S')
                 corr["live_logs"].append(
-                    f"[{datetime.now(timezone.utc).strftime('%H:%M:%S')}] [Phase 3/5] AI Agent reasoning on codebase (PID {proc.pid})..."
+                    f"[{ts_phase}] [Phase 3/5] AI Agent reasoning (PID {proc.pid})..."
                 )
-                scan.progress = 45.0
+                scan.progress = 20.0
                 scan.correlation = corr
                 db.commit()
 
-        # Stream / await output with 300s timeout
-        stdout_bytes, stderr_bytes = await asyncio.wait_for(proc.communicate(), timeout=300.0)
-        raw_output = stdout_bytes.decode(errors="replace")
-        error_output = stderr_bytes.decode(errors="replace")
-
-        logger.info("AI CLI %s finished with code %d, stdout %d bytes", provider, proc.returncode, len(raw_output))
-
-    except asyncio.TimeoutError:
-        if proc:
+        # Background task to smoothly advance progress while AI reasoning executes
+        async def _smooth_progress_ticker():
+            current_p = 20.0
             try:
-                proc.kill()
-            except Exception:
+                while True:
+                    await asyncio.sleep(2.0)
+                    if current_p < 76.0:
+                        current_p += 2.5
+                        with SessionLocal() as ticker_db:
+                            s = ticker_db.get(ScanModel, scan_id)
+                            if s and s.status == ScanStatus.RUNNING.value:
+                                s.progress = round(current_p, 1)
+                                ticker_db.commit()
+            except asyncio.CancelledError:
                 pass
+            except Exception as ex:
+                logger.debug("AI progress ticker error: %s", ex)
+
+        ticker_task = asyncio.create_task(_smooth_progress_ticker())
+
+        try:
+            # Stream / await output with 300s timeout
+            stdout_bytes, _ = await asyncio.wait_for(proc.communicate(), timeout=300.0)
+            raw_output = stdout_bytes.decode(errors="replace")
+        finally:
+            ticker_task.cancel()
+
+        logger.info(
+            "AI CLI %s finished with code %d, stdout %d bytes",
+            provider,
+            proc.returncode,
+            len(raw_output),
+        )
+
+    except TimeoutError:
+        if proc:
+            import contextlib
+            with contextlib.suppress(Exception):
+                proc.kill()
         with SessionLocal() as db:
             scan = db.get(ScanModel, scan_id)
             if scan:
                 scan.status = ScanStatus.FAILED.value
-                scan.error_message = f"{provider.capitalize()} security evaluation timed out after 300 seconds. Check network or model responsiveness."
+                scan.error_message = (
+                    f"{provider.capitalize()} evaluation timed out after 300s. "
+                    "Check network or model responsiveness."
+                )
                 corr = dict(scan.correlation or {})
-                corr["live_logs"].append(f"[{datetime.now(timezone.utc).strftime('%H:%M:%S')}] [Timeout] Subprocess killed after 300s.")
+                ts_to = datetime.now(UTC).strftime('%H:%M:%S')
+                corr["live_logs"].append(
+                    f"[{ts_to}] [Timeout] Subprocess killed after 300s."
+                )
                 scan.correlation = corr
                 db.commit()
         return
@@ -382,7 +484,9 @@ async def run_ai_scan_background(
                 scan.status = ScanStatus.FAILED.value
                 scan.error_message = f"Execution error in {provider}: {exc}"
                 corr = dict(scan.correlation or {})
-                corr["live_logs"].append(f"[{datetime.now(timezone.utc).strftime('%H:%M:%S')}] [Error] {exc}")
+                corr["live_logs"].append(
+                    f"[{datetime.now(UTC).strftime('%H:%M:%S')}] [Error] {exc}"
+                )
                 scan.correlation = corr
                 db.commit()
         return
@@ -396,7 +500,7 @@ async def run_ai_scan_background(
         corr = dict(scan.correlation or {})
         corr["status_phase"] = "Normalizing findings into canonical schema"
         corr["live_logs"].append(
-            f"[{datetime.now(timezone.utc).strftime('%H:%M:%S')}] [Phase 4/5] Normalizing AI response into canonical findings..."
+            f"[{datetime.now(UTC).strftime('%H:%M:%S')}] [Phase 4/5] Normalizing AI findings..."
         )
         scan.progress = 80.0
         scan.correlation = corr
@@ -451,18 +555,52 @@ async def run_ai_scan_background(
             except Exception as err:
                 logger.warning("Error creating finding model from AI output: %s", err)
 
+        # Build live findings payload for real-time frontend IDE inspection
+        live_findings = []
+        for f in saved_findings:
+            live_findings.append(
+                {
+                    "id": str(f.id),
+                    "title": f.title,
+                    "file": f.file,
+                    "line_start": f.line_start,
+                    "code_snippet": f.code_snippet,
+                    "severity": f.severity,
+                    "rule_id": f"ai-{provider}",
+                    "analyzer": f"ai-{provider}",
+                    "remediation": f.remediation,
+                    "root_cause": (f.finding_metadata or {}).get("root_cause")
+                    if f.finding_metadata
+                    else None,
+                    "description": f.description,
+                }
+            )
 
+        scan.findings_count = len(saved_findings)
+        corr["live_findings"] = live_findings
+        scan.correlation = dict(corr)
+        flag_modified(scan, "correlation")
         db.commit()
 
         # Create RiskAssessment record
         overall_score = max([f.risk_score or 0.0 for f in saved_findings], default=15.0)
-        overall_level = "critical" if overall_score >= 75 else "high" if overall_score >= 50 else "medium" if overall_score >= 25 else "low"
+        overall_level = (
+            "critical"
+            if overall_score >= 75
+            else "high"
+            if overall_score >= 50
+            else "medium"
+            if overall_score >= 25
+            else "low"
+        )
         assessment = RiskAssessment(
             scan_id=scan.id,
             overall_score=overall_score,
             overall_level=overall_level,
             algorithm="codesentinel-risk-v1-ai",
-            rationale=f"Synthesized from {len(saved_findings)} findings identified by {provider} agent.",
+            rationale=(
+                f"Synthesized from {len(saved_findings)} findings identified by {provider} agent."
+            ),
             breakdown={"critical": 0, "high": 0, "medium": 0, "low": 0, "info": 0},
             top_priorities=[],
             finding_risks=[],
@@ -473,10 +611,12 @@ async def run_ai_scan_background(
         # Phase 5: Differential comparison vs baseline static scan
         corr["status_phase"] = "Computing differential benchmark vs static scan"
         corr["live_logs"].append(
-            f"[{datetime.now(timezone.utc).strftime('%H:%M:%S')}] [Phase 5/5] Correlating findings against baseline static scan..."
+            f"[{datetime.now(UTC).strftime('%H:%M:%S')}] [Phase 5/5] "
+            "Correlating findings against baseline static scan..."
         )
         scan.progress = 95.0
-        scan.correlation = corr
+        scan.correlation = dict(corr)
+        flag_modified(scan, "correlation")
         db.commit()
 
         # Find latest completed static scan for this project
@@ -494,9 +634,7 @@ async def run_ai_scan_background(
         static_findings = []
         if static_scan:
             static_findings = (
-                db.query(FindingModel)
-                .filter(FindingModel.scan_id == static_scan.id)
-                .all()
+                db.query(FindingModel).filter(FindingModel.scan_id == static_scan.id).all()
             )
 
         # Run differential analysis
@@ -511,17 +649,23 @@ async def run_ai_scan_background(
         scan.status = ScanStatus.COMPLETED.value
         scan.progress = 100.0
         scan.findings_count = len(saved_findings)
-        scan.completed_at = datetime.now(timezone.utc)
+        scan.completed_at = datetime.now(UTC)
 
         corr["status_phase"] = "Scan completed successfully"
         corr["comparison"] = differential
+        static_id_str = str(static_scan.id) if static_scan else "none"
         corr["live_logs"].append(
-            f"[{datetime.now(timezone.utc).strftime('%H:%M:%S')}] [Complete] Identified {len(saved_findings)} AI vulnerabilities. Comparison computed against Scan #{static_scan.id if static_scan else 'none'}."
+            f"[{datetime.now(UTC).strftime('%H:%M:%S')}] [Complete] "
+            f"Identified {len(saved_findings)} AI vulnerabilities. "
+            f"Comparison computed against Scan #{static_id_str}."
         )
-        scan.correlation = corr
+        scan.correlation = dict(corr)
+        flag_modified(scan, "correlation")
         db.commit()
 
-        logger.info("AI Scan #%d completed successfully with %d findings", scan_id, len(saved_findings))
+        logger.info(
+            "AI Scan #%d completed successfully with %d findings", scan_id, len(saved_findings)
+        )
 
 
 def parse_ai_findings(text: str, provider: str) -> list[dict[str, Any]]:
@@ -580,7 +724,11 @@ def parse_ai_findings(text: str, provider: str) -> list[dict[str, Any]]:
         if not line_clean:
             continue
 
-        if line_clean.startswith("###") or line_clean.startswith("- **") or re.match(r"^\d+\.\s+\*\*", line_clean):
+        if (
+            line_clean.startswith("###")
+            or line_clean.startswith("- **")
+            or re.match(r"^\d+\.\s+\*\*", line_clean)
+        ):
             if current_item.get("title"):
                 results.append(current_item)
                 current_item = {}
@@ -588,7 +736,13 @@ def parse_ai_findings(text: str, provider: str) -> list[dict[str, Any]]:
             title_clean = re.sub(r"^[#\-\*\d\.\s]+", "", line_clean).replace("**", "").strip()
             current_item["title"] = title_clean[:128]
             lower_title = title_clean.lower()
-            current_item["severity"] = "critical" if "critical" in lower_title else "high" if "high" in lower_title else "medium"
+            current_item["severity"] = (
+                "critical"
+                if "critical" in lower_title
+                else "high"
+                if "high" in lower_title
+                else "medium"
+            )
             current_item["category"] = "vulnerability"
         elif "severity:" in line_clean.lower():
             sev_candidate = line_clean.split(":", 1)[1].strip().lower().replace("*", "")
@@ -616,15 +770,20 @@ def parse_ai_findings(text: str, provider: str) -> list[dict[str, Any]]:
 
     if clean_text:
         # Fallback overview finding
-        return [{
-            "title": f"{provider.capitalize()} Security Assessment Overview",
-            "severity": "info",
-            "category": "vulnerability",
-            "file": "README.md",
-            "line_start": 1,
-            "description": clean_text[:1200],
-            "remediation": "Review the full AI output in the embedded terminal for detailed remediation steps.",
-        }]
+        return [
+            {
+                "title": f"{provider.capitalize()} Security Assessment Overview",
+                "severity": "info",
+                "category": "vulnerability",
+                "file": "README.md",
+                "line_start": 1,
+                "description": clean_text[:1200],
+                "remediation": (
+                    "Review the full AI output in the embedded terminal "
+                    "for detailed remediation steps."
+                ),
+            }
+        ]
 
     return []
 
@@ -639,31 +798,38 @@ def _normalize_findings_list(items: list[Any], provider: str) -> list[dict[str, 
         sev = str(item.get("severity", "medium")).lower()
         if sev not in ["critical", "high", "medium", "low", "info"]:
             sev = "medium"
-        file_path = str(item.get("file") or item.get("filename") or item.get("path") or "project").strip().replace("`", "")
+        file_path = (
+            str(item.get("file") or item.get("filename") or item.get("path") or "project")
+            .strip()
+            .replace("`", "")
+        )
         line_val = item.get("line_start") or item.get("line") or item.get("line_number")
         try:
             line_start = int(line_val) if line_val is not None else None
         except (ValueError, TypeError):
             line_start = None
 
-        normalized.append({
-            "title": str(title)[:256],
-            "severity": sev,
-            "category": str(item.get("category", "vulnerability")),
-            "file": file_path,
-            "line_start": line_start,
-            "description": str(item.get("description") or item.get("summary") or ""),
-            "remediation": str(item.get("remediation") or item.get("fix") or item.get("recommendation") or ""),
-        })
+        normalized.append(
+            {
+                "title": str(title)[:256],
+                "severity": sev,
+                "category": str(item.get("category", "vulnerability")),
+                "file": file_path,
+                "line_start": line_start,
+                "description": str(item.get("description") or item.get("summary") or ""),
+                "remediation": str(
+                    item.get("remediation") or item.get("fix") or item.get("recommendation") or ""
+                ),
+            }
+        )
     return normalized
-
 
 
 async def run_ai_codebase_assessment(
     db: Session,
     project_id: int,
     provider: str = "opencode",
-    custom_prompt: Optional[str] = None,
+    custom_prompt: str | None = None,
 ) -> dict[str, Any]:
     """Synchronous compatibility wrapper for automated CLI codebase assessments."""
     scan = scan_service.create_scan(db, project_id)

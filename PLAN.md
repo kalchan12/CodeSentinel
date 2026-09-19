@@ -10,36 +10,45 @@
 
 ```text
 Phase:
-Phase 20 — Capstone Polish
+Phase 20 — Capstone Polish & Verification
 
 Task:
-AI Engine Reliability, Model Selection, Distinct Differential Benchmarking & Project Cascade Deletion (Completed)
+End-to-End AI Scan Verification, Differential Benchmarking, Model Selection & Cascade Deletion (Completed)
 
 Status:
-Complete
+Complete / Verified End-to-End
 
 Owner:
 Developer + Agent
 
 Started:
-2026-09-11
+2026-09-19
 
 Dependencies:
-Phase 1-20 completion, AI CLI & Embedded Terminal
+Phase 1-20 completion, local AI CLI engines (agy/opencode), SQLite scan models
 
-Notes:
-- Enforced SQLite foreign key cascading (`PRAGMA foreign_keys=ON`) and implemented explicit multi-table deletion (`delete_project` purges RiskAssessments, Findings, Scans, and Project records) to prevent orphaned ghost data from polluting findings, overview, and report views.
+Runtime Environment:
+- Backend: http://127.0.0.1:8000 (FastAPI + SQLite, auto-initialized tables via lifespan in main.py)
+- Frontend: http://localhost:3000 (Next.js 16.3.1 + Tauri desktop shell)
+- Python venv: /home/kal/CodeSentinel/.venv/ (pytest tests/unit/: 94 passed, 3 skipped)
+- Desktop check: npm run typecheck -w @codesentinel/desktop (0 errors)
+- Demo test codebase: /home/kal/vulnerable-test-app (Project #1: Scan #1 = 101 static findings; Scan #2 = 26 real AI findings)
+
+Accomplishments & Verified Features:
+- Enforced SQLite foreign key cascading (`PRAGMA foreign_keys=ON`) and implemented explicit multi-table deletion (`delete_project` purges RiskAssessments, Findings, Scans, and Project records) to prevent orphaned ghost data.
 - Added permanent Project Deletion UI modal on `/projects` page with safety confirmations and immediate cache invalidation.
-- Fixed OpenCode 45% freeze by adding `check_opencode_credentials()`. Headless scans fail fast with a clear notification when unauthenticated, guiding users to run `opencode auth` via the embedded terminal drawer.
+- Fixed OpenCode 45% freeze by adding `check_opencode_credentials()`. Headless scans fail fast with clear notification when unauthenticated, guiding users to run `opencode auth`.
 - Set default AI provider to Google Antigravity CLI (`agy`) which is pre-authenticated on the system.
-- Added AI Model selection dropdown (`model` parameter) across the backend API (`AIScanRequest`), CLI invocation flags (`-m` for OpenCode, `--model` for `agy`), and frontend `/ai-analysis` UI.
-- Separated the Cross-Engine Differential Comparison into 3 distinct sections: (1) Corroborated Findings (Agreement between static and AI), (2) Threats Missed by Static Scan (AI-Exclusive Discoveries), and (3) Deterministic Static-Only Rules (AST/regex detections).
-- Added enriched Target Project status display showing repo/local path and static baseline scan presence.
-- Verified test suite: 91 unit tests passed, 3 skipped, 0 errors. Verified Next.js production build: 17/17 static pages compiled successfully.
+- Added AI Model selection dropdown (`model` parameter) across backend API (`AIScanRequest`), CLI invocation flags (`-m` for OpenCode, `--model` for `agy`), and frontend `/ai-analysis` UI.
+- Separated Cross-Engine Differential Comparison into 3 distinct sections: (1) Corroborated Findings, (2) Threats Missed by Static Scan (AI-Exclusive Discoveries), and (3) Deterministic Static-Only Rules.
+- Audit-grade PDF report generation directly extracted from scan data via ReportLab.
+- LiveVulnerabilityIDE with AI fix copilot and smooth AI scan progress tracking.
+- Fixed SQLAlchemy Mutable JSON Bug in `app/services/ai_service.py` using `flag_modified(scan, "correlation")`.
+- End-to-End AI Scan Execution on Project #1: 14.5KB JSON AST extracted and 26 normalized AI findings persisted.
 
-Next:
-Capstone final presentation and demo
-
+Next / Handover:
+- Final capstone demonstration run and presentation walkthrough.
+- Package Tauri desktop distribution artifacts if requested.
 ```
 
 > Keep this section current. Every meaningful work session should start by reading it and end by updating it.

@@ -161,4 +161,20 @@ export const api = {
       ai_only: any[];
       static_only: any[];
     }>(`/projects/${projectId}/scan-comparison?static_scan_id=${staticScanId}&ai_scan_id=${aiScanId}`),
+  getReportSummary: (scanId: number) => request<any>(`/reports/${scanId}/summary`),
+  downloadReportPdf: async (scanId: number, filename?: string) => {
+    const res = await fetch(`${API_BASE}/reports/${scanId}/export/pdf`);
+    if (!res.ok) {
+      throw new ApiError(res.status, "Failed to download PDF report");
+    }
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename ?? `codesentinel_report_scan_${scanId}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  },
 };

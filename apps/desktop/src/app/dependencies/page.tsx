@@ -141,7 +141,7 @@ export default function DependenciesPage() {
         <div className="flex gap-sm">
           <button
             onClick={() => toast.success("Lockfile audit synced with local cache")}
-            className="bg-transparent border border-outline-variant text-on-surface px-4 py-1.5 rounded-md text-[13px] leading-[20px] font-[JetBrains_Mono] hover:bg-surface-container-highest transition-colors flex items-center gap-xs"
+            className="bg-surface-container hover:bg-surface-container-high border border-outline-variant text-on-surface px-4 py-1.5 rounded-md text-[13px] leading-[20px] font-[JetBrains_Mono] transition-colors flex items-center gap-xs cursor-pointer shadow-sm"
           >
             <span className="material-symbols-outlined text-sm">refresh</span>
             Refresh Advisories
@@ -196,24 +196,24 @@ export default function DependenciesPage() {
         </div>
         <div className="flex flex-wrap items-center gap-sm">
           <select
-            className="bg-background border border-outline-variant rounded text-on-surface text-[12px] leading-[18px] font-[JetBrains_Mono] py-1.5 px-3 focus:ring-1 focus:ring-primary outline-none"
+            className="bg-surface-container border border-outline-variant rounded text-on-surface text-[12px] leading-[18px] font-[JetBrains_Mono] py-1.5 px-3 focus:ring-1 focus:ring-primary outline-none cursor-pointer"
             value={ecosystemFilter}
             onChange={(e) => setEcosystemFilter(e.target.value)}
           >
-            <option value="all">All Ecosystems</option>
-            <option value="npm">npm</option>
-            <option value="PyPI">PyPI</option>
-            <option value="Go">Go</option>
-            <option value="crates.io">crates.io</option>
+            <option className="bg-surface-container text-on-surface" value="all">All Ecosystems</option>
+            <option className="bg-surface-container text-on-surface" value="npm">npm</option>
+            <option className="bg-surface-container text-on-surface" value="PyPI">PyPI</option>
+            <option className="bg-surface-container text-on-surface" value="Go">Go</option>
+            <option className="bg-surface-container text-on-surface" value="crates.io">crates.io</option>
           </select>
 
           <button
             onClick={() => setVulnOnly(!vulnOnly)}
             className={cn(
-              "px-3 py-1.5 rounded text-[12px] leading-[18px] font-[JetBrains_Mono] border transition-colors flex items-center gap-xs",
+              "px-3 py-1.5 rounded text-[12px] leading-[18px] font-[JetBrains_Mono] border transition-colors flex items-center gap-xs cursor-pointer",
               vulnOnly
-                ? "bg-error/15 text-error border-error/40 font-semibold"
-                : "bg-background text-on-surface-variant border-outline-variant hover:text-on-surface"
+                ? "bg-error/20 text-error border-error/50 font-semibold"
+                : "bg-surface-container text-on-surface border-outline-variant hover:bg-surface-container-high"
             )}
           >
             <span className="material-symbols-outlined text-[16px]">
@@ -402,7 +402,7 @@ export default function DependenciesPage() {
                     );
                     toast.success(`Copied update command for ${selectedDep.name}`);
                   }}
-                  className="w-full py-2 bg-primary/15 text-primary hover:bg-primary/25 border border-primary/40 rounded text-[12px] font-[JetBrains_Mono] font-semibold transition-colors flex items-center justify-center gap-xs"
+                  className="w-full py-2 bg-primary hover:bg-primary/90 text-on-primary rounded text-[12px] font-[JetBrains_Mono] font-semibold transition-all flex items-center justify-center gap-xs shadow-[0_0_12px_rgba(139,92,246,0.25)] cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-sm">content_copy</span>
                   Copy Upgrade Command

@@ -27,7 +27,22 @@ def normalize_semgrep_finding(result: Mapping[str, object]) -> Finding:
     end = result.get("end", {}) or {}
     line_start = start.get("line") if isinstance(start, Mapping) else None
     line_end = end.get("line") if isinstance(end, Mapping) else None
-    snippet = str(extra.get("lines", "") or "").strip()
+    raw_lines = str(extra.get("lines", "") or "").strip()
+    snippet = raw_lines if raw_lines and raw_lines.lower() != "requires login" else None
+
+    if not snippet and path and line_start:
+        import os
+        if os.path.isfile(path):
+            try:
+                with open(path, "r", encoding="utf-8", errors="replace") as f:
+                    flines = f.readlines()
+                if flines and 1 <= line_start <= len(flines):
+                    s_idx = max(0, line_start - 3)
+                    e_idx = min(len(flines), line_start + 3)
+                    snippet = "".join(flines[s_idx:e_idx])
+            except Exception:
+                pass
+
     message = str(extra.get("message", "")).strip() or check_id
 
     return Finding(
