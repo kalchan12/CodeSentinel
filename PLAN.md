@@ -10,38 +10,38 @@
 
 ```text
 Phase:
-Phase 20 — Capstone Polish
+Phase 20 — Capstone Polish & Verification
 
 Task:
-Audit-Grade Real PDF Generation & Extraction from Scans (Completed)
+End-to-End AI Scan Verification, ORM JSON Fix & Differential Analysis (Completed)
 
 Status:
-Complete / Ready for Final Demo
+Complete / Verified End-to-End
 
 Owner:
 Developer + Agent
 
 Started:
-2026-09-11
+2026-09-19
 
 Dependencies:
-Phase 1-20 completion, ReportLab engine, SQLite scan models
+Phase 1-20 completion, local AI CLI engines (agy/opencode), SQLite scan models
 
 Runtime Environment:
 - Backend: http://127.0.0.1:8000 (FastAPI + SQLite, auto-initialized tables via lifespan in main.py)
 - Frontend: http://localhost:3000 (Next.js 16.3.1 + Tauri desktop shell)
 - Python venv: /home/kal/CodeSentinel/.venv/ (pytest tests/unit/: 94 passed, 3 skipped)
-- Desktop check: npm run typecheck -w @codesentinel/desktop (0 errors), npm run build (17/17 routes)
-- Demo test codebase: /home/kal/vulnerable-test-app (Project #1, 101 static findings, 18 AI findings)
+- Desktop check: npm run typecheck -w @codesentinel/desktop (0 errors)
+- Demo test codebase: /home/kal/vulnerable-test-app (Project #1: Scan #1 = 101 static findings; Scan #2 = 26 real AI findings)
 
 Session Accomplishments & State:
-1. Replaced Mock PDF with Real ReportLab Engine: Implemented `ReportService` in `app/services/report_service.py` to extract actual scan findings, project metadata, compliance scorecards, and severity distributions directly from SQLite.
-2. Two-Pass Numbered Canvas: Added dynamic running headers ("CodeSentinel Executive Security Assessment Report") and running footers with "Page X of Y" and local-first audit notices.
-3. Multi-Page Comprehensive Findings Catalog: Grouped findings by category (SAST flaws, secrets, configuration, SCA dependencies), rendering syntax code snippets, location gutters, CWE/Rule IDs, and actionable remediation steps.
-4. Real PDF Download in Desktop UI: Added `api.downloadReportPdf` to `api.ts`, updated `apps/desktop/src/app/reports/page.tsx` with animated "Export Audit PDF" and "Download Audit PDF" buttons triggering real browser/desktop downloads with toast feedback.
-5. Unit Testing & Linting: Added comprehensive unit tests in `tests/unit/test_report_service.py` (94 passed), added `reportlab` to `pyproject.toml`, and confirmed 0 ruff errors and 0 Next.js build errors.
+1. End-to-End AI Scan Execution: Triggered real AI codebase analysis using host CLI agent (`agy`) on Project #1. Subprocess completed in ~78s, extracted 14,597 bytes of JSON AST/security analysis, and persisted 26 normalized AI findings into SQLite.
+2. Differential Comparison Engine (`/api/scans/{id}/comparison`): Cross-referenced static findings (Scan #1: 101 findings) with AI findings (Scan #2: 26 findings). Identified 12 corroborated high-confidence findings, 14 unique AI discoveries (CORS wildcard, insecure cookie flags, eval/exec code execution), and 89 static-only findings.
+3. Fixed SQLAlchemy Mutable JSON Bug: Resolved in-place dictionary mutation tracking in `app/services/ai_service.py` by using detached dict assignments and `flag_modified(scan, "correlation")`.
+4. Linting & Formatting: Cleaned and typed `ai_service.py` and `differential_service.py` to achieve 0 ruff errors and 100% compliance with PEP 8 and the project's 100-char line limit.
+5. All Tests Passing: 94/94 unit tests passing, desktop TypeScript types 100% clean.
 
-Next / Handover to New Chat:
+Next / Handover:
 - Final capstone demonstration run and presentation walkthrough.
 - Package Tauri desktop distribution artifacts if requested.
 ```
