@@ -79,17 +79,77 @@ def update_progress(
     db.commit()
 
 
+import os
+from app.models.project import Project
+
+
+def extract_code_context(
+    target_dir: str | None,
+    file_path: str | None,
+    line_start: int | None,
+    context_lines: int = 3,
+) -> str | None:
+    """Read actual source lines from project file if available on host."""
+    if not file_path:
+        return None
+    clean = file_path.strip().strip("`").strip("'").strip('"').lstrip("./").lstrip("/")
+    candidates = []
+    if target_dir:
+        candidates.append(os.path.join(target_dir, clean))
+        candidates.append(os.path.join(target_dir, file_path))
+    candidates.append(file_path)
+
+    full_path = None
+    for cand in candidates:
+        if os.path.isfile(cand):
+            full_path = cand
+            break
+
+    if not full_path and target_dir and os.path.isdir(target_dir):
+        base_name = os.path.basename(clean)
+        if base_name:
+            for root, dirs, files in os.walk(target_dir):
+                dirs[:] = [d for d in dirs if d not in (".git", "node_modules", ".venv", ".next")]
+                if base_name in files:
+                    full_path = os.path.join(root, base_name)
+                    break
+
+    if not full_path or not os.path.isfile(full_path):
+        return None
+
+    try:
+        with open(full_path, "r", encoding="utf-8", errors="replace") as f:
+            lines = f.readlines()
+        if not lines:
+            return None
+        ln = line_start if (line_start and 1 <= line_start <= len(lines)) else 1
+        start = max(0, ln - 1 - context_lines)
+        end = min(len(lines), ln + context_lines)
+        return "".join(lines[start:end])
+    except Exception:
+        return None
+
+
 def persist_results(db: Session, scan_id: int, result: OrchestrationResult) -> None:
     """Store normalized findings, risk assessment and scan bookkeeping."""
     scan = db.get(Scan, scan_id)
     if scan is None:
         raise ValueError(f"scan {scan_id} not found")
 
+    project = db.get(Project, scan.project_id) if scan.project_id else None
+    target_dir = project.local_path if project else None
+
     risk_by_id = {r.finding_id: r for r in result.assessment.finding_risks}
 
     findings: list[FindingModel] = []
     for finding in result.findings:
         risk = risk_by_id.get(finding.id)
+        snip = finding.code_snippet
+        if not snip or snip.strip().lower() in ("requires login", "redacted"):
+            disk_snip = extract_code_context(target_dir, finding.file, finding.line_start)
+            if disk_snip:
+                snip = disk_snip
+
         findings.append(
             FindingModel(
                 id=finding.id,
@@ -104,7 +164,7 @@ def persist_results(db: Session, scan_id: int, result: OrchestrationResult) -> N
                 file=finding.file,
                 line_start=finding.line_start,
                 line_end=finding.line_end,
-                code_snippet=finding.code_snippet,
+                code_snippet=snip,
                 rule_id=finding.rule_id,
                 evidence=finding.evidence,
                 remediation=finding.remediation,

@@ -163,13 +163,32 @@ def extract_code_snippet(
     """Extract code context around line_start from project file for visual inspection."""
     if not file_path:
         return None
-    clean_p = file_path.strip().lstrip("./").lstrip("/")
-    full_path = os.path.join(target_dir, clean_p)
-    if not os.path.isfile(full_path):
-        if os.path.isabs(file_path) and os.path.isfile(file_path):
-            full_path = file_path
-        else:
-            return None
+    clean_p = file_path.strip().strip("`").strip("'").strip('"').lstrip("./").lstrip("/")
+    candidates = [
+        os.path.join(target_dir, clean_p),
+        file_path,
+        os.path.join(target_dir, file_path),
+    ]
+
+    # If direct path not found, search target_dir for matching filename
+    full_path = None
+    for cand in candidates:
+        if os.path.isfile(cand):
+            full_path = cand
+            break
+
+    if not full_path and os.path.isdir(target_dir):
+        base_name = os.path.basename(clean_p)
+        if base_name:
+            for root, dirs, files in os.walk(target_dir):
+                dirs[:] = [d for d in dirs if d not in IGNORE_DIRS and not d.startswith(".")]
+                if base_name in files:
+                    full_path = os.path.join(root, base_name)
+                    break
+
+    if not full_path or not os.path.isfile(full_path):
+        return None
+
     try:
         with open(full_path, "r", encoding="utf-8", errors="replace") as f:
             lines = f.readlines()
