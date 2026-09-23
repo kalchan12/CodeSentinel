@@ -12,18 +12,18 @@ and the reasoning behind the major design decisions.
 │                     │                                            │
 │                     │  HTTP / JSON (localhost:8000, CORS)        │
 │                     ▼                                            │
-│  apps/backend   FastAPI ── creates scan rows, enqueues Celery    │
-│                tasks, serves scan/finding/assessment APIs        │
+│  apps/backend   FastAPI ── creates scan rows, schedules async    │
+│                BackgroundTasks, serves scan/finding APIs         │
+│                     │                                            │
+│                     ▼ (FastAPI BackgroundTasks & SQLite)         │
+│         engine.AnalysisOrchestrator ── persists to SQLite        │
+│                        │                                         │
+│                        ├─ resolver  (local path | git clone)     │
+│                        ├─ analyzers (Semgrep, Gitleaks, AST...)  │
+│                        ├─ normalization (validate + dedupe)      │
+│                        ├─ correlation (group/aggregate)          │
+│                        └─ risk engine (explainable scoring)      │
 └──────────────────────────────────────────────────────────────────┘
-        │ (Redis broker & progress events)
-        ▼
-  Celery worker  ── engine.AnalysisOrchestrator ── persists to PostgreSQL
-                       │
-                       ├─ resolver  (local path | git clone into workspace)
-                       ├─ analyzers (plugin interface)
-                       ├─ normalization (validate + dedupe)
-                       ├─ correlation (group/aggregate)
-                       └─ risk engine (explainable scoring)
 ```
 
 Runtime pieces:
@@ -31,27 +31,23 @@ Runtime pieces:
 | Component | Where | Role |
 | --- | --- | --- |
 | Next.js UI | host (webview / browser) | project & scan management, results dashboard |
-| FastAPI | container (`:8000`) | API layer; never runs analysis inline |
-| Celery worker | container | executes the analysis pipeline per scan |
-| PostgreSQL | container | source of truth for projects/scans/findings/assessments |
-| Redis | container | Celery broker + scan progress event channel |
+| FastAPI | host process (`:8000`) | API layer & asynchronous BackgroundTasks orchestrator |
+| SQLite | `~/.codesentinel/codesentinel.db` | local source of truth for projects, scans, findings |
+| Analysis Engines | host (local binaries/venv) | Semgrep, Gitleaks, Tree-sitter, Git, AI |
 
 The repo is a **single Python distribution**: installing the root
 `pyproject.toml` installs the `engine` package *and* the `app` backend
-package into one environment. This keeps the worker and the API on the same
-code (one image, two commands) which is the simplest local-first setup and
-requires no IPC/networking between analysis code and persistence code.
+package into one environment. This keeps the execution pipeline and the API on the same
+codebase which is the simplest local-first setup and requires zero external server daemons.
 
 ## 2. Scan lifecycle (the vertical slice)
 
 ```
 POST /api/projects/{id}/scans
-  1. A Scan row is created (status=pending) and committed.
-  2. Celery task `scans.run_scan` is enqueued on Redis.
-  3. The worker:
-       a. resolves the source:
-            local  -> must exist and be a directory
-            github -> cloned (shallow) into <data>/workspace/<project_id>
+  1. A Scan row is created (status=pending) and committed to SQLite.
+  2. A FastAPI BackgroundTask `run_scan_pipeline` is dispatched.
+  3. The asynchronous task:
+       a. resolves the source (local path or git clone into workspace)
        b. builds the pipeline from the enabled analyzers (env)
        c. runs each analyzer; findings accumulated
        d. normalization (validation + dedup)
