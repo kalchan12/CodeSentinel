@@ -70,11 +70,10 @@ scripts/            setup.sh, dev.sh, test.sh, gen_icons.py
 
 - The **desktop app** (Tauri webview) renders the Next.js UI, which talks to the
   **FastAPI backend** over HTTP on `localhost:8000`.
-- The backend **never runs analysis inline**: creating a scan enqueues a
-  **Celery task** (Redis broker) that runs the analysis pipeline in the worker.
+- The backend **processes analysis asynchronously**: creating a scan schedules a
+  **FastAPI BackgroundTask** that runs the analysis pipeline natively without requiring external message brokers.
 - The **engine** is database-agnostic: it consumes a source descriptor and
-  returns domain models. Only the worker's persistence step touches
-  PostgreSQL.
+  returns domain models. Local persistence writes directly to **SQLite** (`~/.codesentinel/codesentinel.db`).
 - Every analyzer implements the `Analyzer` interface and returns normalized
   `Finding` objects; the **risk engine** only sees normalized findings.
 
@@ -87,64 +86,32 @@ full picture and the reasoning behind each decision.
 
 - Python 3.11+ (tested with 3.12)
 - Node.js 20+
-- Docker + Docker Compose (for PostgreSQL, Redis, API and worker containers)
+- SQLite3 (built into Python standard library)
 - For the Tauri shell: Rust toolchain plus Linux webkit2gtk-4.1 (see
   [Tauri prerequisites](https://v2.tauri.app/start/prerequisites/))
 
-## Quick start (Docker)
+## Quick start (Zero-Docker Local Setup)
 
 ```bash
-# 1) one-time setup
-#    OPTIONAL: create `.env` to override defaults (see docs/environment.md)
-./scripts/setup.sh
+# 1) One-time setup: install backend dependencies and initialize virtual environment
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e ".[analyzers]"
 
-# 2) start the backend stack
-docker compose up -d --build
-#    - PostgreSQL on :5432
-#    - Redis on :6379
-#    - FastAPI on :8000  (http://localhost:8000/api/health)
-#    - Celery worker (processes scan jobs)
+# 2) Start the FastAPI backend
+.venv/bin/uvicorn app.main:app --reload --app-dir apps/backend --reload-dir engine --port 8000
 
-# 3) start the frontend
+# 3) Start the frontend desktop app
 npm run dev:desktop        # http://localhost:3000
 ```
-
-Or everything in one go: `./scripts/dev.sh`.
 
 ### Try it now
 
 1. Open http://localhost:3000 → **New project**.
 2. Pick **Local project** and point it at any source tree on this machine
-   (e.g. the `engine/` directory itself).
-3. **Run new scan** → the worker runs the mock analyzer, computes risk, and
-   the dashboard shows status, findings, severity distribution and top
-   priorities.
-4. For a GitHub URL, enter `https://github.com/<owner>/<repo>` — it is cloned
-   into the local workspace first.
-
-> The **mock analyzer** is the only enabled provider in this vertical slice.
-> It scans source files for hardcoded secrets, `eval`/`exec` calls and debug
-> configuration. It is deterministic and needs no external tools.
-
-## Running without Docker
-
-The Python parts can run directly:
-
-```bash
-# 1) PostgreSQL + Redis (any local install), then:
-#    OPTIONAL: create `.env` to override defaults (see docs/environment.md)
-./scripts/setup.sh
-
-# 2) apply migrations (path A — host psql)
-CODESENTINEL_DATABASE_URL=postgresql+psycopg://..."
-
-# 3) run API + worker in separate terminals
-.venv/bin/uvicorn app.main:app --reload --app-dir apps/backend --reload-dir engine
-.venv/bin/celery -A app.celery_app:celery_app worker --app-dir apps/backend --loglevel=info
-```
-
-Migrations are applied automatically by the backend container entrypoint; on
-a host you run `alembic -c apps/backend/alembic.ini upgrade head`.
+   (e.g. any local repository or directory).
+3. **Run new scan** → the pipeline executes the analyzer engines (Semgrep, Gitleaks, Tree-sitter, etc.), computes transparent risk scores, and the dashboard displays prioritized findings.
+4. For a GitHub URL, enter `https://github.com/<owner>/<repo>` — it is cloned into the local workspace first.
 
 ## Tests
 
