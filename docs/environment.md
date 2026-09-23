@@ -11,22 +11,17 @@ automatically (pydantic-settings). Every variable has a safe default, so a
 | --- | --- | --- |
 | `CODESENTINEL_ENVIRONMENT` | `development` | environment label |
 | `CODESENTINEL_LOG_LEVEL` | `INFO` | backend logging level |
-| `CODESENTINEL_DATABASE_URL` | `postgresql+psycopg://codesentinel:codesentinel@localhost:5432/codesentinel` | SQLAlchemy DSN (psycopg3) |
-| `CODESENTINEL_REDIS_URL` | `redis://localhost:6379/0` | Redis DSN; Celery broker/result backend + scan events |
-| `CODESENTINEL_DATA_DIR` | `~/.codesentinel` (host) / `/data` (container) | workspace for clones (`<dir>/workspace/`) and local data |
-| `CODESENTINEL_ENABLED_ANALYZERS` | `mock` | comma-separated analyzer names running in scans |
-| `CODESENTINEL_CORS_ORIGINS` | `http://localhost:3000,http://localhost:1420,tauri://localhost` | comma-separated allowed UI origins |
+| `CODESENTINEL_DATABASE_URL` | `sqlite:///<home>/.codesentinel/codesentinel.db` | SQLAlchemy DSN (SQLite3) |
+| `CODESENTINEL_DATA_DIR` | `~/.codesentinel` | workspace for clones (`<dir>/workspace/`) and local data |
+| `CODESENTINEL_ENABLED_ANALYZERS` | `semgrep,gitleaks,tree_sitter,dependencies,configuration,git` | comma-separated analyzer names running in scans |
+| `CODESENTINEL_CORS_ORIGINS` | `http://localhost:3000,http://localhost:3001,http://localhost:1420,tauri://localhost,http://tauri.localhost` | comma-separated allowed UI origins |
 
 ## How it is applied
 
 - `apps/backend/app/config.py` (pydantic-settings) reads the variables once
   on import; `settings` is the shared singleton.
-- `apps/backend/alembic/env.py` reads `CODESENTINEL_DATABASE_URL` for
-  migrations.
-- `docker-compose.yml` maps the environment for the `backend` and `worker`
-  services, reading host defaults through `${VAR:-default}`.
-- The test suite forces its own URLs (`CODESENTINEL_TEST_DATABASE_URL`,
-  `CODESENTINEL_TEST_REDIS_URL`) and never uses the development database.
+- SQLite foreign key cascading and schema initialization are handled via FastAPI lifespan events.
+- Background scans run asynchronously through FastAPI BackgroundTasks.
 
 ## URLs used in development
 
@@ -35,8 +30,7 @@ automatically (pydantic-settings). Every variable has a safe default, so a
 | API (FastAPI) | http://localhost:8000 |
 | API docs (Swagger) | http://localhost:8000/docs |
 | Frontend (Next.js) | http://localhost:3000 |
-| PostgreSQL | localhost:5432 |
-| Redis | localhost:6379 |
+| SQLite Database | `~/.codesentinel/codesentinel.db` |
 
 ## Analyzer-specific variables
 
