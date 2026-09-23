@@ -42,8 +42,7 @@ if unknown.
 ## Scans
 
 ### `POST /projects/{project_id}/scans`
-Creates a scan (status `pending`) and enqueues the Celery job. Returns the
-`Scan`. `503` if the worker broker is unreachable.
+Creates a scan (status `pending`) and schedules asynchronous execution via FastAPI `BackgroundTasks`. Returns the created `Scan` object.
 
 ### `GET /scans/{scan_id}`
 Scan status, progress, counts and (once computed) `risk_score`/`risk_level`.
