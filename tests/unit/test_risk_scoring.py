@@ -116,3 +116,19 @@ def test_top_priorities_capped() -> None:
     many = [_finding(Severity.HIGH, FindingCategory.VULNERABILITY) for _ in range(12)]
     assessment = engine.assess(many)
     assert len(assessment.top_priorities) == 5
+
+
+def test_category_exploitability_weights_influence_score() -> None:
+    engine = RiskEngine()
+    secret_finding = _finding(Severity.HIGH, FindingCategory.SECRETS, Confidence.HIGH)
+    quality_finding = _finding(Severity.HIGH, FindingCategory.CODE_QUALITY, Confidence.HIGH)
+    assert engine.grade_finding(secret_finding).score > engine.grade_finding(quality_finding).score
+
+
+def test_info_finding_stays_within_low_risk_level() -> None:
+    engine = RiskEngine()
+    info_finding = _finding(Severity.INFO, FindingCategory.REPOSITORY, Confidence.LOW)
+    grade = engine.grade_finding(info_finding)
+    assert grade.level.value == "low"
+    assert grade.score <= 20.0
+
